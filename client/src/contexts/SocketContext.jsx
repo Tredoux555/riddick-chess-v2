@@ -29,7 +29,11 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const newSocket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001', {
+    // In production, connect to same origin. In dev, use localhost:5000
+    const socketUrl = process.env.NODE_ENV === 'production' 
+      ? window.location.origin 
+      : 'http://localhost:5000';
+    const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
