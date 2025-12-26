@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+.env
+.env.local
+.env*.local
+server/.env
+client/.env
+client/build/
+dist/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.swp
+*.swo
+.railway/
