@@ -273,12 +273,12 @@ const Puzzles = () => {
             <h3>Puzzle Rating</h3>
             <div className="puzzle-rating">{puzzle?.rating || '—'}</div>
             
-            {puzzle?.themes && puzzle.themes.length > 0 && (
+            {puzzle?.themes && (
               <>
                 <h4>Themes</h4>
                 <div className="puzzle-themes">
-                  {puzzle.themes.map(theme => (
-                    <span key={theme} className="theme-tag">{theme}</span>
+                  {(Array.isArray(puzzle.themes) ? puzzle.themes : (puzzle.themes || '').split(',')).filter(t => t).map(theme => (
+                    <span key={theme} className="theme-tag">{theme.trim()}</span>
                   ))}
                 </div>
               </>
