@@ -546,17 +546,16 @@ function initializeSocket(io) {
     socket.on('challenge:accept', async ({ challengerId, timeControl, rated }) => {
       if (!userId) return;
 
+      // Randomly assign colors - one player white, the other black
+      const whitePlayer = Math.random() < 0.5 ? challengerId : userId;
+      const blackPlayer = whitePlayer === challengerId ? userId : challengerId;
+
       // Create the game
       const game = await pool.query(`
         INSERT INTO games (white_player_id, black_player_id, time_control, white_time_remaining, black_time_remaining, rated)
         VALUES ($1, $2, $3, $3, $3, $4)
         RETURNING id
-      `, [
-        Math.random() < 0.5 ? challengerId : userId,
-        Math.random() < 0.5 ? userId : challengerId,
-        timeControl,
-        rated
-      ]);
+      `, [whitePlayer, blackPlayer, timeControl, rated]);
 
       const gameId = game.rows[0].id;
 
