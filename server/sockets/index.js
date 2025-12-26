@@ -549,32 +549,55 @@ function initializeSocket(io) {
     });
 
     socket.on('challenge:accept', async ({ challengerId, timeControl, rated }) => {
-      if (!userId) return;
+      console.log('=== CHALLENGE ACCEPT RECEIVED ===');
+      console.log('From userId:', userId);
+      console.log('ChallengerID:', challengerId, 'Type:', typeof challengerId);
+      console.log('TimeControl:', timeControl, 'Rated:', rated);
+      
+      if (!userId) {
+        console.log('ERROR: No userId - not authenticated');
+        return;
+      }
 
       // Convert to number
       const challId = Number(challengerId);
+      console.log('Converted challId:', challId);
 
       // Randomly assign colors - one player white, the other black
       const whitePlayer = Math.random() < 0.5 ? challId : userId;
       const blackPlayer = whitePlayer === challId ? userId : challId;
+      console.log('White:', whitePlayer, 'Black:', blackPlayer);
 
-      // Create the game
-      const game = await pool.query(`
-        INSERT INTO games (white_player_id, black_player_id, time_control, white_time_remaining, black_time_remaining, rated)
-        VALUES ($1, $2, $3, $3, $3, $4)
-        RETURNING id
-      `, [whitePlayer, blackPlayer, timeControl, rated]);
+      try {
+        // Create the game
+        const game = await pool.query(`
+          INSERT INTO games (white_player_id, black_player_id, time_control, white_time_remaining, black_time_remaining, rated)
+          VALUES ($1, $2, $3, $3, $3, $4)
+          RETURNING id
+        `, [whitePlayer, blackPlayer, timeControl, rated]);
 
-      const gameId = game.rows[0].id;
+        const gameId = game.rows[0].id;
+        console.log('Game created with ID:', gameId);
 
-      console.log('Game created:', { gameId, white: whitePlayer, black: blackPlayer });
-
-      // Notify both players
-      const challengerSocketId = userSockets.get(challId);
-      if (challengerSocketId) {
-        io.to(challengerSocketId).emit('challenge:accepted', { gameId });
+        // Notify both players
+        const challengerSocketId = userSockets.get(challId);
+        console.log('Challenger socket ID:', challengerSocketId);
+        console.log('All userSockets:', [...userSockets.entries()]);
+        
+        if (challengerSocketId) {
+          console.log('Emitting challenge:accepted to challenger');
+          io.to(challengerSocketId).emit('challenge:accepted', { gameId });
+        } else {
+          console.log('WARNING: Challenger socket not found!');
+        }
+        
+        console.log('Emitting challenge:accepted to accepter (self)');
+        socket.emit('challenge:accepted', { gameId });
+        console.log('=== CHALLENGE ACCEPT COMPLETE ===');
+      } catch (error) {
+        console.error('Error creating game:', error);
+        socket.emit('challenge:error', { message: 'Failed to create game' });
       }
-      socket.emit('challenge:accepted', { gameId });
     });
 
     socket.on('challenge:decline', ({ challengerId }) => {
