@@ -9,6 +9,9 @@ import { FaLightbulb, FaRedo, FaFire, FaCheck, FaTimes } from 'react-icons/fa';
 // Build: 2025-12-26-v4-final
 
 const Puzzles = () => {
+  // Debug marker - check window.PUZZLE_VERSION in console
+  if (typeof window !== 'undefined') window.PUZZLE_VERSION = 'v6';
+  
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(new Chess());
   const [solution, setSolution] = useState([]);
@@ -50,6 +53,7 @@ const Puzzles = () => {
   };
 
   function onDrop(sourceSquare, targetSquare) {
+    console.log('🎯 PUZZLE V6 onDrop:', sourceSquare, targetSquare);
     if (solved || failed || loading || !puzzle) return false;
 
     const move = sourceSquare + targetSquare;
@@ -125,7 +129,7 @@ const Puzzles = () => {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles v5</h1>
+      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles v6</h1>
       
       <div style={{ textAlign: 'center', marginBottom: '10px', color: '#aaa' }}>
         {game.turn() === 'w' ? 'White' : 'Black'} to move
