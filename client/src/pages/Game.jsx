@@ -4,15 +4,17 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useBoardSettings } from '../contexts/BoardSettingsContext';
 import toast from 'react-hot-toast';
-import { FaFlag, FaHandshake, FaComments, FaEye } from 'react-icons/fa';
-import chessComPieces, { chessComBoardStyle } from '../utils/chessComPieces';
+import { FaFlag, FaHandshake, FaComments, FaEye, FaShare } from 'react-icons/fa';
+import ShareModal from '../components/ShareModal';
 
 const Game = () => {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { socket, connected, joinGame, makeMove, resign, offerDraw, acceptDraw, declineDraw, sendMessage } = useSocket();
+  const { customPieces, currentTheme } = useBoardSettings();
 
   const [game, setGame] = useState(new Chess());
   const [gameData, setGameData] = useState(null);
@@ -31,6 +33,7 @@ const Game = () => {
   const [spectatorCount, setSpectatorCount] = useState(0);
   const [opponentDisconnected, setOpponentDisconnected] = useState(false);
   const [reconnectCountdown, setReconnectCountdown] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     if (connected && gameId) {
@@ -398,6 +401,14 @@ const Game = () => {
             </div>
           )}
 
+          {/* Share button */}
+          <button 
+            className="btn btn-secondary share-btn"
+            onClick={() => setShowShareModal(true)}
+          >
+            <FaShare /> Share Game
+          </button>
+
           {/* Move list */}
           <div className="move-list">
             <h4>Moves</h4>
@@ -448,6 +459,15 @@ const Game = () => {
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={window.location.href}
+        title={`Watch this chess game: ${whitePlayer} vs ${blackPlayer}`}
+        text="Check out this chess game on Riddick Chess!"
+      />
     </div>
   );
 };

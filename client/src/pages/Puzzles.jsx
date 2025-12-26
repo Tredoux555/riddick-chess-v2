@@ -5,9 +5,10 @@ import { Chess } from 'chess.js';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FaLightbulb, FaRedo, FaFire, FaCheck, FaTimes } from 'react-icons/fa';
-import chessComPieces, { chessComBoardStyle } from '../utils/chessComPieces';
+import { useBoardSettings } from '../contexts/BoardSettingsContext';
 
 const Puzzles = () => {
+  const { customPieces, currentTheme } = useBoardSettings();
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(new Chess());
   const [playerColor, setPlayerColor] = useState('w');
@@ -227,14 +228,14 @@ const Puzzles = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               boardOrientation={playerColor === 'b' ? 'black' : 'white'}
-              customPieces={chessComPieces()}
+              customPieces={customPieces}
               customSquareStyles={customSquareStyles}
               customBoardStyle={{
                 borderRadius: '8px',
                 boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
               }}
-              customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
-              customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
+              customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
+              customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
             />
           </div>
 

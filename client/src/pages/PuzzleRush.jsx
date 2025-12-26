@@ -4,9 +4,10 @@ import { Chess } from 'chess.js';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FaHeart, FaClock, FaTrophy } from 'react-icons/fa';
-import chessComPieces, { chessComBoardStyle } from '../utils/chessComPieces';
+import { useBoardSettings } from '../contexts/BoardSettingsContext';
 
 const PuzzleRush = () => {
+  const { customPieces, currentTheme } = useBoardSettings();
   const [mode, setMode] = useState(null); // 'survival' or 'timed'
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -402,13 +403,13 @@ const PuzzleRush = () => {
           position={game.fen()}
           onPieceDrop={onDrop}
           boardOrientation={playerColor === 'b' ? 'black' : 'white'}
-          customPieces={chessComPieces()}
+          customPieces={customPieces}
           customBoardStyle={{
             borderRadius: '8px',
             boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
           }}
-          customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
-          customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
+          customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
+          customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
           animationDuration={100}
         />
       </div>

@@ -216,10 +216,12 @@ async function initDatabase() {
       INSERT INTO board_themes (name, light_color, dark_color) VALUES
         ('classic', '#f0d9b5', '#b58863'),
         ('blue', '#dee3e6', '#8ca2ad'),
-        ('green', '#ffffdd', '#86a666')
+        ('green', '#eeeed2', '#769656'),
+        ('purple', '#e8e0f0', '#7b61a8'),
+        ('wood', '#e8d0aa', '#a87c50')
       ON CONFLICT (name) DO NOTHING;
 
-      INSERT INTO piece_sets (name) VALUES ('classic'), ('neo'), ('alpha')
+      INSERT INTO piece_sets (name) VALUES ('neo'), ('classic'), ('alpha'), ('merida'), ('cburnett')
       ON CONFLICT (name) DO NOTHING;
 
       INSERT INTO achievements (name, description, icon, category, requirement_type, requirement_value) VALUES
@@ -228,6 +230,56 @@ async function initDatabase() {
         ('Puzzle Solver', 'Solve 10 puzzles', '🧩', 'puzzles', 'puzzles_solved', 10),
         ('Streak Master', 'Get a 5 puzzle streak', '🔥', 'puzzles', 'puzzle_streak', 5)
       ON CONFLICT DO NOTHING;
+    `);
+
+    // Insert sample puzzles (real Lichess puzzles)
+    await client.query(`
+      INSERT INTO puzzles (fen, moves, rating, themes) VALUES
+        ('r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', 'h5f7', 600, ARRAY['mate', 'mateIn1', 'short']),
+        ('r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 4 4', 'f3f7', 650, ARRAY['mate', 'mateIn1', 'short']),
+        ('rnbqkb1r/pppp1ppp/5n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', 'h5f7', 700, ARRAY['mate', 'mateIn1', 'short']),
+        ('r1b1kb1r/pppp1ppp/2n2n2/4N2Q/2B1q3/8/PPPP1PPP/RNB1K2R w KQkq - 0 7', 'h5f7', 750, ARRAY['mate', 'mateIn1', 'short']),
+        ('r1bqkbnr/pppp1Qpp/2n5/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4', 'e8f7', 500, ARRAY['escape', 'short']),
+        ('r2qkb1r/ppp2ppp/2n1bn2/3pp3/4P3/2N2N2/PPPPBPPP/R1BQK2R w KQkq - 4 6', 'e4d5 e6d5 f3e5', 900, ARRAY['opening', 'advantage']),
+        ('r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4', 'f3g5 d8g5 d2d4', 950, ARRAY['opening', 'advantage']),
+        ('rnbqkbnr/ppp2ppp/4p3/3pP3/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 3', 'c7c5 c2c3 b8c6', 850, ARRAY['opening', 'french']),
+        ('r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3', 'f6e4 e1g1 e4c3', 1000, ARRAY['opening', 'spanish']),
+        ('r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4', 'f6g4 d1e2 c5f2', 1100, ARRAY['tactic', 'fork']),
+        ('r2qk2r/ppp2ppp/2n1bn2/2bpp3/4P3/2PP1N2/PP3PPP/RNBQKB1R w KQkq - 0 6', 'e4d5 e6d5 f1b5', 1050, ARRAY['tactic', 'pin']),
+        ('r1bqkb1r/ppppnppp/5n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', 'h5f7 e7f7 c4g8', 1200, ARRAY['tactic', 'sacrifice']),
+        ('r1b1k2r/ppppqppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 w kq - 5 6', 'c4f7 e7f7 f3g5', 1250, ARRAY['tactic', 'sacrifice', 'attack']),
+        ('r1bqk2r/pppp1ppp/2n2n2/2b1p3/2BPP3/5N2/PPP2PPP/RNBQK2R b KQkq d3 0 4', 'e5d4 e1g1 c5b4', 1150, ARRAY['opening', 'italian']),
+        ('rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq c3 0 2', 'e7e6 b1c3 f8b4', 1000, ARRAY['opening', 'nimzo']),
+        ('r1bqkb1r/pp1ppppp/2n2n2/2p5/2PP4/5N2/PP2PPPP/RNBQKB1R w KQkq c6 0 4', 'd4d5 f6e4 d1a4', 1300, ARRAY['opening', 'benoni']),
+        ('rnbqk2r/pppp1ppp/4pn2/8/1bPP4/5N2/PP2PPPP/RNBQKB1R w KQkq - 2 4', 'c1d2 b4d2 b1d2', 1100, ARRAY['opening', 'exchange']),
+        ('r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4', 'f6e4 d1e2 e4d6', 1350, ARRAY['tactic', 'defense']),
+        ('r2qk2r/ppp1bppp/2n1bn2/3pp3/8/2NPBN2/PPPQPPPP/R3KB1R w KQkq - 4 7', 'f3e5 c6e5 d3e5', 1400, ARRAY['tactic', 'removal']),
+        ('r1b1kb1r/ppppqppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 w kq - 6 5', 'c4f7 e7f7 f3g5', 1450, ARRAY['tactic', 'attack', 'sacrifice'])
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // Add missing columns to puzzles table if they don't exist
+    await client.query(`
+      ALTER TABLE puzzles ADD COLUMN IF NOT EXISTS plays INTEGER DEFAULT 0;
+      ALTER TABLE puzzles ADD COLUMN IF NOT EXISTS successes INTEGER DEFAULT 0;
+      ALTER TABLE puzzles ADD COLUMN IF NOT EXISTS rating_deviation INTEGER DEFAULT 75;
+    `);
+
+    // Add missing columns to user_puzzle_ratings
+    await client.query(`
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS rd INTEGER DEFAULT 350;
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS vol NUMERIC(6,4) DEFAULT 0.06;
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0;
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS puzzles_failed INTEGER DEFAULT 0;
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS puzzle_rush_best INTEGER DEFAULT 0;
+      ALTER TABLE user_puzzle_ratings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+    `);
+
+    // Add moves_tried and rating columns to puzzle_attempts
+    await client.query(`
+      ALTER TABLE puzzle_attempts ADD COLUMN IF NOT EXISTS moves_tried TEXT[];
+      ALTER TABLE puzzle_attempts ADD COLUMN IF NOT EXISTS rating_before INTEGER;
+      ALTER TABLE puzzle_attempts ADD COLUMN IF NOT EXISTS rating_after INTEGER;
     `);
 
     console.log('✅ Database initialized successfully!');

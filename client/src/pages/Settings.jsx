@@ -1,365 +1,230 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import { Chessboard } from 'react-chessboard';
+import { useBoardSettings } from '../contexts/BoardSettingsContext';
+import { FaChessBoard, FaChessPawn, FaCheck } from 'react-icons/fa';
 
 const Settings = () => {
-  const { user, updateUser } = useAuth();
-  const [username, setUsername] = useState(user?.username || '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [preferences, setPreferences] = useState({
-    board_theme: 'classic',
-    piece_set: 'standard',
-    sound_enabled: true,
-    auto_promote_queen: true,
-    show_legal_moves: true,
-    confirm_resign: true,
-    animation_speed: 'normal'
-  });
-  const [loading, setLoading] = useState(false);
+  const {
+    pieceSet,
+    setPieceSet,
+    boardTheme,
+    setBoardTheme,
+    currentTheme,
+    customPieces,
+    availablePieceSets,
+    availableBoardThemes
+  } = useBoardSettings();
 
-  useEffect(() => {
-    loadPreferences();
-  }, []);
+  const [activeTab, setActiveTab] = useState('board');
 
-  const loadPreferences = async () => {
-    try {
-      const response = await axios.get('/api/customization/preferences');
-      setPreferences(response.data);
-    } catch (error) {
-      console.error('Failed to load preferences:', error);
-    }
-  };
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await axios.put('/api/auth/profile', { username });
-      updateUser({ username });
-      toast.success('Profile updated!');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to update');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await axios.put('/api/auth/password', {
-        currentPassword,
-        newPassword
-      });
-      toast.success('Password changed!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to change password');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdatePreferences = async (key, value) => {
-    const updated = { ...preferences, [key]: value };
-    setPreferences(updated);
-    
-    try {
-      await axios.put('/api/customization/preferences', { [key]: value });
-    } catch (error) {
-      console.error('Failed to save preference:', error);
-    }
-  };
+  // Preview position
+  const previewPosition = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
 
   return (
     <div className="settings-page">
-      <div className="page-header">
-        <h1 className="page-title">Settings</h1>
-      </div>
+      <div className="settings-container">
+        <h1><FaChessBoard /> Board Settings</h1>
+        
+        <div className="settings-tabs">
+          <button 
+            className={`tab ${activeTab === 'board' ? 'active' : ''}`}
+            onClick={() => setActiveTab('board')}
+          >
+            <FaChessBoard /> Board Theme
+          </button>
+          <button 
+            className={`tab ${activeTab === 'pieces' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pieces')}
+          >
+            <FaChessPawn /> Piece Style
+          </button>
+        </div>
 
-      <div className="settings-sections">
-        {/* Profile */}
-        <section className="settings-section">
-          <h2>Profile</h2>
-          <form onSubmit={handleUpdateProfile}>
-            <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                type="text"
-                className="form-input"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                minLength={3}
-                maxLength={20}
+        <div className="settings-content">
+          <div className="preview-section">
+            <h3>Preview</h3>
+            <div className="board-preview">
+              <Chessboard
+                position={previewPosition}
+                boardWidth={350}
+                customPieces={customPieces}
+                customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
+                customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
+                customBoardStyle={{ borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
+                arePiecesDraggable={false}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                className="form-input"
-                value={user?.email || ''}
-                disabled
-              />
-              <small style={{ color: 'var(--text-muted)' }}>Email cannot be changed</small>
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              Save Changes
-            </button>
-          </form>
-        </section>
-
-        {/* Password */}
-        <section className="settings-section">
-          <h2>Change Password</h2>
-          <form onSubmit={handleChangePassword}>
-            <div className="form-group">
-              <label className="form-label">Current Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                minLength={6}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Confirm New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              Change Password
-            </button>
-          </form>
-        </section>
-
-        {/* Game Preferences */}
-        <section className="settings-section">
-          <h2>Game Preferences</h2>
-          
-          <div className="preference-item">
-            <div>
-              <label>Board Theme</label>
-              <p className="pref-desc">Choose your board colors</p>
-            </div>
-            <select
-              className="form-input form-select"
-              value={preferences.board_theme}
-              onChange={(e) => handleUpdatePreferences('board_theme', e.target.value)}
-              style={{ width: 'auto' }}
-            >
-              <option value="classic">Classic</option>
-              <option value="wood">Wood</option>
-              <option value="green">Green</option>
-              <option value="blue">Blue</option>
-              <option value="purple">Purple</option>
-            </select>
           </div>
 
-          <div className="preference-item">
-            <div>
-              <label>Piece Set</label>
-              <p className="pref-desc">Choose your piece style</p>
-            </div>
-            <select
-              className="form-input form-select"
-              value={preferences.piece_set}
-              onChange={(e) => handleUpdatePreferences('piece_set', e.target.value)}
-              style={{ width: 'auto' }}
-            >
-              <option value="standard">Standard</option>
-              <option value="neo">Neo</option>
-              <option value="alpha">Alpha</option>
-              <option value="merida">Merida</option>
-            </select>
-          </div>
+          <div className="options-section">
+            {activeTab === 'board' && (
+              <div className="theme-grid">
+                {Object.entries(availableBoardThemes).map(([key, theme]) => (
+                  <div 
+                    key={key}
+                    className={`theme-option ${boardTheme === key ? 'selected' : ''}`}
+                    onClick={() => setBoardTheme(key)}
+                  >
+                    <div className="theme-preview">
+                      <div className="mini-board">
+                        <div className="square light" style={{ backgroundColor: theme.lightSquare }}></div>
+                        <div className="square dark" style={{ backgroundColor: theme.darkSquare }}></div>
+                        <div className="square dark" style={{ backgroundColor: theme.darkSquare }}></div>
+                        <div className="square light" style={{ backgroundColor: theme.lightSquare }}></div>
+                      </div>
+                    </div>
+                    <span className="theme-name">{theme.name}</span>
+                    {boardTheme === key && <FaCheck className="check-icon" />}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <div className="preference-item">
-            <div>
-              <label>Animation Speed</label>
-              <p className="pref-desc">Piece movement speed</p>
-            </div>
-            <select
-              className="form-input form-select"
-              value={preferences.animation_speed}
-              onChange={(e) => handleUpdatePreferences('animation_speed', e.target.value)}
-              style={{ width: 'auto' }}
-            >
-              <option value="fast">Fast</option>
-              <option value="normal">Normal</option>
-              <option value="slow">Slow</option>
-              <option value="none">None</option>
-            </select>
+            {activeTab === 'pieces' && (
+              <div className="pieces-grid">
+                {Object.entries(availablePieceSets).map(([key, set]) => (
+                  <div 
+                    key={key}
+                    className={`piece-option ${pieceSet === key ? 'selected' : ''}`}
+                    onClick={() => setPieceSet(key)}
+                  >
+                    <div className="piece-preview">
+                      <img 
+                        src={`${set.baseUrl}/wk.png`} 
+                        alt={set.name}
+                        className="preview-piece"
+                      />
+                      <img 
+                        src={`${set.baseUrl}/bn.png`} 
+                        alt={set.name}
+                        className="preview-piece"
+                      />
+                    </div>
+                    <span className="piece-name">{set.name}</span>
+                    {pieceSet === key && <FaCheck className="check-icon" />}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-
-          <div className="preference-item">
-            <div>
-              <label>Sound Effects</label>
-              <p className="pref-desc">Play sounds for moves</p>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={preferences.sound_enabled}
-                onChange={(e) => handleUpdatePreferences('sound_enabled', e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div className="preference-item">
-            <div>
-              <label>Show Legal Moves</label>
-              <p className="pref-desc">Highlight possible moves</p>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={preferences.show_legal_moves}
-                onChange={(e) => handleUpdatePreferences('show_legal_moves', e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div className="preference-item">
-            <div>
-              <label>Auto Promote to Queen</label>
-              <p className="pref-desc">Skip promotion choice</p>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={preferences.auto_promote_queen}
-                onChange={(e) => handleUpdatePreferences('auto_promote_queen', e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div className="preference-item">
-            <div>
-              <label>Confirm Resign</label>
-              <p className="pref-desc">Ask before resigning</p>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={preferences.confirm_resign}
-                onChange={(e) => handleUpdatePreferences('confirm_resign', e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-            </label>
-          </div>
-        </section>
+        </div>
       </div>
 
       <style jsx>{`
         .settings-page {
-          max-width: 700px;
+          min-height: calc(100vh - 60px);
+          padding: 2rem;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        .settings-container {
+          max-width: 1000px;
           margin: 0 auto;
         }
-        .settings-sections {
+        .settings-container h1 {
+          color: #fff;
+          margin-bottom: 2rem;
           display: flex;
-          flex-direction: column;
-          gap: 32px;
-        }
-        .settings-section {
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          padding: 24px;
-        }
-        .settings-section h2 {
-          margin-bottom: 20px;
-          font-size: 1.25rem;
-          padding-bottom: 12px;
-          border-bottom: 1px solid var(--border-color);
-        }
-        .preference-item {
-          display: flex;
-          justify-content: space-between;
           align-items: center;
-          padding: 16px 0;
-          border-bottom: 1px solid var(--border-color);
+          gap: 0.5rem;
         }
-        .preference-item:last-child {
-          border-bottom: none;
+        .settings-tabs {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
         }
-        .preference-item label {
-          font-weight: 500;
-        }
-        .pref-desc {
-          color: var(--text-muted);
-          font-size: 0.85rem;
-          margin-top: 4px;
-        }
-        .toggle {
-          position: relative;
-          display: inline-block;
-          width: 50px;
-          height: 28px;
-        }
-        .toggle input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        .toggle-slider {
-          position: absolute;
+        .tab {
+          padding: 0.75rem 1.5rem;
+          background: rgba(255,255,255,0.1);
+          border: none;
+          border-radius: 8px;
+          color: #fff;
           cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: var(--bg-tertiary);
-          border-radius: 28px;
-          transition: 0.3s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.2s;
         }
-        .toggle-slider:before {
+        .tab:hover { background: rgba(255,255,255,0.2); }
+        .tab.active { background: #769656; }
+        .settings-content {
+          display: grid;
+          grid-template-columns: 400px 1fr;
+          gap: 2rem;
+        }
+        .preview-section {
+          background: rgba(255,255,255,0.05);
+          padding: 1.5rem;
+          border-radius: 12px;
+        }
+        .preview-section h3 {
+          color: #fff;
+          margin-bottom: 1rem;
+        }
+        .board-preview {
+          display: flex;
+          justify-content: center;
+        }
+        .options-section {
+          background: rgba(255,255,255,0.05);
+          padding: 1.5rem;
+          border-radius: 12px;
+        }
+        .theme-grid, .pieces-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 1rem;
+        }
+        .theme-option, .piece-option {
+          background: rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 1rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+          position: relative;
+        }
+        .theme-option:hover, .piece-option:hover {
+          background: rgba(255,255,255,0.2);
+          transform: translateY(-2px);
+        }
+        .theme-option.selected, .piece-option.selected {
+          background: rgba(118, 150, 86, 0.3);
+          border: 2px solid #769656;
+        }
+        .mini-board {
+          width: 60px;
+          height: 60px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          border-radius: 4px;
+          overflow: hidden;
+          margin: 0 auto 0.5rem;
+        }
+        .square { width: 30px; height: 30px; }
+        .theme-name, .piece-name {
+          color: #fff;
+          font-size: 0.9rem;
+        }
+        .check-icon {
           position: absolute;
-          content: "";
-          height: 20px;
-          width: 20px;
-          left: 4px;
-          bottom: 4px;
-          background: white;
-          border-radius: 50%;
-          transition: 0.3s;
+          top: 8px;
+          right: 8px;
+          color: #769656;
         }
-        .toggle input:checked + .toggle-slider {
-          background: var(--accent-primary);
+        .piece-preview {
+          display: flex;
+          justify-content: center;
+          gap: 0.25rem;
+          margin-bottom: 0.5rem;
         }
-        .toggle input:checked + .toggle-slider:before {
-          transform: translateX(22px);
+        .preview-piece {
+          width: 40px;
+          height: 40px;
+        }
+        @media (max-width: 768px) {
+          .settings-content {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
