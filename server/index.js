@@ -31,7 +31,7 @@ const io = new Server(server, {
 });
 
 // Initialize socket handlers
-const { initializeSocket } = require('./sockets');
+const { initializeSocket, userSockets } = require('./sockets');
 initializeSocket(io);
 
 // Middleware
@@ -61,6 +61,30 @@ app.use('/api/customization', require('./routes/customization'));
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Get actually connected socket users
+app.get('/api/online-users', async (req, res) => {
+  try {
+    const connectedUserIds = [...userSockets.keys()];
+    console.log('Connected socket users:', connectedUserIds);
+    
+    if (connectedUserIds.length === 0) {
+      return res.json([]);
+    }
+    
+    const pool = require('./utils/db');
+    const result = await pool.query(`
+      SELECT id, username, avatar
+      FROM users
+      WHERE id = ANY($1) AND is_banned = FALSE
+    `, [connectedUserIds]);
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get online users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Serve React app (production or if build exists in dev)

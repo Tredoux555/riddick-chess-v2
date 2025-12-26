@@ -34,6 +34,10 @@ const Play = () => {
   useEffect(() => {
     loadFriends();
     loadOnlineUsers();
+    
+    // Refresh online users every 5 seconds
+    const interval = setInterval(loadOnlineUsers, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -87,7 +91,8 @@ const Play = () => {
 
   const loadOnlineUsers = async () => {
     try {
-      const response = await axios.get('/api/users/status/online');
+      // Use the socket-connected users endpoint for real-time accuracy
+      const response = await axios.get('/api/online-users');
       setOnlineUsers(response.data.filter(u => u.id !== user.id));
     } catch (error) {
       console.error('Failed to load online users:', error);
