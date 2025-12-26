@@ -282,6 +282,11 @@ async function initDatabase() {
       ALTER TABLE puzzle_attempts ADD COLUMN IF NOT EXISTS rating_after INTEGER;
     `);
 
+    // Add last_online to users table
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_online TIMESTAMP DEFAULT NOW();
+    `);
+
     console.log('✅ Database initialized successfully!');
   } catch (err) {
     console.error('❌ Database initialization error:', err.message);

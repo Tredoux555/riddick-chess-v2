@@ -14,10 +14,15 @@ const { initDatabase } = require('./init-db');
 const app = express();
 const server = http.createServer(app);
 
+// CORS configuration - allow same origin in production
+const corsOrigin = process.env.NODE_ENV === 'production' 
+  ? true  // Allow same origin
+  : 'http://localhost:3000';
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
     credentials: true
   },
@@ -31,7 +36,7 @@ initializeSocket(io);
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(express.json());
