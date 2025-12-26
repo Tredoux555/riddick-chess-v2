@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
@@ -102,18 +102,15 @@ const Puzzles = () => {
     }
   };
 
-  const onDrop = useCallback(async (sourceSquare, targetSquare, piece) => {
-    console.log('onDrop called:', { sourceSquare, targetSquare, piece, solved, failed, loading, turn: game.turn(), playerColor });
+  const onDrop = async (sourceSquare, targetSquare, piece) => {
+    console.log('onDrop called:', { sourceSquare, targetSquare, piece, solved, failed, puzzleId: puzzle?.id });
     
-    if (solved || failed || loading) {
-      console.log('Blocked: solved/failed/loading');
+    if (solved || failed || !puzzle) {
+      console.log('Blocked: solved/failed/no puzzle');
       return false;
     }
-    if (game.turn() !== playerColor) {
-      console.log('Blocked: not your turn', game.turn(), playerColor);
-      return false;
-    }
-
+    
+    // Always allow the move attempt - server will validate
     const move = sourceSquare + targetSquare + (piece[1] === 'P' && (targetSquare[1] === '8' || targetSquare[1] === '1') ? 'q' : '');
 
     try {
@@ -183,7 +180,7 @@ const Puzzles = () => {
       console.error('Move error:', error);
       return false;
     }
-  }, [game, puzzle, playerColor, moveIndex, solved, failed, loading, startTime]);
+  };
 
   const handleHint = async () => {
     if (showHint || !puzzle) return;
@@ -241,7 +238,7 @@ const Puzzles = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               boardOrientation={playerColor === 'b' ? 'black' : 'white'}
-              arePiecesDraggable={!solved && !failed && !loading}
+              arePiecesDraggable={true}
               customPieces={customPieces}
               customSquareStyles={customSquareStyles}
               customBoardStyle={{
