@@ -240,11 +240,17 @@ const Game = () => {
     declineDraw(gameId);
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
+  const handleSendMessage = () => {
     if (!chatInput.trim()) return;
     sendMessage(gameId, chatInput);
     setChatInput('');
+  };
+
+  const handleChatKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   const formatTime = (ms) => {
@@ -445,17 +451,18 @@ const Game = () => {
                   </div>
                 ))}
               </div>
-              <form className="chat-input" onSubmit={handleSendMessage}>
+              <div className="chat-input">
                 <input
                   type="text"
                   className="form-input"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={handleChatKeyPress}
                   placeholder="Type a message..."
                   maxLength={200}
                 />
-                <button type="submit" className="btn btn-primary btn-sm">Send</button>
-              </form>
+                <button type="button" className="btn btn-primary btn-sm" onClick={handleSendMessage}>Send</button>
+              </div>
             </div>
           )}
         </div>

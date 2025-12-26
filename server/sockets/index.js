@@ -614,28 +614,51 @@ function initializeSocket(io) {
 
     socket.on('chat:message', async ({ gameId, content }) => {
       if (!userId) return;
+      if (!content || !content.trim()) return;
 
+      const gId = Number(gameId);
+      
       // Check for bad words (simple filter)
       const filtered = filterBadWords(content);
       const isFlagged = filtered !== content;
 
-      // Save message
-      const game = activeGames.get(gameId);
-      if (!game) return;
+      try {
+        // Get game from database if not in memory
+        let recipientId = null;
+        const game = activeGames.get(gId);
+        
+        if (game) {
+          recipientId = userId === game.whiteId ? game.blackId : game.whiteId;
+        } else {
+          // Fetch from database
+          const result = await pool.query(
+            'SELECT white_player_id, black_player_id FROM games WHERE id = $1',
+            [gId]
+          );
+          if (result.rows.length > 0) {
+            const row = result.rows[0];
+            recipientId = userId === row.white_player_id ? row.black_player_id : row.white_player_id;
+          }
+        }
 
-      const recipientId = userId === game.whiteId ? game.blackId : game.whiteId;
+        if (recipientId) {
+          await pool.query(`
+            INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
+            VALUES ($1, $2, $3, $4, $5)
+          `, [userId, recipientId, gId, filtered, isFlagged]);
+        }
 
-      await pool.query(`
-        INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [userId, recipientId, gameId, filtered, isFlagged]);
-
-      // Broadcast to game room
-      io.to(`game:${gameId}`).emit('chat:message', {
-        from: userId,
-        content: filtered,
-        timestamp: Date.now()
-      });
+        // Always broadcast to game room
+        io.to(`game:${gId}`).emit('chat:message', {
+          from: userId,
+          content: filtered,
+          timestamp: Date.now()
+        });
+        
+        console.log('Chat message sent in game', gId, ':', filtered);
+      } catch (error) {
+        console.error('Chat error:', error);
+      }
     });
 
     // ========================================
