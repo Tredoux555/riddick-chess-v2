@@ -43,14 +43,21 @@ const Puzzles = () => {
       const chess = new Chess(puzzleData.fen);
       setGame(chess);
       
-      // Determine player color (opposite of who moves first in the puzzle)
-      const firstMoveColor = chess.turn();
-      setPlayerColor(firstMoveColor === 'w' ? 'b' : 'w');
+      // Player plays whoever's turn it is in the position
+      const currentTurn = chess.turn();
+      setPlayerColor(currentTurn);
       
-      // Make the first move (opponent's move) after a short delay
-      setTimeout(() => {
-        makeOpponentMove(chess, puzzleData.id, 0);
-      }, 500);
+      // For puzzles with setup moves (opponent moves first), make that move
+      // For direct puzzles (like mate-in-1), player moves immediately
+      if (puzzleData.movesCount && puzzleData.movesCount > 1) {
+        // Has setup move - make opponent's first move
+        setTimeout(() => {
+          makeOpponentMove(chess, puzzleData.id, 0);
+        }, 500);
+      } else {
+        // Direct puzzle - player moves first, moveIndex starts at 0
+        setMoveIndex(0);
+      }
 
       setStartTime(Date.now());
     } catch (error) {
@@ -169,26 +176,22 @@ const Puzzles = () => {
   }, [game, puzzle, playerColor, moveIndex, solved, failed, loading, startTime]);
 
   const handleHint = async () => {
-    if (showHint) return;
+    if (showHint || !puzzle) return;
     
     try {
-      const response = await axios.post(`/api/puzzles/${puzzle.id}/move`, {
-        move: 'hint',
-        moveIndex
-      });
-      
-      if (response.data.hint) {
-        setHintSquare(response.data.hint.from);
-        setShowHint(true);
-      }
-    } catch (error) {
-      // Get hint from solution
+      // Get hint from solution directly
       const solutionRes = await axios.get(`/api/puzzles/${puzzle.id}/solution`);
       const moves = solutionRes.data.moves.split(' ');
-      if (moves[moveIndex]) {
-        setHintSquare(moves[moveIndex].slice(0, 2));
+      const currentMove = moves[moveIndex];
+      
+      if (currentMove) {
+        setHintSquare(currentMove.slice(0, 2));
         setShowHint(true);
+        toast('Hint: Look at the highlighted square', { icon: '💡' });
       }
+    } catch (error) {
+      console.error('Failed to get hint:', error);
+      toast.error('Could not load hint');
     }
   };
 
