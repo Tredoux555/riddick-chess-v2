@@ -334,6 +334,23 @@ async function initDatabase() {
     await client.query(`
       ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS increment INTEGER DEFAULT 0;
       ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS total_rounds INTEGER DEFAULT 5;
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'swiss';
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS prize_description TEXT;
+    `);
+    
+    // Add tournament_participants columns
+    await client.query(`
+      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;
+      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS opponents INTEGER[] DEFAULT '{}';
+      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS colors VARCHAR(1)[] DEFAULT '{}';
+      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS has_bye BOOLEAN DEFAULT FALSE;
+    `);
+
+    // Add tournament_pairings columns
+    await client.query(`
+      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS is_bye BOOLEAN DEFAULT FALSE;
+      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS white_player_id INTEGER REFERENCES users(id);
+      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS black_player_id INTEGER REFERENCES users(id);
     `);
 
     // Add achievements columns
