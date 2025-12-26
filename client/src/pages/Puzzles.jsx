@@ -123,7 +123,7 @@ const Puzzles = () => {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles</h1>
+      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles v3</h1>
       
       <div style={{ textAlign: 'center', marginBottom: '10px', color: '#aaa' }}>
         {game.turn() === 'w' ? 'White' : 'Black'} to move
