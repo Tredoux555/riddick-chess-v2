@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   FaShare, FaWhatsapp, FaTelegram, FaFacebook, FaTwitter, 
-  FaLinkedin, FaEnvelope, FaCopy, FaCheck, FaTimes 
+  FaLinkedin, FaEnvelope, FaCopy, FaCheck, FaTimes, FaWeixin
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
@@ -20,6 +20,12 @@ const ShareModal = ({ isOpen, onClose, url, title, text }) => {
       icon: FaWhatsapp,
       color: '#25D366',
       url: `https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`
+    },
+    {
+      name: 'WeChat',
+      icon: FaWeixin,
+      color: '#07C160',
+      action: 'copy' // WeChat requires copying link to paste in app
     },
     {
       name: 'Telegram',
@@ -81,6 +87,15 @@ const ShareModal = ({ isOpen, onClose, url, title, text }) => {
   };
 
   const handleShareClick = (option) => {
+    if (option.action === 'copy') {
+      // For WeChat, copy link to clipboard
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success('Link copied! Paste in WeChat to share');
+      }).catch(() => {
+        toast.error('Failed to copy');
+      });
+      return;
+    }
     window.open(option.url, '_blank', 'width=600,height=400');
   };
 

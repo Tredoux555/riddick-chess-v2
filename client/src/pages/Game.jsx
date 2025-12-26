@@ -307,13 +307,13 @@ const Game = () => {
               onPieceDrop={onDrop}
               boardOrientation={boardOrientation}
               boardWidth={560}
-              customPieces={chessComPieces()}
+              customPieces={customPieces}
               customBoardStyle={{
                 borderRadius: '8px',
                 boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
               }}
-              customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
-              customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
+              customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
+              customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
               animationDuration={200}
             />
           </div>
