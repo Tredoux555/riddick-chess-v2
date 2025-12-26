@@ -523,7 +523,12 @@ function initializeSocket(io) {
     socket.on('challenge:send', async ({ opponentId, timeControl, rated = true }) => {
       if (!userId) return;
 
-      const opponentSocketId = userSockets.get(opponentId);
+      // Convert to number to match userSockets keys
+      const oppId = Number(opponentId);
+      const opponentSocketId = userSockets.get(oppId);
+      
+      console.log('Challenge send:', { from: userId, to: oppId, socketId: opponentSocketId, allSockets: [...userSockets.keys()] });
+      
       if (!opponentSocketId) {
         return socket.emit('challenge:error', { message: 'Opponent is offline' });
       }
@@ -540,15 +545,18 @@ function initializeSocket(io) {
         rated
       });
 
-      socket.emit('challenge:sent', { to: opponentId });
+      socket.emit('challenge:sent', { to: oppId });
     });
 
     socket.on('challenge:accept', async ({ challengerId, timeControl, rated }) => {
       if (!userId) return;
 
+      // Convert to number
+      const challId = Number(challengerId);
+
       // Randomly assign colors - one player white, the other black
-      const whitePlayer = Math.random() < 0.5 ? challengerId : userId;
-      const blackPlayer = whitePlayer === challengerId ? userId : challengerId;
+      const whitePlayer = Math.random() < 0.5 ? challId : userId;
+      const blackPlayer = whitePlayer === challId ? userId : challId;
 
       // Create the game
       const game = await pool.query(`
@@ -559,8 +567,10 @@ function initializeSocket(io) {
 
       const gameId = game.rows[0].id;
 
+      console.log('Game created:', { gameId, white: whitePlayer, black: blackPlayer });
+
       // Notify both players
-      const challengerSocketId = userSockets.get(challengerId);
+      const challengerSocketId = userSockets.get(challId);
       if (challengerSocketId) {
         io.to(challengerSocketId).emit('challenge:accepted', { gameId });
       }
@@ -568,7 +578,8 @@ function initializeSocket(io) {
     });
 
     socket.on('challenge:decline', ({ challengerId }) => {
-      const challengerSocketId = userSockets.get(challengerId);
+      const challId = Number(challengerId);
+      const challengerSocketId = userSockets.get(challId);
       if (challengerSocketId) {
         io.to(challengerSocketId).emit('challenge:declined');
       }
