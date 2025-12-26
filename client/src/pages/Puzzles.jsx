@@ -177,3 +177,4 @@ const Puzzles = () => {
 };
 
 export default Puzzles;
+// Cache bust: 1766724523
