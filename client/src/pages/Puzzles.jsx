@@ -5,6 +5,7 @@ import { Chess } from 'chess.js';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FaLightbulb, FaRedo, FaFire, FaCheck, FaTimes } from 'react-icons/fa';
+import { chessComPieces, chessComBoardStyle } from '../utils/chessComPieces';
 
 // Build: 2025-12-26-v4-final
 
@@ -144,6 +145,9 @@ const Puzzles = () => {
           customSquareStyles={squareStyles}
           arePiecesDraggable={true}
           isDraggablePiece={() => true}
+          customPieces={chessComPieces()}
+          customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
+          customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
         />
       </div>
 

@@ -4,10 +4,11 @@ import { Chess } from 'chess.js';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FaHeart, FaClock, FaTrophy } from 'react-icons/fa';
-import { useBoardSettings } from '../contexts/BoardSettingsContext';
+import { chessComPieces, chessComBoardStyle } from '../utils/chessComPieces';
 
 const PuzzleRush = () => {
-  const { customPieces, currentTheme } = useBoardSettings();
+  const customPieces = chessComPieces();
+  const currentTheme = chessComBoardStyle;
   const [mode, setMode] = useState(null); // 'survival' or 'timed'
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);

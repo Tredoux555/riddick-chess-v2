@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { useBoardSettings } from '../contexts/BoardSettingsContext';
+import { PIECE_SETS, BOARD_THEMES, createCustomPieces } from '../utils/chessComPieces';
 import { FaChessBoard, FaChessPawn, FaCheck } from 'react-icons/fa';
 
 const Settings = () => {
-  const {
-    pieceSet,
-    setPieceSet,
-    boardTheme,
-    setBoardTheme,
-    currentTheme,
-    customPieces,
-    availablePieceSets,
-    availableBoardThemes
-  } = useBoardSettings();
+  const [pieceSet, setPieceSet] = useState('neo');
+  const [boardTheme, setBoardTheme] = useState('green');
+  const currentTheme = BOARD_THEMES[boardTheme];
+  const customPieces = createCustomPieces(pieceSet);
+  const availablePieceSets = PIECE_SETS;
+  const availableBoardThemes = BOARD_THEMES;
 
   const [activeTab, setActiveTab] = useState('board');
 
