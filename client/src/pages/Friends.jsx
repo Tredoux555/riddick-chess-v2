@@ -150,9 +150,9 @@ const Friends = () => {
                   {user.avatar ? (
                     <img src={user.avatar} alt="" className="user-avatar" />
                   ) : (
-                    <div className="avatar-placeholder">{user.username[0]}</div>
+                    <div className="avatar-placeholder">{user.username?.[0] || '?'}</div>
                   )}
-                  <Link to={`/profile/${user.id}`}>{user.username}</Link>
+                  <Link to={`/profile/${user.id}`}>{user.username || 'Unknown'}</Link>
                 </div>
                 <button 
                   className="btn btn-sm btn-primary"
@@ -194,11 +194,11 @@ const Friends = () => {
                     {friend.avatar ? (
                       <img src={friend.avatar} alt="" className="user-avatar" />
                     ) : (
-                      <div className="avatar-placeholder">{friend.username[0]}</div>
+                      <div className="avatar-placeholder">{friend.username?.[0] || '?'}</div>
                     )}
                     <div>
                       <Link to={`/profile/${friendId}`} className="friend-name">
-                        {friend.username}
+                        {friend.username || 'Unknown'}
                       </Link>
                       <div className="friend-status">
                         {isOnline(friendId) ? 'Online' : 'Offline'}
@@ -245,9 +245,9 @@ const Friends = () => {
                     {request.avatar ? (
                       <img src={request.avatar} alt="" className="user-avatar" />
                     ) : (
-                      <div className="avatar-placeholder">{request.username[0]}</div>
+                      <div className="avatar-placeholder">{request.username?.[0] || '?'}</div>
                     )}
-                    <Link to={`/profile/${request.user_id}`}>{request.username}</Link>
+                    <Link to={`/profile/${request.user_id}`}>{request.username || 'Unknown'}</Link>
                   </div>
                   <div className="request-actions">
                     <button 
@@ -277,9 +277,9 @@ const Friends = () => {
                     {request.avatar ? (
                       <img src={request.avatar} alt="" className="user-avatar" />
                     ) : (
-                      <div className="avatar-placeholder">{request.username[0]}</div>
+                      <div className="avatar-placeholder">{request.username?.[0] || '?'}</div>
                     )}
-                    <span>{request.username}</span>
+                    <span>{request.username || 'Unknown'}</span>
                   </div>
                   <span className="pending-label">Pending</span>
                 </div>
