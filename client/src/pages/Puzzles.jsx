@@ -10,7 +10,7 @@ import { FaLightbulb, FaRedo, FaFire, FaCheck, FaTimes } from 'react-icons/fa';
 
 const Puzzles = () => {
   // Debug marker - check window.PUZZLE_VERSION in console
-  if (typeof window !== 'undefined') window.PUZZLE_VERSION = 'v6';
+  if (typeof window !== 'undefined') window.PUZZLE_VERSION = 'v7';
   
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(new Chess());
@@ -129,7 +129,7 @@ const Puzzles = () => {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles v6</h1>
+      <h1 style={{ color: '#fff', textAlign: 'center' }}>♟️ Puzzles v7</h1>
       
       <div style={{ textAlign: 'center', marginBottom: '10px', color: '#aaa' }}>
         {game.turn() === 'w' ? 'White' : 'Black'} to move
@@ -142,6 +142,8 @@ const Puzzles = () => {
           onPieceDrop={onDrop}
           boardOrientation={orientation}
           customSquareStyles={squareStyles}
+          arePiecesDraggable={true}
+          isDraggablePiece={() => true}
         />
       </div>
 
