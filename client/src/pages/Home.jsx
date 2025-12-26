@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { FaPlay, FaTrophy, FaPuzzlePiece, FaUsers, FaChartLine, FaCrown } from 'react-icons/fa';
+import { FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, FaCrown } from 'react-icons/fa';
 
 const Home = () => {
   const { user, isClubMember } = useAuth();
   const [stats, setStats] = useState(null);
-  const [liveGames, setLiveGames] = useState([]);
   const [upcomingTournaments, setUpcomingTournaments] = useState([]);
 
   useEffect(() => {

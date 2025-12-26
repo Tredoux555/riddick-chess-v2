@@ -4,7 +4,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { FaSearch, FaUserFriends, FaRobot, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaUserFriends, FaTimes } from 'react-icons/fa';
 
 const TIME_CONTROLS = [
   { time: 60, increment: 0, label: '1 min', category: 'Bullet' },
@@ -30,6 +30,7 @@ const Play = () => {
   const { socket, connected, joinMatchmaking, leaveMatchmaking, sendChallenge } = useSocket();
   const { user } = useAuth();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadFriends();
     loadOnlineUsers();

@@ -34,8 +34,6 @@ const Achievements = () => {
     ? achievements 
     : achievements.filter(a => a.category === activeCategory);
 
-  const earnedCount = achievements.filter(a => a.earned).length;
-
   const getRarityColor = (rarity) => {
     switch (rarity) {
       case 'common': return '#9ca3af';

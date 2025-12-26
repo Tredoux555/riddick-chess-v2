@@ -19,6 +19,7 @@ const Profile = () => {
   const userId = id || currentUser?.id;
   const isOwnProfile = !id || id === currentUser?.id;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (userId) {
       loadProfile();

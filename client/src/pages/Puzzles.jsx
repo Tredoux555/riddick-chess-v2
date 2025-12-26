@@ -19,6 +19,7 @@ const Puzzles = () => {
   const [hintSquare, setHintSquare] = useState(null);
   const [startTime, setStartTime] = useState(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadPuzzle();
     loadStats();

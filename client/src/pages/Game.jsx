@@ -4,9 +4,8 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
 import toast from 'react-hot-toast';
-import { FaFlag, FaHandshake, FaUndo, FaComments, FaEye } from 'react-icons/fa';
+import { FaFlag, FaHandshake, FaComments, FaEye } from 'react-icons/fa';
 
 const Game = () => {
   const { id: gameId } = useParams();

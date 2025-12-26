@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import axios from 'axios';
@@ -7,7 +6,6 @@ import toast from 'react-hot-toast';
 import { FaHeart, FaClock, FaTrophy } from 'react-icons/fa';
 
 const PuzzleRush = () => {
-  const navigate = useNavigate();
   const [mode, setMode] = useState(null); // 'survival' or 'timed'
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -26,6 +24,7 @@ const PuzzleRush = () => {
     loadBestScore();
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!gameStarted || gameOver || mode !== 'timed') return;
 
@@ -195,6 +194,7 @@ const PuzzleRush = () => {
       }
       return false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, gameOver, gameStarted, playerColor, puzzles, currentIndex, solutions, moveIndex, lives, mode]);
 
   const endGame = async () => {

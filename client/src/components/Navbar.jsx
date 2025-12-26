@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { 
-  FaChess, FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
+  FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
   FaShieldAlt
 } from 'react-icons/fa';

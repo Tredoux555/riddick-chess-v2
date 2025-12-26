@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { FaCalendar, FaClock, FaUsers, FaTrophy, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaCalendar, FaClock, FaUsers, FaTrophy, FaCheck } from 'react-icons/fa';
 
 const Tournament = () => {
   const { id } = useParams();
@@ -13,6 +13,7 @@ const Tournament = () => {
   const [activeTab, setActiveTab] = useState('standings');
   const [rounds, setRounds] = useState([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTournament();
   }, [id]);
