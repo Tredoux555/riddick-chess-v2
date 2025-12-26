@@ -72,12 +72,15 @@ export const SocketProvider = ({ children }) => {
 
     // Challenge notifications
     newSocket.on('challenge:received', ({ from, timeControl, rated }) => {
+      console.log('=== CHALLENGE RECEIVED ===', { from, timeControl, rated });
       toast((t) => (
         <div className="challenge-toast">
           <p><strong>{from.username}</strong> challenges you!</p>
           <p>{Math.floor(timeControl / 60)} min {rated ? 'Rated' : 'Casual'}</p>
           <div className="challenge-actions">
             <button onClick={() => {
+              console.log('=== ACCEPTING CHALLENGE ===');
+              console.log('Emitting challenge:accept with:', { challengerId: from.id, timeControl, rated });
               newSocket.emit('challenge:accept', { 
                 challengerId: from.id, 
                 timeControl, 
@@ -86,6 +89,7 @@ export const SocketProvider = ({ children }) => {
               toast.dismiss(t.id);
             }}>Accept</button>
             <button onClick={() => {
+              console.log('Declining challenge');
               newSocket.emit('challenge:decline', { challengerId: from.id });
               toast.dismiss(t.id);
             }}>Decline</button>
@@ -95,6 +99,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on('challenge:accepted', ({ gameId }) => {
+      console.log('=== CHALLENGE ACCEPTED - NAVIGATING TO GAME ===', gameId);
       toast.success('Challenge accepted!');
       window.location.href = `/game/${gameId}`;
     });
