@@ -54,17 +54,26 @@ async function initDatabase() {
 
       CREATE TABLE IF NOT EXISTS games (
         id SERIAL PRIMARY KEY,
-        white_id INTEGER REFERENCES users(id),
-        black_id INTEGER REFERENCES users(id),
+        white_player_id INTEGER REFERENCES users(id),
+        black_player_id INTEGER REFERENCES users(id),
         white_username VARCHAR(50),
         black_username VARCHAR(50),
         time_control INTEGER,
         increment INTEGER DEFAULT 0,
+        white_time_remaining INTEGER,
+        black_time_remaining INTEGER,
         fen TEXT,
         pgn TEXT,
         status VARCHAR(20) DEFAULT 'active',
         result VARCHAR(10),
+        result_reason VARCHAR(50),
         rated BOOLEAN DEFAULT true,
+        tournament_id INTEGER,
+        white_rating_before INTEGER,
+        white_rating_after INTEGER,
+        black_rating_before INTEGER,
+        black_rating_after INTEGER,
+        completed_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
@@ -72,7 +81,8 @@ async function initDatabase() {
         id SERIAL PRIMARY KEY,
         game_id INTEGER REFERENCES games(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        joined_at TIMESTAMP DEFAULT NOW()
+        joined_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(game_id, user_id)
       );
 
       CREATE TABLE IF NOT EXISTS friendships (
@@ -285,6 +295,99 @@ async function initDatabase() {
     // Add last_online to users table
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS last_online TIMESTAMP DEFAULT NOW();
+    `);
+
+    // Fix games table - add missing columns
+    await client.query(`
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS white_player_id INTEGER REFERENCES users(id);
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS black_player_id INTEGER REFERENCES users(id);
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS white_time_remaining INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS black_time_remaining INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS result_reason VARCHAR(50);
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS tournament_id INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS white_rating_before INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS white_rating_after INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS black_rating_before INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS black_rating_after INTEGER;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+    `);
+
+    // Migrate old column names to new if they exist
+    await client.query(`
+      UPDATE games SET white_player_id = white_id WHERE white_player_id IS NULL AND white_id IS NOT NULL;
+      UPDATE games SET black_player_id = black_id WHERE black_player_id IS NULL AND black_id IS NOT NULL;
+    `).catch(() => {});
+
+    // Add user_ratings columns
+    await client.query(`
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS bullet_games INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS blitz_games INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS rapid_games INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS classical_games INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS bullet_rd INTEGER DEFAULT 350;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS blitz_rd INTEGER DEFAULT 350;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS rapid_rd INTEGER DEFAULT 350;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS classical_rd INTEGER DEFAULT 350;
+    `);
+
+    // Add tournament columns  
+    await client.query(`
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS increment INTEGER DEFAULT 0;
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS total_rounds INTEGER DEFAULT 5;
+    `);
+
+    // Add achievements columns
+    await client.query(`
+      ALTER TABLE achievements ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 10;
+      ALTER TABLE achievements ADD COLUMN IF NOT EXISTS rarity VARCHAR(20) DEFAULT 'common';
+    `);
+
+    // Create leaderboard views
+    await client.query(`
+      CREATE OR REPLACE VIEW leaderboard_bullet AS
+      SELECT u.id, u.username, u.avatar, ur.bullet_rating as rating, ur.bullet_games as games,
+             RANK() OVER (ORDER BY ur.bullet_rating DESC) as rank
+      FROM users u
+      JOIN user_ratings ur ON u.id = ur.user_id
+      WHERE u.is_banned = FALSE AND ur.bullet_games >= 1
+      ORDER BY ur.bullet_rating DESC
+      LIMIT 100;
+
+      CREATE OR REPLACE VIEW leaderboard_blitz AS
+      SELECT u.id, u.username, u.avatar, ur.blitz_rating as rating, ur.blitz_games as games,
+             RANK() OVER (ORDER BY ur.blitz_rating DESC) as rank
+      FROM users u
+      JOIN user_ratings ur ON u.id = ur.user_id
+      WHERE u.is_banned = FALSE AND ur.blitz_games >= 1
+      ORDER BY ur.blitz_rating DESC
+      LIMIT 100;
+
+      CREATE OR REPLACE VIEW leaderboard_rapid AS
+      SELECT u.id, u.username, u.avatar, ur.rapid_rating as rating, ur.rapid_games as games,
+             RANK() OVER (ORDER BY ur.rapid_rating DESC) as rank
+      FROM users u
+      JOIN user_ratings ur ON u.id = ur.user_id
+      WHERE u.is_banned = FALSE AND ur.rapid_games >= 1
+      ORDER BY ur.rapid_rating DESC
+      LIMIT 100;
+
+      CREATE OR REPLACE VIEW leaderboard_classical AS
+      SELECT u.id, u.username, u.avatar, ur.classical_rating as rating, ur.classical_games as games,
+             RANK() OVER (ORDER BY ur.classical_rating DESC) as rank
+      FROM users u
+      JOIN user_ratings ur ON u.id = ur.user_id
+      WHERE u.is_banned = FALSE AND ur.classical_games >= 1
+      ORDER BY ur.classical_rating DESC
+      LIMIT 100;
+
+      CREATE OR REPLACE VIEW leaderboard_puzzles AS
+      SELECT u.id, u.username, u.avatar, upr.rating, upr.puzzles_solved,
+             RANK() OVER (ORDER BY upr.rating DESC) as rank
+      FROM users u
+      JOIN user_puzzle_ratings upr ON u.id = upr.user_id
+      WHERE u.is_banned = FALSE AND upr.puzzles_solved >= 1
+      ORDER BY upr.rating DESC
+      LIMIT 100;
     `);
 
     console.log('✅ Database initialized successfully!');
