@@ -27,11 +27,23 @@ const Friends = () => {
         axios.get('/api/friends/pending')
       ]);
       
-      setFriends(friendsRes.data.filter(f => f.status === 'accepted'));
-      setPendingReceived(pendingRes.data.received || []);
-      setPendingSent(pendingRes.data.sent || []);
+      // Map friends to have consistent 'id' field
+      const friendsList = friendsRes.data.map(f => ({
+        ...f,
+        id: f.friendship_id || f.id,
+        status: f.status || 'accepted'
+      }));
+      setFriends(friendsList.filter(f => f.status === 'accepted'));
+      
+      // Handle both old and new API response formats, and normalize field names
+      const incoming = pendingRes.data.received || pendingRes.data.incoming || [];
+      const outgoing = pendingRes.data.sent || pendingRes.data.outgoing || [];
+      
+      setPendingReceived(incoming.map(r => ({ ...r, id: r.friendship_id || r.id })));
+      setPendingSent(outgoing.map(r => ({ ...r, id: r.friendship_id || r.id })));
     } catch (error) {
       console.error('Failed to load friends:', error);
+      toast.error('Failed to load friends');
     } finally {
       setLoading(false);
     }

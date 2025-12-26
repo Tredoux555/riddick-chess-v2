@@ -83,7 +83,8 @@ router.get('/pending', authenticateToken, async (req, res) => {
 // Send friend request
 router.post('/request', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.body;
+    // Accept both userId and friendId for compatibility
+    const userId = req.body.userId || req.body.friendId;
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
@@ -196,17 +197,27 @@ router.post('/decline/:friendshipId', authenticateToken, async (req, res) => {
   }
 });
 
-// Remove friend
-router.delete('/:friendId', authenticateToken, async (req, res) => {
+// Remove friend - accepts either friendshipId or friendUserId
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const { friendId } = req.params;
+    const { id } = req.params;
 
-    const result = await pool.query(`
+    // First try to delete by friendship ID
+    let result = await pool.query(`
       DELETE FROM friendships
-      WHERE ((user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1))
-        AND status = 'accepted'
+      WHERE id = $1 AND (user_id = $2 OR friend_id = $2)
       RETURNING id
-    `, [req.user.id, friendId]);
+    `, [id, req.user.id]);
+
+    // If not found, try by friend's user ID
+    if (result.rows.length === 0) {
+      result = await pool.query(`
+        DELETE FROM friendships
+        WHERE ((user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1))
+          AND status = 'accepted'
+        RETURNING id
+      `, [req.user.id, id]);
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Friendship not found' });
