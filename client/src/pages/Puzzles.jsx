@@ -38,6 +38,7 @@ const Puzzles = () => {
     try {
       const response = await axios.get('/api/puzzles/next');
       const puzzleData = response.data;
+      console.log('Puzzle loaded:', puzzleData);
       setPuzzle(puzzleData);
 
       const chess = new Chess(puzzleData.fen);
@@ -45,6 +46,7 @@ const Puzzles = () => {
       
       // Player plays whoever's turn it is in the position
       const currentTurn = chess.turn();
+      console.log('Current turn:', currentTurn);
       setPlayerColor(currentTurn);
       
       // For puzzles with setup moves (opponent moves first), make that move
@@ -101,8 +103,16 @@ const Puzzles = () => {
   };
 
   const onDrop = useCallback(async (sourceSquare, targetSquare, piece) => {
-    if (solved || failed || loading) return false;
-    if (game.turn() !== playerColor) return false;
+    console.log('onDrop called:', { sourceSquare, targetSquare, piece, solved, failed, loading, turn: game.turn(), playerColor });
+    
+    if (solved || failed || loading) {
+      console.log('Blocked: solved/failed/loading');
+      return false;
+    }
+    if (game.turn() !== playerColor) {
+      console.log('Blocked: not your turn', game.turn(), playerColor);
+      return false;
+    }
 
     const move = sourceSquare + targetSquare + (piece[1] === 'P' && (targetSquare[1] === '8' || targetSquare[1] === '1') ? 'q' : '');
 
@@ -231,6 +241,7 @@ const Puzzles = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               boardOrientation={playerColor === 'b' ? 'black' : 'white'}
+              arePiecesDraggable={!solved && !failed && !loading}
               customPieces={customPieces}
               customSquareStyles={customSquareStyles}
               customBoardStyle={{
