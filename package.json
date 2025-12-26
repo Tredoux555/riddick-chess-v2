@@ -1,0 +1,14 @@
+{
+  "name": "riddick-chess-v2",
+  "version": "2.0.0",
+  "description": "Riddick Chess - Full-featured school chess platform",
+  "scripts": {
+    "start": "node server/index.js",
+    "install": "cd server && npm install",
+    "build": "cd client && npm install && npm run build",
+    "postinstall": "npm run build || echo 'Client build skipped'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
