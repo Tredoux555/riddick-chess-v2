@@ -6,6 +6,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { FaFlag, FaHandshake, FaComments, FaEye } from 'react-icons/fa';
+import chessComPieces, { chessComBoardStyle } from '../utils/chessComPieces';
 
 const Game = () => {
   const { id: gameId } = useParams();
@@ -303,12 +304,13 @@ const Game = () => {
               onPieceDrop={onDrop}
               boardOrientation={boardOrientation}
               boardWidth={560}
+              customPieces={chessComPieces()}
               customBoardStyle={{
                 borderRadius: '8px',
                 boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
               }}
-              customDarkSquareStyle={{ backgroundColor: '#b58863' }}
-              customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+              customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
+              customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
               animationDuration={200}
             />
           </div>
