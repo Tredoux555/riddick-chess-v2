@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
+const { initDatabase } = require('./init-db');
 
 const app = express();
 const server = http.createServer(app);
@@ -125,8 +126,12 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`
+
+// Initialize database then start server
+initDatabase()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`
   ♔ ═══════════════════════════════════════════ ♔
   ║                                               ║
   ║         RIDDICK CHESS v2.0                    ║
@@ -142,7 +147,12 @@ server.listen(PORT, () => {
   ║   ✓ Club Members Section                      ║
   ║                                               ║
   ♔ ═══════════════════════════════════════════ ♔
-  `);
-});
+      `);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
 
 module.exports = { app, server, io };
