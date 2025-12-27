@@ -234,12 +234,7 @@ async function initDatabase() {
       INSERT INTO piece_sets (name) VALUES ('neo'), ('classic'), ('alpha'), ('merida'), ('cburnett')
       ON CONFLICT (name) DO NOTHING;
 
-      INSERT INTO achievements (name, description, icon, category, requirement_type, requirement_value) VALUES
-        ('First Win', 'Win your first game', '🏆', 'games', 'wins', 1),
-        ('10 Wins', 'Win 10 games', '🎯', 'games', 'wins', 10),
-        ('Puzzle Solver', 'Solve 10 puzzles', '🧩', 'puzzles', 'puzzles_solved', 10),
-        ('Streak Master', 'Get a 5 puzzle streak', '🔥', 'puzzles', 'puzzle_streak', 5)
-      ON CONFLICT DO NOTHING;
+      -- Achievements are now managed manually, not auto-seeded
     `);
 
     // Insert sample puzzles (real Lichess puzzles)
