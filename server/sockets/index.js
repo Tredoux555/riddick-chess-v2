@@ -331,28 +331,42 @@ function initializeSocket(io) {
     });
 
     socket.on('game:move', async ({ gameId, move }) => {
-      if (!userId) return;
+      console.log('=== MOVE RECEIVED ===', { userId, gameId, move });
+      
+      if (!userId) {
+        console.log('Move rejected: no userId');
+        return;
+      }
 
-      const game = activeGames.get(gameId);
-      if (!game) return socket.emit('error', { message: 'Game not found' });
+      const game = activeGames.get(Number(gameId));
+      if (!game) {
+        console.log('Move rejected: game not found in activeGames. Keys:', [...activeGames.keys()]);
+        return socket.emit('error', { message: 'Game not found' });
+      }
 
       // Verify it's this player's turn
       const turn = game.chess.turn();
       const isWhite = userId === game.whiteId;
       const isBlack = userId === game.blackId;
       
+      console.log('Turn check:', { turn, userId, whiteId: game.whiteId, blackId: game.blackId, isWhite, isBlack });
+      
       if ((turn === 'w' && !isWhite) || (turn === 'b' && !isBlack)) {
+        console.log('Move rejected: not your turn');
         return socket.emit('error', { message: 'Not your turn' });
       }
 
       const result = game.makeMove(move);
+      console.log('Move result:', result);
       
       if (!result.valid) {
         return socket.emit('game:move:invalid', { error: result.error });
       }
 
       // Broadcast move to all in game room
-      io.to(`game:${gameId}`).emit('game:moved', {
+      const roomName = `game:${gameId}`;
+      console.log('Broadcasting move to room:', roomName);
+      io.to(roomName).emit('game:moved', {
         move: result.move,
         fen: game.chess.fen(),
         turn: game.chess.turn(),
