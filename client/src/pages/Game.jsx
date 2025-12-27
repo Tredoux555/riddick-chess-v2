@@ -4,7 +4,7 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
-import { chessComPieces, chessComBoardStyle } from '../utils/chessComPieces';
+import { PIECE_SETS, BOARD_THEMES, createCustomPieces } from '../utils/chessComPieces';
 import toast from 'react-hot-toast';
 import { FaFlag, FaHandshake, FaComments, FaEye, FaShare } from 'react-icons/fa';
 import ShareModal from '../components/ShareModal';
@@ -14,8 +14,12 @@ const Game = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { socket, connected, joinGame, makeMove, resign, offerDraw, acceptDraw, declineDraw, sendMessage } = useSocket();
-  const customPieces = chessComPieces();
-  const currentTheme = chessComBoardStyle;
+  
+  // Load preferences from localStorage
+  const savedPieceSet = localStorage.getItem('chess_piece_set') || 'neo';
+  const savedBoardTheme = localStorage.getItem('chess_board_theme') || 'green';
+  const customPieces = createCustomPieces(savedPieceSet);
+  const currentTheme = BOARD_THEMES[savedBoardTheme] || BOARD_THEMES.green;
 
   const [game, setGame] = useState(new Chess());
   const [gameData, setGameData] = useState(null);
@@ -146,6 +150,7 @@ const Game = () => {
     });
 
     socket.on('chat:message', (msg) => {
+      console.log('Received chat message:', msg);
       setMessages(prev => [...prev, msg]);
     });
 
@@ -242,7 +247,12 @@ const Game = () => {
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
-    if (!socket) return;
+    if (!socket) {
+      console.log('No socket connection for chat');
+      return;
+    }
+    
+    console.log('Sending chat message:', chatInput.trim());
     
     socket.emit('chat:message', {
       gameId: gameId,

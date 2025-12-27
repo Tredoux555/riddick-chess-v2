@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { PIECE_SETS, BOARD_THEMES, createCustomPieces } from '../utils/chessComPieces';
-import { FaChessBoard, FaChessPawn, FaCheck } from 'react-icons/fa';
+import { FaChessBoard, FaChessPawn, FaCheck, FaSave } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 const Settings = () => {
-  const [pieceSet, setPieceSet] = useState('neo');
-  const [boardTheme, setBoardTheme] = useState('green');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get previous page from state or default to home
+  const previousPage = location.state?.from || '/';
+  
+  // Load saved preferences from localStorage
+  const [pieceSet, setPieceSet] = useState(() => {
+    return localStorage.getItem('chess_piece_set') || 'neo';
+  });
+  const [boardTheme, setBoardTheme] = useState(() => {
+    return localStorage.getItem('chess_board_theme') || 'green';
+  });
+  
+  const [saving, setSaving] = useState(false);
+  const [countdown, setCountdown] = useState(null);
+  
   const currentTheme = BOARD_THEMES[boardTheme];
   const customPieces = createCustomPieces(pieceSet);
   const availablePieceSets = PIECE_SETS;
@@ -15,6 +32,32 @@ const Settings = () => {
 
   // Preview position
   const previewPosition = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
+
+  const handleSave = () => {
+    // Save to localStorage
+    localStorage.setItem('chess_piece_set', pieceSet);
+    localStorage.setItem('chess_board_theme', boardTheme);
+    
+    setSaving(true);
+    setCountdown(5);
+    toast.success('Preferences saved!');
+  };
+  
+  // Countdown and redirect
+  useEffect(() => {
+    if (countdown === null) return;
+    
+    if (countdown === 0) {
+      navigate(previousPage);
+      return;
+    }
+    
+    const timer = setTimeout(() => {
+      setCountdown(countdown - 1);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [countdown, navigate, previousPage]);
 
   return (
     <div className="settings-page">
@@ -49,6 +92,22 @@ const Settings = () => {
                 customBoardStyle={{ borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
                 arePiecesDraggable={false}
               />
+            </div>
+            
+            {/* Save Button */}
+            <div className="save-section">
+              {saving ? (
+                <div className="redirect-notice">
+                  <p>Redirecting in {countdown} seconds...</p>
+                  <button className="btn btn-secondary" onClick={() => navigate(previousPage)}>
+                    Go Now
+                  </button>
+                </div>
+              ) : (
+                <button className="btn btn-primary save-btn" onClick={handleSave}>
+                  <FaSave /> Save Preferences
+                </button>
+              )}
             </div>
           </div>
 
@@ -159,6 +218,29 @@ const Settings = () => {
         .board-preview {
           display: flex;
           justify-content: center;
+        }
+        .save-section {
+          margin-top: 1.5rem;
+          text-align: center;
+        }
+        .save-btn {
+          width: 100%;
+          padding: 1rem;
+          font-size: 1.1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+        .redirect-notice {
+          background: rgba(118, 150, 86, 0.2);
+          padding: 1rem;
+          border-radius: 8px;
+          color: #fff;
+          text-align: center;
+        }
+        .redirect-notice p {
+          margin-bottom: 0.5rem;
         }
         .options-section {
           background: rgba(255,255,255,0.05);

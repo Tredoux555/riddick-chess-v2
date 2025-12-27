@@ -93,7 +93,7 @@ const Navbar = () => {
                     <Link to="/friends" className="dropdown-item">
                       <FaUsers /> Friends
                     </Link>
-                    <Link to="/settings" className="dropdown-item">
+                    <Link to="/settings" state={{ from: location.pathname }} className="dropdown-item">
                       <FaCog /> Settings
                     </Link>
                     {isAdmin && (
