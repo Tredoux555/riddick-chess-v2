@@ -5,6 +5,7 @@ import { Chess } from 'chess.js';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PIECE_SETS, BOARD_THEMES, createCustomPieces } from '../utils/chessComPieces';
+import { preloadSounds, playMoveSound, playSound } from '../utils/sounds';
 import toast from 'react-hot-toast';
 import { FaFlag, FaHandshake, FaComments, FaEye, FaShare } from 'react-icons/fa';
 import ShareModal from '../components/ShareModal';
@@ -41,8 +42,13 @@ const Game = () => {
   const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
+    preloadSounds();
+  }, []);
+
+  useEffect(() => {
     if (connected && gameId) {
       joinGame(gameId);
+      playSound('gameStart');
     }
   }, [connected, gameId, joinGame]);
 
@@ -89,6 +95,9 @@ const Game = () => {
       setWhiteTime(data.whiteTime);
       setBlackTime(data.blackTime);
       setMoveHistory(prev => [...prev, data.move]);
+      
+      // Play sound
+      playMoveSound(data.move, chess.isCheck());
     });
 
     socket.on('game:move:invalid', ({ error }) => {
