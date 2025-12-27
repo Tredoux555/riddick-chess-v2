@@ -17,14 +17,22 @@ const Achievements = () => {
   const loadAchievements = async () => {
     setLoading(true);
     try {
-      const [achievementsRes, progressRes] = await Promise.all([
-        axios.get('/api/achievements'),
-        axios.get('/api/achievements/progress')
-      ]);
-      setAchievements(achievementsRes.data);
-      setProgress(progressRes.data);
+      // Fetch achievements first (most important)
+      const achievementsRes = await axios.get('/api/achievements');
+      setAchievements(achievementsRes.data || []);
+      
+      // Try to fetch progress separately (don't let it break achievements)
+      try {
+        const progressRes = await axios.get('/api/achievements/progress');
+        setProgress(progressRes.data);
+      } catch (progressError) {
+        console.error('Failed to load progress:', progressError);
+        // Set default progress
+        setProgress({ earned: 0, total: achievementsRes.data?.length || 0, points: 0, maxPoints: 0, percentage: 0 });
+      }
     } catch (error) {
       console.error('Failed to load achievements:', error);
+      setAchievements([]);
     } finally {
       setLoading(false);
     }

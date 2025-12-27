@@ -6,22 +6,26 @@ const achievementService = require('../services/achievementService');
 // Get all achievements with user's progress
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching achievements for user:', req.user.id);
     const achievements = await achievementService.getUserAchievements(req.user.id);
+    console.log('Found achievements:', achievements.length);
     res.json(achievements);
   } catch (error) {
     console.error('Get achievements error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
 // Get user's achievement progress/stats
 router.get('/progress', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching progress for user:', req.user.id);
     const progress = await achievementService.getProgress(req.user.id);
+    console.log('Progress result:', progress);
     res.json(progress);
   } catch (error) {
     console.error('Get progress error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
