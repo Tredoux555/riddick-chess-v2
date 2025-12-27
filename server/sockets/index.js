@@ -644,7 +644,6 @@ function initializeSocket(io) {
         return;
       }
 
-      // Use number for room name consistency
       const gId = Number(gameId);
       
       console.log('Chat message from user', userId, 'in game', gId, ':', content);
@@ -654,42 +653,46 @@ function initializeSocket(io) {
       const isFlagged = filtered !== content;
 
       try {
-        // Get game from database if not in memory
-        let recipientId = null;
-        const game = activeGames.get(Number(gameId));
+        // Get both player IDs from database
+        const result = await pool.query(
+          'SELECT white_player_id, black_player_id FROM games WHERE id = $1',
+          [gId]
+        );
         
-        if (game) {
-          recipientId = userId === game.whiteId ? game.blackId : game.whiteId;
-        } else {
-          // Fetch from database
-          const result = await pool.query(
-            'SELECT white_player_id, black_player_id FROM games WHERE id = $1',
-            [gameId]
-          );
-          if (result.rows.length > 0) {
-            const row = result.rows[0];
-            recipientId = userId === row.white_player_id ? row.black_player_id : row.white_player_id;
-          }
+        if (result.rows.length === 0) {
+          console.log('Chat: game not found', gId);
+          return;
         }
+        
+        const { white_player_id, black_player_id } = result.rows[0];
+        const recipientId = userId === white_player_id ? black_player_id : white_player_id;
 
-        if (recipientId) {
-          await pool.query(`
-            INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
-            VALUES ($1, $2, $3, $4, $5)
-          `, [userId, recipientId, gameId, filtered, isFlagged]);
-        }
+        // Save to database
+        await pool.query(`
+          INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [userId, recipientId, gId, filtered, isFlagged]);
 
-        // Broadcast to game room
-        const roomName = `game:${gId}`;
-        const room = io.sockets.adapter.rooms.get(roomName);
-        console.log('Broadcasting to room', roomName, '- sockets in room:', room ? room.size : 0);
-        io.to(roomName).emit('chat:message', {
+        const messageData = {
           from: userId,
           content: filtered,
           timestamp: Date.now()
-        });
+        };
+
+        // Send to BOTH players directly via their sockets
+        const whiteSocketId = userSockets.get(white_player_id);
+        const blackSocketId = userSockets.get(black_player_id);
         
-        console.log('Chat message broadcast complete');
+        console.log('Sending chat to white socket:', whiteSocketId, 'black socket:', blackSocketId);
+        
+        if (whiteSocketId) {
+          io.to(whiteSocketId).emit('chat:message', messageData);
+        }
+        if (blackSocketId) {
+          io.to(blackSocketId).emit('chat:message', messageData);
+        }
+        
+        console.log('Chat message sent to both players');
       } catch (error) {
         console.error('Chat error:', error);
       }

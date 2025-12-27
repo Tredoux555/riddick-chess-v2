@@ -151,9 +151,16 @@ const Game = () => {
 
     socket.on('chat:message', (msg) => {
       console.log('Received chat message:', msg);
-      // Avoid duplicates from own messages (we add them optimistically)
-      if (msg.from === user?.id) return;
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => {
+        // Check if message already exists (from optimistic update)
+        const isDuplicate = prev.some(m => 
+          m.from === msg.from && 
+          m.content === msg.content && 
+          Math.abs((m.timestamp || 0) - (msg.timestamp || 0)) < 5000
+        );
+        if (isDuplicate) return prev;
+        return [...prev, msg];
+      });
     });
 
     socket.on('spectators:update', ({ count }) => {
