@@ -151,6 +151,8 @@ const Game = () => {
 
     socket.on('chat:message', (msg) => {
       console.log('Received chat message:', msg);
+      // Avoid duplicates from own messages (we add them optimistically)
+      if (msg.from === user?.id) return;
       setMessages(prev => [...prev, msg]);
     });
 
@@ -249,15 +251,29 @@ const Game = () => {
     if (!chatInput.trim()) return;
     if (!socket) {
       console.log('No socket connection for chat');
+      toast.error('Not connected');
+      return;
+    }
+    if (!connected) {
+      console.log('Socket not authenticated');
+      toast.error('Not connected');
       return;
     }
     
-    console.log('Sending chat message:', chatInput.trim());
+    console.log('Sending chat message to game', gameId, ':', chatInput.trim());
     
     socket.emit('chat:message', {
-      gameId: gameId,
+      gameId: Number(gameId),
       content: chatInput.trim()
     });
+    
+    // Optimistically add own message
+    setMessages(prev => [...prev, {
+      from: user.id,
+      content: chatInput.trim(),
+      timestamp: Date.now()
+    }]);
+    
     setChatInput('');
   };
 
