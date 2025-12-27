@@ -669,9 +669,9 @@ function initializeSocket(io) {
 
         // Save to database
         await pool.query(`
-          INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [userId, recipientId, gId, filtered, isFlagged]);
+          INSERT INTO messages (sender_id, receiver_id, game_id, content)
+          VALUES ($1, $2, $3, $4)
+        `, [userId, recipientId, gId, filtered]);
 
         const messageData = {
           from: userId,
