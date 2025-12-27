@@ -54,9 +54,10 @@ const Friends = () => {
     
     try {
       const response = await axios.get(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(response.data);
+      setSearchResults(response.data || []);
     } catch (error) {
       console.error('Search failed:', error);
+      setSearchResults([]);
     }
   };
 
@@ -142,7 +143,7 @@ const Friends = () => {
           </button>
         </div>
 
-        {searchResults.length > 0 && (
+        {searchResults && searchResults.length > 0 && (
           <div className="search-results">
             {searchResults.map(user => (
               <div key={user.id} className="user-row">
@@ -150,7 +151,7 @@ const Friends = () => {
                   {user.avatar ? (
                     <img src={user.avatar} alt="" className="user-avatar" />
                   ) : (
-                    <div className="avatar-placeholder">{user.username?.[0] || '?'}</div>
+                    <div className="avatar-placeholder">{(user.username || '?')[0]}</div>
                   )}
                   <Link to={`/profile/${user.id}`}>{user.username || 'Unknown'}</Link>
                 </div>
