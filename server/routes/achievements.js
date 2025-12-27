@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const achievementService = require('../services/achievementService');
+const pool = require('../utils/db');
+
+// DEBUG: Test endpoint - no auth required
+router.get('/test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM achievements ORDER BY id');
+    res.json({ count: result.rows.length, achievements: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Get all achievements with user's progress
 router.get('/', authenticateToken, async (req, res) => {
