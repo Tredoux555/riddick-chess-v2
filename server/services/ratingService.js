@@ -184,11 +184,8 @@ class RatingService {
   async checkRatingAchievements(userId, rating) {
     const achievementService = require('./achievementService');
     
-    if (rating >= 1200) await achievementService.awardAchievement(userId, 'rating_1200');
-    if (rating >= 1400) await achievementService.awardAchievement(userId, 'rating_1400');
-    if (rating >= 1600) await achievementService.awardAchievement(userId, 'rating_1600');
-    if (rating >= 1800) await achievementService.awardAchievement(userId, 'rating_1800');
-    if (rating >= 2000) await achievementService.awardAchievement(userId, 'rating_2000');
+    // Use requirement-based matching
+    await achievementService.checkRatingAchievements(userId, rating);
   }
 
   /**

@@ -259,8 +259,9 @@ router.post('/members/:userId/verify', authenticateToken, requireAdmin, async (r
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Award achievement
-    await achievementService.awardAchievement(userId, 'club_member');
+    // Award achievement (if club_member achievement exists in database)
+    // Note: Add club_member achievement to database with requirement_type='club' and requirement_value=1
+    await achievementService.checkClubAchievements(userId);
 
     res.json({
       message: 'User verified as club member',

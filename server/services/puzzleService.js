@@ -335,10 +335,11 @@ class PuzzleService {
       WHERE user_id = $2
     `, [score, userId]);
 
-    // Check achievements
+    // Check achievements (puzzle_rush achievements can be added to database with requirement_type='puzzle_rush')
+    // For now, using requirement-based matching if achievements exist in database
     const achievementService = require('./achievementService');
-    if (score >= 20) await achievementService.awardAchievement(userId, 'puzzle_rush_20');
-    if (score >= 30) await achievementService.awardAchievement(userId, 'puzzle_rush_30');
+    // Note: Add puzzle_rush achievements to database with requirement_type='puzzle_rush' to enable
+    // await achievementService.checkAchievementsByRequirement(userId, 'puzzle_rush', score);
 
     return { score, recorded: true };
   }
@@ -348,14 +349,9 @@ class PuzzleService {
    */
   async checkPuzzleAchievements(userId) {
     const achievementService = require('./achievementService');
-    const rating = await this.getUserPuzzleRating(userId);
-
-    if (rating.current_streak >= 10) {
-      await achievementService.awardAchievement(userId, 'puzzle_streak_10');
-    }
-    if (rating.current_streak >= 25) {
-      await achievementService.awardAchievement(userId, 'puzzle_streak_25');
-    }
+    
+    // Use requirement-based matching
+    await achievementService.checkPuzzleAchievements(userId);
   }
 
   /**

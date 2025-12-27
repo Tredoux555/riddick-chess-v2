@@ -77,48 +77,70 @@ class AchievementService {
    * Get achievement progress for a user
    */
   async getProgress(userId) {
-    // Get user stats
-    const statsResult = await pool.query(`
-      SELECT 
-        ur.total_wins, ur.total_games,
-        upr.puzzles_solved, upr.best_streak, upr.puzzle_rush_best,
-        (SELECT COUNT(*) FROM friendships WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted') as friend_count,
-        (SELECT COUNT(*) FROM tournament_participants WHERE user_id = $1) as tournament_participations,
-        u.is_club_member
-      FROM users u
-      LEFT JOIN user_ratings ur ON u.id = ur.user_id
-      LEFT JOIN user_puzzle_ratings upr ON u.id = upr.user_id
-      WHERE u.id = $1
-    `, [userId]);
+    try {
+      // Get earned count
+      const earnedResult = await pool.query(`
+        SELECT COUNT(*) as earned_count,
+               COALESCE(SUM(a.points), 0) as total_points
+        FROM user_achievements ua
+        JOIN achievements a ON ua.achievement_id = a.id
+        WHERE ua.user_id = $1
+      `, [userId]);
 
-    const stats = statsResult.rows[0] || {};
+      const earned = earnedResult.rows[0];
 
-    // Get earned count
-    const earnedResult = await pool.query(`
-      SELECT COUNT(*) as earned_count,
-             COALESCE(SUM(a.points), 0) as total_points
-      FROM user_achievements ua
-      JOIN achievements a ON ua.achievement_id = a.id
-      WHERE ua.user_id = $1
-    `, [userId]);
+      // Get total achievements
+      const totalResult = await pool.query(`
+        SELECT COUNT(*) as total, COALESCE(SUM(points), 0) as max_points FROM achievements
+      `);
 
-    const earned = earnedResult.rows[0];
+      const total = totalResult.rows[0];
+      const totalCount = parseInt(total.total) || 1;
 
-    // Get total achievements
-    const totalResult = await pool.query(`
-      SELECT COUNT(*) as total, COALESCE(SUM(points), 0) as max_points FROM achievements
-    `);
+      return {
+        earned: parseInt(earned.earned_count) || 0,
+        total: totalCount,
+        points: parseInt(earned.total_points) || 0,
+        maxPoints: parseInt(total.max_points) || 0,
+        percentage: Math.round(((parseInt(earned.earned_count) || 0) / totalCount) * 100)
+      };
+    } catch (error) {
+      console.error('getProgress error:', error);
+      return {
+        earned: 0,
+        total: 0,
+        points: 0,
+        maxPoints: 0,
+        percentage: 0
+      };
+    }
+  }
 
-    const total = totalResult.rows[0];
-
-    return {
-      stats,
-      earned: parseInt(earned.earned_count),
-      total: parseInt(total.total),
-      points: parseInt(earned.total_points),
-      maxPoints: parseInt(total.max_points),
-      percentage: Math.round((earned.earned_count / total.total) * 100)
-    };
+  /**
+   * Check achievements based on requirement type and value
+   */
+  async checkAchievementsByRequirement(userId, requirementType, currentValue) {
+    const awarded = [];
+    
+    // Get achievements matching the requirement type that user qualifies for
+    const achievements = await pool.query(`
+      SELECT a.* FROM achievements a
+      WHERE a.requirement_type = $1 
+      AND a.requirement_value <= $2
+      AND a.id NOT IN (
+        SELECT achievement_id FROM user_achievements WHERE user_id = $3
+      )
+    `, [requirementType, currentValue, userId]);
+    
+    // Award each qualifying achievement
+    for (const achievement of achievements.rows) {
+      const result = await this.awardAchievement(userId, achievement.id);
+      if (result.awarded) {
+        awarded.push(result.achievement);
+      }
+    }
+    
+    return awarded;
   }
 
   /**
@@ -134,37 +156,12 @@ class AchievementService {
 
     const wins = stats.rows[0]?.total_wins || 0;
 
-    // Win-based achievements
-    if (wins >= 1) {
-      const result = await this.awardAchievement(userId, 'first_win');
-      if (result.awarded) awarded.push(result.achievement);
-    }
-    if (wins >= 10) {
-      const result = await this.awardAchievement(userId, 'ten_wins');
-      if (result.awarded) awarded.push(result.achievement);
-    }
-    if (wins >= 50) {
-      const result = await this.awardAchievement(userId, 'fifty_wins');
-      if (result.awarded) awarded.push(result.achievement);
-    }
-    if (wins >= 100) {
-      const result = await this.awardAchievement(userId, 'hundred_wins');
-      if (result.awarded) awarded.push(result.achievement);
-    }
+    // Check win-based achievements using requirement-based matching
+    const winAchievements = await this.checkAchievementsByRequirement(userId, 'wins', wins);
+    awarded.push(...winAchievements);
 
-    // Special checkmate achievements
-    if (gameDetails && gameDetails.checkmate) {
-      if (gameDetails.moveCount <= 4) {
-        // Scholar's mate
-        const result = await this.awardAchievement(userId, 'checkmate_scholar');
-        if (result.awarded) awarded.push(result.achievement);
-      }
-      
-      if (gameDetails.isBackRankMate) {
-        const result = await this.awardAchievement(userId, 'checkmate_back_rank');
-        if (result.awarded) awarded.push(result.achievement);
-      }
-    }
+    // Special checkmate achievements (these would need to be handled separately if they exist)
+    // For now, we'll skip them as they're not in the new achievement list
 
     return awarded;
   }
@@ -175,14 +172,20 @@ class AchievementService {
   async checkTournamentAchievements(userId, placement, tournamentId) {
     const awarded = [];
 
-    // First tournament participation
-    const result1 = await this.awardAchievement(userId, 'first_tournament');
-    if (result1.awarded) awarded.push(result1.achievement);
+    // Get tournament participation count
+    const participationResult = await pool.query(`
+      SELECT COUNT(*) as count FROM tournament_participants WHERE user_id = $1
+    `, [userId]);
+    const participationCount = parseInt(participationResult.rows[0]?.count || 0);
 
-    // Tournament winner
+    // Check tournament participation achievements
+    const participationAchievements = await this.checkAchievementsByRequirement(userId, 'tournament_count', participationCount);
+    awarded.push(...participationAchievements);
+
+    // Check tournament win achievements
     if (placement === 1) {
-      const result2 = await this.awardAchievement(userId, 'tournament_winner');
-      if (result2.awarded) awarded.push(result2.achievement);
+      const winAchievements = await this.checkAchievementsByRequirement(userId, 'tournament_wins', 1);
+      awarded.push(...winAchievements);
     }
 
     return awarded;
@@ -200,20 +203,69 @@ class AchievementService {
       WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'
     `, [userId]);
 
-    if (friendResult.rows[0].count >= 10) {
-      const result = await this.awardAchievement(userId, 'friendly_player');
-      if (result.awarded) awarded.push(result.achievement);
-    }
+    const friendCount = parseInt(friendResult.rows[0]?.count || 0);
+    
+    // Check friend-based achievements
+    const friendAchievements = await this.checkAchievementsByRequirement(userId, 'friend_count', friendCount);
+    awarded.push(...friendAchievements);
 
-    // Club member
+    return awarded;
+  }
+
+  /**
+   * Check club membership achievements
+   */
+  async checkClubAchievements(userId) {
+    const awarded = [];
+
+    // Check if user is club member
     const userResult = await pool.query(`
       SELECT is_club_member FROM users WHERE id = $1
     `, [userId]);
 
     if (userResult.rows[0]?.is_club_member) {
-      const result = await this.awardAchievement(userId, 'club_member');
-      if (result.awarded) awarded.push(result.achievement);
+      // Check club-based achievements (if club_member achievement exists with requirement_type='club')
+      const clubAchievements = await this.checkAchievementsByRequirement(userId, 'club', 1);
+      awarded.push(...clubAchievements);
     }
+
+    return awarded;
+  }
+
+  /**
+   * Check puzzle achievements
+   */
+  async checkPuzzleAchievements(userId) {
+    const awarded = [];
+
+    // Get puzzle stats
+    const puzzleStats = await pool.query(`
+      SELECT puzzles_solved, best_streak FROM user_puzzle_ratings WHERE user_id = $1
+    `, [userId]);
+
+    const puzzlesSolved = puzzleStats.rows[0]?.puzzles_solved || 0;
+    const streak = puzzleStats.rows[0]?.best_streak || 0;
+
+    // Check puzzle solved achievements
+    const solvedAchievements = await this.checkAchievementsByRequirement(userId, 'puzzles_solved', puzzlesSolved);
+    awarded.push(...solvedAchievements);
+
+    // Check streak achievements
+    const streakAchievements = await this.checkAchievementsByRequirement(userId, 'puzzle_streak', streak);
+    awarded.push(...streakAchievements);
+
+    return awarded;
+  }
+
+  /**
+   * Check rating achievements
+   */
+  async checkRatingAchievements(userId, rating) {
+    const awarded = [];
+
+    // Check rating-based achievements (using the highest rating across all time controls)
+    const ratingAchievements = await this.checkAchievementsByRequirement(userId, 'rating', rating);
+    awarded.push(...ratingAchievements);
 
     return awarded;
   }
