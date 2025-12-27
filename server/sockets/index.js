@@ -257,6 +257,22 @@ function initializeSocket(io) {
         
         // Notify friends of online status
         broadcastOnlineStatus(io, userId, true);
+        
+        // Send list of currently online friends to this user
+        const friends = await pool.query(`
+          SELECT CASE 
+            WHEN user_id = $1 THEN friend_id 
+            ELSE user_id 
+          END as friend_id
+          FROM friendships
+          WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'
+        `, [userId]);
+        
+        const onlineFriendIds = friends.rows
+          .map(r => r.friend_id)
+          .filter(friendId => userSockets.has(friendId));
+        
+        socket.emit('friends:online', { friendIds: onlineFriendIds });
       } catch (error) {
         socket.emit('authenticated', { success: false, error: 'Invalid token' });
       }
@@ -802,7 +818,7 @@ async function broadcastOnlineStatus(io, oduserId, isOnline) {
     const friendSocketId = userSockets.get(row.friend_id);
     if (friendSocketId) {
       io.to(friendSocketId).emit('friend:status', {
-        oduserId,
+        userId: oduserId,
         isOnline
       });
     }

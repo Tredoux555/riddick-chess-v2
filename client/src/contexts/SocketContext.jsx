@@ -54,18 +54,25 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
+    // Initial list of online friends
+    newSocket.on('friends:online', ({ friendIds }) => {
+      console.log('Online friends:', friendIds);
+      setOnlineFriends(friendIds || []);
+    });
+
     newSocket.on('disconnect', () => {
       console.log('Socket disconnected');
       setConnected(false);
     });
 
     // Friend status updates
-    newSocket.on('friend:status', ({ oduserId, isOnline }) => {
+    newSocket.on('friend:status', ({ oduserId, userId, isOnline }) => {
+      const friendId = userId || oduserId; // Support both for compatibility
       setOnlineFriends(prev => {
         if (isOnline) {
-          return [...new Set([...prev, oduserId])];
+          return [...new Set([...prev, friendId])];
         } else {
-          return prev.filter(id => id !== oduserId);
+          return prev.filter(id => id !== friendId);
         }
       });
     });
