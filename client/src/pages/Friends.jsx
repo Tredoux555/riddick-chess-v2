@@ -50,10 +50,10 @@ const Friends = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || searchQuery.length < 2) return;
     
     try {
-      const response = await axios.get(`/api/users/search/${searchQuery}`);
+      const response = await axios.get(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchResults(response.data);
     } catch (error) {
       console.error('Search failed:', error);
