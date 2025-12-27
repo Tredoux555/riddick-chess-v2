@@ -327,6 +327,10 @@ async function initDatabase() {
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_losses INTEGER DEFAULT 0;
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_draws INTEGER DEFAULT 0;
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_games INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS bullet_vol FLOAT DEFAULT 0.06;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS blitz_vol FLOAT DEFAULT 0.06;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS rapid_vol FLOAT DEFAULT 0.06;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS classical_vol FLOAT DEFAULT 0.06;
     `);
 
     // Add tournament columns  
