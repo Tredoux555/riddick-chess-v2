@@ -285,7 +285,13 @@ function initializeSocket(io) {
     socket.on('game:join', async ({ gameId }) => {
       if (!userId) return socket.emit('error', { message: 'Not authenticated' });
 
-      socket.join(`game:${gameId}`);
+      gameId = Number(gameId);
+      const roomName = `game:${gameId}`;
+      socket.join(roomName);
+      
+      // Debug: show all sockets in room
+      const room = io.sockets.adapter.rooms.get(roomName);
+      console.log(`User ${userId} joined room ${roomName} - total sockets in room: ${room ? room.size : 0}`);
 
       // Check if game is in memory, if not load it
       if (!activeGames.has(gameId)) {
@@ -629,10 +635,19 @@ function initializeSocket(io) {
     // ========================================
 
     socket.on('chat:message', async ({ gameId, content }) => {
-      if (!userId) return;
-      if (!content || !content.trim()) return;
+      if (!userId) {
+        console.log('Chat rejected: no userId');
+        return;
+      }
+      if (!content || !content.trim()) {
+        console.log('Chat rejected: empty content');
+        return;
+      }
 
+      // Use number for room name consistency
       const gId = Number(gameId);
+      
+      console.log('Chat message from user', userId, 'in game', gId, ':', content);
       
       // Check for bad words (simple filter)
       const filtered = filterBadWords(content);
@@ -641,7 +656,7 @@ function initializeSocket(io) {
       try {
         // Get game from database if not in memory
         let recipientId = null;
-        const game = activeGames.get(gId);
+        const game = activeGames.get(Number(gameId));
         
         if (game) {
           recipientId = userId === game.whiteId ? game.blackId : game.whiteId;
@@ -649,7 +664,7 @@ function initializeSocket(io) {
           // Fetch from database
           const result = await pool.query(
             'SELECT white_player_id, black_player_id FROM games WHERE id = $1',
-            [gId]
+            [gameId]
           );
           if (result.rows.length > 0) {
             const row = result.rows[0];
@@ -661,17 +676,20 @@ function initializeSocket(io) {
           await pool.query(`
             INSERT INTO messages (sender_id, recipient_id, game_id, content, is_flagged)
             VALUES ($1, $2, $3, $4, $5)
-          `, [userId, recipientId, gId, filtered, isFlagged]);
+          `, [userId, recipientId, gameId, filtered, isFlagged]);
         }
 
-        // Always broadcast to game room
-        io.to(`game:${gId}`).emit('chat:message', {
+        // Broadcast to game room
+        const roomName = `game:${gId}`;
+        const room = io.sockets.adapter.rooms.get(roomName);
+        console.log('Broadcasting to room', roomName, '- sockets in room:', room ? room.size : 0);
+        io.to(roomName).emit('chat:message', {
           from: userId,
           content: filtered,
           timestamp: Date.now()
         });
         
-        console.log('Chat message sent in game', gId, ':', filtered);
+        console.log('Chat message broadcast complete');
       } catch (error) {
         console.error('Chat error:', error);
       }

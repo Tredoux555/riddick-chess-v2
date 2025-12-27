@@ -263,7 +263,7 @@ const Game = () => {
     console.log('Sending chat message to game', gameId, ':', chatInput.trim());
     
     socket.emit('chat:message', {
-      gameId: Number(gameId),
+      gameId: gameId,  // Keep as string to match room name
       content: chatInput.trim()
     });
     
