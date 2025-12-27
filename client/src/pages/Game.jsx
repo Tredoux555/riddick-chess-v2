@@ -242,7 +242,12 @@ const Game = () => {
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
-    sendMessage(gameId, chatInput);
+    if (!socket) return;
+    
+    socket.emit('chat:message', {
+      gameId: gameId,
+      content: chatInput.trim()
+    });
     setChatInput('');
   };
 
@@ -442,6 +447,9 @@ const Game = () => {
           {showChat && (
             <div className="game-chat">
               <div className="chat-messages">
+                {messages.length === 0 && (
+                  <div className="no-messages">No messages yet</div>
+                )}
                 {messages.map((msg, i) => (
                   <div 
                     key={i} 
@@ -457,7 +465,7 @@ const Game = () => {
                   className="form-input"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={handleChatKeyPress}
+                  onKeyDown={handleChatKeyPress}
                   placeholder="Type a message..."
                   maxLength={200}
                 />
