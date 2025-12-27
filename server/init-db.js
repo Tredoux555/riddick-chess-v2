@@ -323,6 +323,10 @@ async function initDatabase() {
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS blitz_rd INTEGER DEFAULT 350;
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS rapid_rd INTEGER DEFAULT 350;
       ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS classical_rd INTEGER DEFAULT 350;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_wins INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_losses INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_draws INTEGER DEFAULT 0;
+      ALTER TABLE user_ratings ADD COLUMN IF NOT EXISTS total_games INTEGER DEFAULT 0;
     `);
 
     // Add tournament columns  
