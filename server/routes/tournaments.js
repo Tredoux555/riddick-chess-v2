@@ -15,23 +15,30 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get a specific tournament
-router.get('/:id', authenticateToken, async (req, res) => {
+// Get MY tournaments (must be before /:id)
+router.get('/my', authenticateToken, async (req, res) => {
   try {
-    const tournament = await tournamentService.getTournament(req.params.id, req.user.id);
-    
-    if (!tournament) {
-      return res.status(404).json({ error: 'Tournament not found' });
-    }
-
-    res.json(tournament);
+    const tournaments = await tournamentService.getUserTournaments(req.user.id);
+    res.json(tournaments);
   } catch (error) {
-    console.error('Get tournament error:', error);
+    console.error('Get my tournaments error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Create a tournament (admin only)
+// Get user's tournament history (must be before /:id)
+router.get('/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId === 'me' ? req.user.id : req.params.userId;
+    const tournaments = await tournamentService.getUserTournaments(userId);
+    res.json(tournaments);
+  } catch (error) {
+    console.error('Get user tournaments error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create a tournament (admin only) - must be before /:id
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const tournament = await tournamentService.createTournament(req.body, req.user.id);
@@ -42,36 +49,20 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Register for a tournament
-router.post('/:id/register', authenticateToken, async (req, res) => {
+// Get a specific tournament (MUST be after /my and /user/:userId)
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const result = await tournamentService.registerPlayer(req.params.id, req.user.id);
-    res.json(result);
-  } catch (error) {
-    console.error('Register tournament error:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
+    console.log('Getting tournament:', req.params.id);
+    const tournament = await tournamentService.getTournament(req.params.id, req.user.id);
+    
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
 
-// Withdraw from a tournament
-router.post('/:id/withdraw', authenticateToken, async (req, res) => {
-  try {
-    const result = await tournamentService.withdrawPlayer(req.params.id, req.user.id);
-    res.json(result);
+    res.json(tournament);
   } catch (error) {
-    console.error('Withdraw tournament error:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// Start a tournament (admin only)
-router.post('/:id/start', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const result = await tournamentService.startTournament(req.params.id);
-    res.json(result);
-  } catch (error) {
-    console.error('Start tournament error:', error);
-    res.status(400).json({ error: error.message });
+    console.error('Get tournament error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -108,15 +99,36 @@ router.get('/:id/rounds/:round', authenticateToken, async (req, res) => {
   }
 });
 
-// Get user's tournament history
-router.get('/user/:userId', authenticateToken, async (req, res) => {
+// Register for a tournament
+router.post('/:id/register', authenticateToken, async (req, res) => {
   try {
-    const userId = req.params.userId === 'me' ? req.user.id : req.params.userId;
-    const tournaments = await tournamentService.getUserTournaments(userId);
-    res.json(tournaments);
+    const result = await tournamentService.registerPlayer(req.params.id, req.user.id);
+    res.json(result);
   } catch (error) {
-    console.error('Get user tournaments error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Register tournament error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Withdraw from a tournament
+router.post('/:id/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const result = await tournamentService.withdrawPlayer(req.params.id, req.user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Withdraw tournament error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Start a tournament (admin only)
+router.post('/:id/start', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await tournamentService.startTournament(req.params.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Start tournament error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
