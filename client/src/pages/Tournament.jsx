@@ -70,6 +70,7 @@ const Tournament = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'TBD';
     return new Date(dateString).toLocaleString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -80,6 +81,7 @@ const Tournament = () => {
   };
 
   const formatTimeControl = (seconds, increment) => {
+    if (!seconds) return 'Standard';
     const mins = Math.floor(seconds / 60);
     return increment > 0 ? `${mins}+${increment}` : `${mins} min`;
   };

@@ -32,6 +32,7 @@ const Tournaments = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'TBD';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -43,6 +44,7 @@ const Tournaments = () => {
   };
 
   const formatTimeControl = (seconds, increment) => {
+    if (!seconds) return 'Standard';
     const mins = Math.floor(seconds / 60);
     if (increment > 0) {
       return `${mins}+${increment}`;
