@@ -156,6 +156,13 @@ const Game = () => {
     socket.on('game:opponent_disconnected', ({ reconnectWindow }) => {
       setOpponentDisconnected(true);
       setReconnectCountdown(reconnectWindow);
+      toast.error('Opponent disconnected! They have 60 seconds to reconnect.');
+    });
+
+    socket.on('game:opponent_reconnected', () => {
+      setOpponentDisconnected(false);
+      setReconnectCountdown(0);
+      toast.success('Opponent reconnected!');
     });
 
     socket.on('chat:message', (msg) => {
@@ -184,6 +191,7 @@ const Game = () => {
       socket.off('game:draw:offered');
       socket.off('game:draw:declined');
       socket.off('game:opponent_disconnected');
+      socket.off('game:opponent_reconnected');
       socket.off('chat:message');
       socket.off('spectators:update');
     };

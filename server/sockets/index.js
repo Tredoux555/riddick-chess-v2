@@ -317,6 +317,10 @@ function initializeSocket(io) {
         if (game.disconnectedPlayer === userId) {
           clearTimeout(game.disconnectTimeout);
           game.disconnectedPlayer = null;
+          
+          // Notify opponent that player reconnected
+          io.to(roomName).emit('game:opponent_reconnected');
+          console.log(`User ${userId} reconnected to game ${gameId}`);
         }
         
         // Check if opponent is connected
@@ -731,8 +735,22 @@ function initializeSocket(io) {
           if (game.whiteId === userId || game.blackId === userId) {
             game.disconnectedPlayer = userId;
             
+            // Wait 3 seconds before notifying - player might just be refreshing
+            setTimeout(() => {
+              // Check if still disconnected (didn't reconnect quickly)
+              if (game.disconnectedPlayer === userId) {
+                io.to(`game:${gameId}`).emit('game:opponent_disconnected', {
+                  reconnectWindow: 60
+                });
+                console.log(`User ${userId} disconnected from game ${gameId} - notified opponent`);
+              }
+            }, 3000);
+            
             // Set timeout for abandonment (60 seconds)
             game.disconnectTimeout = setTimeout(async () => {
+              // Make sure they're still disconnected
+              if (game.disconnectedPlayer !== userId) return;
+              
               const result = userId === game.whiteId ? '0-1' : '1-0';
               const ratingChanges = await game.endGame(result, 'abandonment');
               
@@ -744,10 +762,6 @@ function initializeSocket(io) {
               
               activeGames.delete(gameId);
             }, 60000);
-
-            io.to(`game:${gameId}`).emit('game:opponent_disconnected', {
-              reconnectWindow: 60
-            });
           }
         }
 
