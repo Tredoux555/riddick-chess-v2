@@ -197,7 +197,7 @@ const Tournament = () => {
             </thead>
             <tbody>
               {tournament.participants?.map((player, index) => (
-                <tr key={player.user_id} className={player.user_id === user.id ? 'current-user' : ''}>
+                <tr key={player.user_id} className={player.user_id === user?.id ? 'current-user' : ''}>
                   <td className={`rank rank-${index + 1}`}>{index + 1}</td>
                   <td>
                     <Link to={`/profile/${player.user_id}`} className="player-link">
@@ -237,7 +237,7 @@ const Tournament = () => {
                       <span className="result">{pairing.result}</span>
                     ) : pairing.game_id ? (
                       <Link to={`/game/${pairing.game_id}`} className="btn btn-sm btn-primary">
-                        {(pairing.white_player_id === user.id || pairing.black_player_id === user.id) ? 'Play' : 'Watch'}
+                        {(pairing.white_player_id === user?.id || pairing.black_player_id === user?.id) ? 'Play' : 'Watch'}
                       </Link>
                     ) : (
                       <span className="pending">Pending</span>
