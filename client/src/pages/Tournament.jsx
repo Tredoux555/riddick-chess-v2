@@ -25,8 +25,10 @@ const Tournament = () => {
         axios.get(`/api/tournaments/${id}`),
         axios.get(`/api/tournaments/${id}/rounds`)
       ]);
+      console.log('Tournament data:', tournamentRes.data);
+      console.log('Rounds data:', roundsRes.data);
       setTournament(tournamentRes.data);
-      setRounds(roundsRes.data);
+      setRounds(roundsRes.data || []);
     } catch (error) {
       console.error('Failed to load tournament:', error);
       toast.error('Failed to load tournament');
