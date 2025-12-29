@@ -273,4 +273,108 @@ router.put('/password', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// PASSWORD RESET (User Self-Service)
+// ============================================
+
+// Request password reset (generates token - normally would send email)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    const user = await pool.query('SELECT id, username FROM users WHERE email = $1', [email]);
+    
+    // Always return success to prevent email enumeration
+    if (user.rows.length === 0) {
+      return res.json({ message: 'If an account exists with this email, a reset link has been generated.' });
+    }
+    
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    await pool.query(`
+      UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3
+    `, [token, expires, user.rows[0].id]);
+    
+    // In production, you'd send an email here
+    // For now, we'll just return success
+    console.log(`Password reset requested for ${email}, token: ${token}`);
+    
+    res.json({ 
+      message: 'If an account exists with this email, a reset link has been generated.',
+      // Remove this in production - only for testing
+      ...(process.env.NODE_ENV !== 'production' && { debug_token: token })
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Verify reset token
+router.get('/verify-reset-token', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token required' });
+    }
+    
+    const result = await pool.query(`
+      SELECT id, username FROM users 
+      WHERE reset_token = $1 AND reset_token_expires > NOW()
+    `, [token]);
+    
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+    
+    res.json({ valid: true, username: result.rows[0].username });
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password required' });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    
+    const user = await pool.query(`
+      SELECT id FROM users 
+      WHERE reset_token = $1 AND reset_token_expires > NOW()
+    `, [token]);
+    
+    if (user.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await pool.query(`
+      UPDATE users SET 
+        password_hash = $1, 
+        reset_token = NULL, 
+        reset_token_expires = NULL,
+        must_change_password = FALSE
+      WHERE id = $2
+    `, [hashedPassword, user.rows[0].id]);
+    
+    res.json({ message: 'Password reset successfully. You can now login.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

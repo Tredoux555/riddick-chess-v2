@@ -22,6 +22,7 @@ import Friends from './pages/Friends';
 import Club from './pages/Club';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
+import ResetPassword from './pages/ResetPassword';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requireAdmin = false, requireClub = false }) => {
@@ -71,6 +72,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected routes */}
           <Route path="/play" element={
