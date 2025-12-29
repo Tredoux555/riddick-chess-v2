@@ -452,11 +452,12 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
 
   // Test 33: Puzzle system
   try {
-    const themes = await pool.query(`SELECT DISTINCT unnest(themes) as theme FROM puzzles LIMIT 20`);
     const totalPuzzles = await pool.query(`SELECT COUNT(*) as count FROM puzzles`);
+    // themes is stored as text, not array - just count distinct themes
+    const themeSample = await pool.query(`SELECT DISTINCT themes FROM puzzles LIMIT 20`);
     addTest('Features', 'Puzzle System', 'pass', {
       totalPuzzles: parseInt(totalPuzzles.rows[0].count),
-      themesAvailable: themes.rows.length
+      themeSamples: themeSample.rows.length
     });
   } catch (e) {
     addTest('Features', 'Puzzle System', 'fail', null, e.message);
