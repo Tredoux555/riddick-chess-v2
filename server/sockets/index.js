@@ -717,6 +717,65 @@ function initializeSocket(io) {
     });
 
     // ========================================
+    // CLUB CHAT
+    // ========================================
+
+    socket.on('club:join', async () => {
+      if (!userId) return;
+      
+      // Check if user is club member
+      const user = await pool.query('SELECT is_club_member FROM users WHERE id = $1', [userId]);
+      if (!user.rows[0]?.is_club_member) {
+        return socket.emit('error', { message: 'Not a club member' });
+      }
+      
+      socket.join('club-chat');
+      console.log(`User ${userId} joined club chat`);
+    });
+
+    socket.on('club:leave', () => {
+      socket.leave('club-chat');
+      console.log(`User ${userId} left club chat`);
+    });
+
+    socket.on('club:message', async ({ message }) => {
+      if (!userId) return;
+      
+      // Verify club membership
+      const user = await pool.query('SELECT is_club_member, username, avatar FROM users WHERE id = $1', [userId]);
+      if (!user.rows[0]?.is_club_member) {
+        return socket.emit('error', { message: 'Not a club member' });
+      }
+      
+      if (!message || message.trim().length === 0 || message.length > 500) {
+        return;
+      }
+      
+      try {
+        // Save to database
+        const result = await pool.query(`
+          INSERT INTO club_chat (user_id, message)
+          VALUES ($1, $2)
+          RETURNING id, created_at
+        `, [userId, message.trim()]);
+        
+        const messageData = {
+          id: result.rows[0].id,
+          user_id: userId,
+          username: user.rows[0].username,
+          avatar: user.rows[0].avatar,
+          message: message.trim(),
+          created_at: result.rows[0].created_at
+        };
+        
+        // Broadcast to all club members
+        io.to('club-chat').emit('club:message', messageData);
+      } catch (error) {
+        console.error('Club chat error:', error);
+      }
+    });
+
+    // ========================================
     // DISCONNECT HANDLING
     // ========================================
 
