@@ -7,7 +7,7 @@ import { FaCrown, FaUsers, FaComments, FaPaperPlane, FaCheck, FaTimes, FaCog } f
 
 const Club = () => {
   const { user, isAdmin } = useAuth();
-  const socket = useSocket();
+  const { socket } = useSocket();
   const [clubInfo, setClubInfo] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
