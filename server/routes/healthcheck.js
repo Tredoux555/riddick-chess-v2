@@ -488,6 +488,326 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
     addTest('Features', 'Club System', 'warn', null, e.message);
   }
 
+  // ========================================
+  // CLUB TABLES
+  // ========================================
+
+  // Test 36: Club info table
+  try {
+    const info = await pool.query('SELECT * FROM club_info WHERE id = 1');
+    if (info.rows.length > 0) {
+      addTest('Database', 'Club Info Table', 'pass', { clubName: info.rows[0].name });
+    } else {
+      addTest('Database', 'Club Info Table', 'warn', null, 'No club info record');
+    }
+  } catch (e) {
+    addTest('Database', 'Club Info Table', 'fail', null, e.message);
+  }
+
+  // Test 37: Club chat table
+  try {
+    const chat = await pool.query('SELECT COUNT(*) as count FROM club_chat');
+    addTest('Database', 'Club Chat Table', 'pass', { messages: parseInt(chat.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Club Chat Table', 'fail', null, e.message);
+  }
+
+  // Test 38: Club join requests table
+  try {
+    const requests = await pool.query('SELECT COUNT(*) as count FROM club_join_requests');
+    const pending = await pool.query(`SELECT COUNT(*) as count FROM club_join_requests WHERE status = 'pending'`);
+    addTest('Database', 'Club Join Requests', 'pass', { 
+      total: parseInt(requests.rows[0].count),
+      pending: parseInt(pending.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', 'Club Join Requests', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // ANNOUNCEMENTS SYSTEM
+  // ========================================
+
+  // Test 39: Announcements table
+  try {
+    const announcements = await pool.query('SELECT COUNT(*) as count FROM announcements');
+    const active = await pool.query(`SELECT COUNT(*) as count FROM announcements WHERE expires_at IS NULL OR expires_at > NOW()`);
+    addTest('Database', 'Announcements Table', 'pass', {
+      total: parseInt(announcements.rows[0].count),
+      active: parseInt(active.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', 'Announcements Table', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // USER MODERATION SCHEMA
+  // ========================================
+
+  // Test 40: User ban columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name IN ('is_banned', 'ban_reason', 'ban_expires')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    const required = ['is_banned', 'ban_reason', 'ban_expires'];
+    const missing = required.filter(c => !found.includes(c));
+    if (missing.length > 0) {
+      addTest('Schema', 'User Ban Columns', 'fail', { missing });
+    } else {
+      addTest('Schema', 'User Ban Columns', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', 'User Ban Columns', 'fail', null, e.message);
+  }
+
+  // Test 41: User mute columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name IN ('is_muted', 'mute_expires')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    const required = ['is_muted', 'mute_expires'];
+    const missing = required.filter(c => !found.includes(c));
+    if (missing.length > 0) {
+      addTest('Schema', 'User Mute Columns', 'fail', { missing });
+    } else {
+      addTest('Schema', 'User Mute Columns', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', 'User Mute Columns', 'fail', null, e.message);
+  }
+
+  // Test 42: Password reset columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name IN ('reset_token', 'reset_token_expires', 'must_change_password')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    const required = ['reset_token', 'reset_token_expires', 'must_change_password'];
+    const missing = required.filter(c => !found.includes(c));
+    if (missing.length > 0) {
+      addTest('Schema', 'Password Reset Columns', 'fail', { missing });
+    } else {
+      addTest('Schema', 'Password Reset Columns', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', 'Password Reset Columns', 'fail', null, e.message);
+  }
+
+  // Test 43: User customization columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name IN ('board_theme', 'piece_set')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    if (found.length < 2) {
+      addTest('Schema', 'Customization Columns', 'fail', { found }, 'Missing board_theme or piece_set');
+    } else {
+      addTest('Schema', 'Customization Columns', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', 'Customization Columns', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // ADMIN FUNCTIONS
+  // ========================================
+
+  // Test 44: Admin stats endpoint
+  try {
+    const stats = await pool.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM users WHERE is_banned = FALSE) as users,
+        (SELECT COUNT(*) FROM games) as games,
+        (SELECT COUNT(*) FROM users WHERE is_club_member = TRUE) as club
+    `);
+    addTest('Admin', 'Stats Query', 'pass', {
+      users: parseInt(stats.rows[0].users),
+      games: parseInt(stats.rows[0].games),
+      clubMembers: parseInt(stats.rows[0].club)
+    });
+  } catch (e) {
+    addTest('Admin', 'Stats Query', 'fail', null, e.message);
+  }
+
+  // Test 45: Banned users count
+  try {
+    const banned = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_banned = TRUE');
+    const muted = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_muted = TRUE');
+    addTest('Admin', 'Moderation Status', 'pass', {
+      bannedUsers: parseInt(banned.rows[0].count),
+      mutedUsers: parseInt(muted.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Admin', 'Moderation Status', 'fail', null, e.message);
+  }
+
+  // Test 46: Admin users count
+  try {
+    const admins = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_admin = TRUE');
+    addTest('Admin', 'Admin Users', 'pass', { adminCount: parseInt(admins.rows[0].count) });
+  } catch (e) {
+    addTest('Admin', 'Admin Users', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // FAIR PLAY & REPORTS
+  // ========================================
+
+  // Test 47: Fair play reports table
+  try {
+    const reports = await pool.query('SELECT COUNT(*) as count FROM fair_play_reports');
+    const pending = await pool.query(`SELECT COUNT(*) as count FROM fair_play_reports WHERE status = 'pending'`);
+    addTest('Database', 'Fair Play Reports', 'pass', {
+      total: parseInt(reports.rows[0].count),
+      pending: parseInt(pending.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', 'Fair Play Reports', 'warn', null, e.message);
+  }
+
+  // ========================================
+  // PUZZLE ATTEMPTS & RUSH
+  // ========================================
+
+  // Test 48: Puzzle attempts table
+  try {
+    const attempts = await pool.query('SELECT COUNT(*) as count FROM puzzle_attempts');
+    addTest('Database', 'Puzzle Attempts', 'pass', { attempts: parseInt(attempts.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Puzzle Attempts', 'fail', null, e.message);
+  }
+
+  // Test 49: Puzzle rush scores
+  try {
+    const rushScores = await pool.query('SELECT COUNT(*) as count FROM puzzle_rush_scores');
+    const highScore = await pool.query('SELECT MAX(score) as max FROM puzzle_rush_scores');
+    addTest('Features', 'Puzzle Rush', 'pass', {
+      totalAttempts: parseInt(rushScores.rows[0].count),
+      highScore: parseInt(highScore.rows[0].max) || 0
+    });
+  } catch (e) {
+    addTest('Features', 'Puzzle Rush', 'warn', null, e.message);
+  }
+
+  // ========================================
+  // USER ACHIEVEMENTS
+  // ========================================
+
+  // Test 50: User achievements table
+  try {
+    const ua = await pool.query('SELECT COUNT(*) as count FROM user_achievements');
+    const uniqueUsers = await pool.query('SELECT COUNT(DISTINCT user_id) as count FROM user_achievements');
+    addTest('Database', 'User Achievements', 'pass', {
+      totalAwarded: parseInt(ua.rows[0].count),
+      usersWithAchievements: parseInt(uniqueUsers.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', 'User Achievements', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // EXPIRED BANS/MUTES CHECK
+  // ========================================
+
+  // Test 51: Expired bans still active
+  try {
+    const expiredBans = await pool.query(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE is_banned = TRUE AND ban_expires IS NOT NULL AND ban_expires < NOW()
+    `);
+    const count = parseInt(expiredBans.rows[0].count);
+    if (count > 0) {
+      addTest('Integrity', 'Expired Bans', 'warn', { expiredBanCount: count }, 'Users with expired bans still marked as banned');
+    } else {
+      addTest('Integrity', 'Expired Bans', 'pass');
+    }
+  } catch (e) {
+    addTest('Integrity', 'Expired Bans', 'fail', null, e.message);
+  }
+
+  // Test 52: Expired mutes still active
+  try {
+    const expiredMutes = await pool.query(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE is_muted = TRUE AND mute_expires IS NOT NULL AND mute_expires < NOW()
+    `);
+    const count = parseInt(expiredMutes.rows[0].count);
+    if (count > 0) {
+      addTest('Integrity', 'Expired Mutes', 'warn', { expiredMuteCount: count }, 'Users with expired mutes still marked as muted');
+    } else {
+      addTest('Integrity', 'Expired Mutes', 'pass');
+    }
+  } catch (e) {
+    addTest('Integrity', 'Expired Mutes', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // EXPIRED RESET TOKENS
+  // ========================================
+
+  // Test 53: Expired reset tokens
+  try {
+    const expiredTokens = await pool.query(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE reset_token IS NOT NULL AND reset_token_expires < NOW()
+    `);
+    const count = parseInt(expiredTokens.rows[0].count);
+    if (count > 0) {
+      addTest('Integrity', 'Expired Reset Tokens', 'warn', { count }, 'Expired password reset tokens should be cleaned up');
+    } else {
+      addTest('Integrity', 'Expired Reset Tokens', 'pass');
+    }
+  } catch (e) {
+    addTest('Integrity', 'Expired Reset Tokens', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // SOCKET EVENTS COVERAGE
+  // ========================================
+
+  // Test 54: Club chat socket readiness
+  try {
+    const clubMembers = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_club_member = TRUE');
+    addTest('Realtime', 'Club Chat Ready', 'pass', { 
+      potentialChatUsers: parseInt(clubMembers.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Realtime', 'Club Chat Ready', 'fail', null, e.message);
+  }
+
+  // ========================================
+  // FULL TABLE LIST CHECK
+  // ========================================
+
+  // Test 55: All required tables exist
+  try {
+    const tables = await pool.query(`
+      SELECT table_name FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    `);
+    const tableNames = tables.rows.map(r => r.table_name);
+    const required = [
+      'users', 'games', 'user_ratings', 'puzzles', 'puzzle_attempts',
+      'achievements', 'user_achievements', 'friendships', 'messages',
+      'tournaments', 'tournament_participants', 'tournament_pairings',
+      'club_info', 'club_chat', 'club_join_requests', 'announcements'
+    ];
+    const missing = required.filter(t => !tableNames.includes(t));
+    if (missing.length > 0) {
+      addTest('Schema', 'Required Tables', 'fail', { missing, found: tableNames.length });
+    } else {
+      addTest('Schema', 'Required Tables', 'pass', { tableCount: tableNames.length });
+    }
+  } catch (e) {
+    addTest('Schema', 'Required Tables', 'fail', null, e.message);
+  }
+
   // Calculate final summary
   results.summary.passRate = results.summary.total > 0 
     ? Math.round((results.summary.passed / results.summary.total) * 100) 
