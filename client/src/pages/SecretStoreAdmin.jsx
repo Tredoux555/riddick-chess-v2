@@ -262,14 +262,22 @@ const SecretStoreAdmin = () => {
               <button onClick={loadOrders} style={{ ...btnStyle, background: '#333', color: '#fff' }}>🔄 Refresh</button>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '30px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '30px' }}>
               <div style={{ background: 'rgba(251,191,36,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                 <h3 style={{ fontSize: '36px', color: '#fbbf24', margin: '0 0 5px' }}>{orders.filter(o => o.status === 'pending').length}</h3>
-                <p style={{ color: '#fff', margin: 0 }}>Pending Orders</p>
+                <p style={{ color: '#fff', margin: 0 }}>Pending</p>
               </div>
               <div style={{ background: 'rgba(34,197,94,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                 <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{orders.filter(o => o.status === 'delivered').length}</h3>
                 <p style={{ color: '#fff', margin: 0 }}>Delivered</p>
+              </div>
+              <div style={{ background: 'rgba(139,92,246,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '30px', color: '#8b5cf6', margin: '0 0 5px' }}>¥{orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + parseFloat(o.product_price), 0).toFixed(2)}</h3>
+                <p style={{ color: '#fff', margin: 0 }}>💰 Revenue</p>
+              </div>
+              <div style={{ background: 'rgba(99,102,241,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '30px', color: '#6366f1', margin: '0 0 5px' }}>¥{orders.reduce((sum, o) => sum + parseFloat(o.product_price), 0).toFixed(2)}</h3>
+                <p style={{ color: '#fff', margin: 0 }}>📊 Total Sales</p>
               </div>
             </div>
 
