@@ -65,12 +65,14 @@ async function initTables() {
         name VARCHAR(255) NOT NULL,
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
-        image VARCHAR(500),
+        image TEXT,
         category VARCHAR(100) DEFAULT 'General',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP
       )
     `);
+    // Ensure image column can hold base64 data
+    await pool.query(`ALTER TABLE secret_store_products ALTER COLUMN image TYPE TEXT`).catch(() => {});
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
         id SERIAL PRIMARY KEY,
@@ -266,10 +268,19 @@ router.post('/admin/products/delete', async (req, res) => {
   }
 });
 
-// Image upload
+// Image upload - store as base64 in response (will be saved to DB with product)
 router.post('/admin/upload-image', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-  res.json({ success: true, url: `/uploads/store/${req.file.filename}` });
+  
+  // Convert to base64 data URL
+  const base64 = fs.readFileSync(req.file.path).toString('base64');
+  const mimeType = req.file.mimetype;
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+  
+  // Delete the temp file
+  fs.unlinkSync(req.file.path);
+  
+  res.json({ success: true, url: dataUrl });
 });
 
 module.exports = router;
