@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/SecretStore.css';
 
 const SecretStoreAdmin = () => {
   const [password, setPassword] = useState('');
   const [loggedIn, setLoggedIn] = useState(false);
+  const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
+  
+  // Product form
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General' });
 
   const login = async () => {
     const res = await fetch(`/api/secret-store/admin/users?pass=${password}`);
@@ -17,8 +24,10 @@ const SecretStoreAdmin = () => {
       approved: data.users?.filter(u => u.status === 'approved').length || 0,
       rejected: data.users?.filter(u => u.status === 'rejected').length || 0
     });
+    loadProducts();
     setLoggedIn(true);
   };
+
 
   const loadUsers = async () => {
     const res = await fetch(`/api/secret-store/admin/users?pass=${password}`);
@@ -31,6 +40,11 @@ const SecretStoreAdmin = () => {
     });
   };
 
+  const loadProducts = async () => {
+    const res = await fetch(`/api/secret-store/admin/products?pass=${password}`);
+    const data = await res.json();
+    setProducts(data.products || []);
+  };
 
   const approve = async (id) => {
     await fetch('/api/secret-store/admin/approve', {
@@ -50,6 +64,7 @@ const SecretStoreAdmin = () => {
     loadUsers();
   };
 
+
   const deleteUser = async (id) => {
     if (!window.confirm('Delete this user?')) return;
     await fetch('/api/secret-store/admin/delete', {
@@ -58,6 +73,52 @@ const SecretStoreAdmin = () => {
       body: JSON.stringify({ pass: password, id })
     });
     loadUsers();
+  };
+
+  // Product functions
+  const addProduct = async () => {
+    if (!productForm.name || !productForm.price) { alert('Name and price required'); return; }
+    await fetch('/api/secret-store/admin/products/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, ...productForm })
+    });
+    setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
+    setShowAddProduct(false);
+    loadProducts();
+  };
+
+  const updateProduct = async () => {
+    await fetch('/api/secret-store/admin/products/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id: editingProduct.id, ...productForm })
+    });
+    setEditingProduct(null);
+    setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
+    loadProducts();
+  };
+
+  const deleteProduct = async (id) => {
+    if (!window.confirm('Delete this product?')) return;
+    await fetch('/api/secret-store/admin/products/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadProducts();
+  };
+
+
+  const startEditProduct = (product) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description || '',
+      price: product.price.toString(),
+      image: product.image || '',
+      category: product.category || 'General'
+    });
   };
 
   if (!loggedIn) {
@@ -74,61 +135,127 @@ const SecretStoreAdmin = () => {
     );
   }
 
-
   const pending = users.filter(u => u.status === 'pending');
   const approved = users.filter(u => u.status === 'approved');
   const rejected = users.filter(u => u.status === 'rejected');
 
-  const UserCard = ({ user, showActions }) => (
-    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
-        <h4 style={{ margin: '0 0 5px', color: '#fff' }}>{user.name} <span style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', background: user.status === 'pending' ? 'rgba(251,191,36,0.2)' : user.status === 'approved' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: user.status === 'pending' ? '#fbbf24' : user.status === 'approved' ? '#22c55e' : '#ef4444' }}>{user.status}</span></h4>
-        <p style={{ margin: '0 0 5px', color: 'rgba(255,255,255,0.5)' }}>{user.email}</p>
-        {user.reason && <p style={{ margin: '0 0 5px', color: 'rgba(255,255,255,0.5)' }}>"{user.reason}"</p>}
-        <small style={{ color: 'rgba(255,255,255,0.3)' }}>Requested: {new Date(user.requestedAt).toLocaleString()}</small>
-      </div>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        {showActions && <button onClick={() => approve(user.id)} style={{ padding: '10px 20px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>✓ Approve</button>}
-        {showActions && <button onClick={() => reject(user.id)} style={{ padding: '10px 20px', background: '#ef4444', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>✗ Reject</button>}
-        <button onClick={() => deleteUser(user.id)} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>🗑</button>
-      </div>
-    </div>
-  );
+  const inputStyle = { width: '100%', padding: '12px', marginBottom: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '14px' };
+  const btnStyle = { padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' };
+
 
   return (
     <div className="secret-store-container">
       <div style={{ maxWidth: '1000px', width: '100%', padding: '20px' }}>
-        <h1 style={{ color: '#fff', marginBottom: '30px' }}>👑 Secret Store Admin</h1>
+        <h1 style={{ color: '#fff', marginBottom: '20px' }}>👑 Secret Store Admin</h1>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '36px', color: '#fbbf24', margin: '0 0 5px' }}>{stats.pending}</h3><p style={{ color: '#fff', margin: 0 }}>Pending</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{stats.approved}</h3><p style={{ color: '#fff', margin: 0 }}>Approved</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
-            <h3 style={{ fontSize: '36px', color: '#ef4444', margin: '0 0 5px' }}>{stats.rejected}</h3><p style={{ color: '#fff', margin: 0 }}>Rejected</p>
-          </div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
+          <button onClick={() => setTab('users')} style={{ ...btnStyle, background: tab === 'users' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>👥 Users</button>
+          <button onClick={() => setTab('products')} style={{ ...btnStyle, background: tab === 'products' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🛍️ Products ({products.length})</button>
         </div>
 
-        
-        <button onClick={loadUsers} style={{ marginBottom: '20px', padding: '10px 20px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>🔄 Refresh</button>
+        {tab === 'users' && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '36px', color: '#fbbf24', margin: '0 0 5px' }}>{stats.pending}</h3><p style={{ color: '#fff', margin: 0 }}>Pending</p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{stats.approved}</h3><p style={{ color: '#fff', margin: 0 }}>Approved</p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '36px', color: '#ef4444', margin: '0 0 5px' }}>{stats.rejected}</h3><p style={{ color: '#fff', margin: 0 }}>Rejected</p>
+              </div>
+            </div>
+            <button onClick={loadUsers} style={{ ...btnStyle, background: '#333', color: '#fff', marginBottom: '20px' }}>🔄 Refresh</button>
+            
+            <h2 style={{ color: '#fff', marginBottom: '15px' }}>⏳ Pending ({pending.length})</h2>
+            {pending.map(u => (
+              <div key={u.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span>
+                  {u.reason && <p style={{ color: 'rgba(255,255,255,0.4)', margin: '5px 0 0', fontSize: '14px' }}>"{u.reason}"</p>}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => approve(u.id)} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓</button>
+                  <button onClick={() => reject(u.id)} style={{ ...btnStyle, background: '#ef4444', color: '#fff' }}>✗</button>
+                  <button onClick={() => deleteUser(u.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+                </div>
+              </div>
+            ))}
 
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ color: '#fff', marginBottom: '20px' }}>⏳ Pending Requests</h2>
-          {pending.length === 0 ? <p style={{ color: 'rgba(255,255,255,0.4)' }}>No pending requests</p> : pending.map(u => <UserCard key={u.id} user={u} showActions />)}
-        </div>
+            
+            <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>✅ Approved ({approved.length})</h2>
+            {approved.map(u => (
+              <div key={u.id} style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span></div>
+                <button onClick={() => deleteUser(u.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+              </div>
+            ))}
+            
+            <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>❌ Rejected ({rejected.length})</h2>
+            {rejected.map(u => (
+              <div key={u.id} style={{ background: 'rgba(239,68,68,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span></div>
+                <button onClick={() => deleteUser(u.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+              </div>
+            ))}
+          </>
+        )}
 
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ color: '#fff', marginBottom: '20px' }}>✅ Approved Users</h2>
-          {approved.length === 0 ? <p style={{ color: 'rgba(255,255,255,0.4)' }}>No approved users</p> : approved.map(u => <UserCard key={u.id} user={u} showActions={false} />)}
-        </div>
 
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ color: '#fff', marginBottom: '20px' }}>❌ Rejected Users</h2>
-          {rejected.length === 0 ? <p style={{ color: 'rgba(255,255,255,0.4)' }}>No rejected users</p> : rejected.map(u => <UserCard key={u.id} user={u} showActions={false} />)}
-        </div>
+        {tab === 'products' && (
+          <>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button onClick={() => { setShowAddProduct(true); setEditingProduct(null); setProductForm({ name: '', description: '', price: '', image: '', category: 'General' }); }} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>➕ Add Product</button>
+              <button onClick={loadProducts} style={{ ...btnStyle, background: '#333', color: '#fff' }}>🔄 Refresh</button>
+            </div>
+
+            {/* Add/Edit Product Form */}
+            {(showAddProduct || editingProduct) && (
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
+                <h3 style={{ color: '#fff', marginBottom: '15px' }}>{editingProduct ? '✏️ Edit Product' : '➕ Add Product'}</h3>
+                <input style={inputStyle} placeholder="Product name *" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} />
+                <textarea style={{...inputStyle, height: '80px', resize: 'none'}} placeholder="Description" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} />
+                <input style={inputStyle} placeholder="Price * (e.g. 99.99)" type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} />
+                <input style={inputStyle} placeholder="Image URL (optional)" value={productForm.image} onChange={e => setProductForm({...productForm, image: e.target.value})} />
+                <select style={inputStyle} value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})}>
+                  <option value="General">General</option>
+                  <option value="Chess Sets">Chess Sets</option>
+                  <option value="Accessories">Accessories</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Digital">Digital</option>
+                </select>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button onClick={editingProduct ? updateProduct : addProduct} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>{editingProduct ? 'Update' : 'Add'}</button>
+                  <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); }} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+
+            {/* Product List */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              {products.map(p => (
+                <div key={p.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', overflow: 'hidden' }}>
+                  {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: '150px', objectFit: 'cover', background: '#222' }} />}
+                  {!p.image && <div style={{ width: '100%', height: '150px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' }}>No image</div>}
+                  <div style={{ padding: '15px' }}>
+                    <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 8px', borderRadius: '4px' }}>{p.category}</span>
+                    <h3 style={{ color: '#fff', margin: '10px 0 5px' }}>{p.name}</h3>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
+                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>R{p.price.toFixed(2)}</p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => startEditProduct(p)} style={{ ...btnStyle, flex: 1, background: '#8b5cf6', color: '#fff' }}>✏️ Edit</button>
+                      <button onClick={() => deleteProduct(p.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {products.length === 0 && <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px' }}>No products yet. Add your first product!</p>}
+          </>
+        )}
       </div>
     </div>
   );

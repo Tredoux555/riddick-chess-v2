@@ -7,13 +7,14 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA_FILE = path.join(__dirname, '..', 'data', 'secret-store-users.json');
+const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'secret-store-products.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
 
 // Ensure data directory and file exist
 function ensureDataFile() {
   const dataDir = path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSyncSync(dataDir, { recursive: true });
+    fs.mkdirSync(dataDir, { recursive: true });
   }
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify({ users: [] }, null, 2));
@@ -28,6 +29,27 @@ function loadUsers() {
 function saveUsers(data) {
   ensureDataFile();
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// Products functions
+function ensureProductsFile() {
+  const dataDir = path.join(__dirname, '..', 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(PRODUCTS_FILE)) {
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify({ products: [] }, null, 2));
+  }
+}
+
+function loadProducts() {
+  ensureProductsFile();
+  return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
+}
+
+function saveProducts(data) {
+  ensureProductsFile();
+  fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(data, null, 2));
 }
 
 
@@ -115,6 +137,73 @@ router.post('/admin/delete', (req, res) => {
   data.users = data.users.filter(u => u.id !== id);
   saveUsers(data);
   res.json({ success: true });
+});
+
+// ========== PRODUCTS ==========
+
+// Get all products (public for approved users)
+router.get('/products', (req, res) => {
+  const data = loadProducts();
+  res.json(data.products || []);
+});
+
+// Admin: Add product
+router.post('/admin/products/add', (req, res) => {
+  const { pass, name, description, price, image, category } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  if (!name || !price) return res.status(400).json({ error: 'Name and price required' });
+  
+  const data = loadProducts();
+  const product = {
+    id: Date.now().toString(),
+    name,
+    description: description || '',
+    price: parseFloat(price),
+    image: image || '',
+    category: category || 'General',
+    createdAt: new Date().toISOString()
+  };
+  data.products.push(product);
+  saveProducts(data);
+  res.json({ success: true, product });
+});
+
+// Admin: Update product
+router.post('/admin/products/update', (req, res) => {
+  const { pass, id, name, description, price, image, category } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  
+  const data = loadProducts();
+  const product = data.products.find(p => p.id === id);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  
+  if (name) product.name = name;
+  if (description !== undefined) product.description = description;
+  if (price) product.price = parseFloat(price);
+  if (image !== undefined) product.image = image;
+  if (category) product.category = category;
+  product.updatedAt = new Date().toISOString();
+  
+  saveProducts(data);
+  res.json({ success: true, product });
+});
+
+// Admin: Delete product
+router.post('/admin/products/delete', (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  
+  const data = loadProducts();
+  data.products = data.products.filter(p => p.id !== id);
+  saveProducts(data);
+  res.json({ success: true });
+});
+
+// Admin: Get all products
+router.get('/admin/products', (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  res.json(loadProducts());
 });
 
 module.exports = router;
