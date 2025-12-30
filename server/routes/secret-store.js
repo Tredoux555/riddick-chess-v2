@@ -10,23 +10,10 @@ const fs = require('fs');
 
 const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads', 'store');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `product-${Date.now()}${ext}`);
-  }
-});
+// Configure multer for memory storage (no disk needed)
 const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     cb(null, allowed.includes(file.mimetype));
@@ -272,13 +259,10 @@ router.post('/admin/products/delete', async (req, res) => {
 router.post('/admin/upload-image', upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
   
-  // Convert to base64 data URL
-  const base64 = fs.readFileSync(req.file.path).toString('base64');
+  // Convert buffer to base64 data URL (memory storage)
+  const base64 = req.file.buffer.toString('base64');
   const mimeType = req.file.mimetype;
   const dataUrl = `data:${mimeType};base64,${base64}`;
-  
-  // Delete the temp file
-  fs.unlinkSync(req.file.path);
   
   res.json({ success: true, url: dataUrl });
 });
