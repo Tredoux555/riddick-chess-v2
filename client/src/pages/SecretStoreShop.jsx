@@ -10,6 +10,8 @@ const SecretStoreShop = () => {
   const [symbol, setSymbol] = useState('¥');
   const [currencies, setCurrencies] = useState([]);
   const [buyMessage, setBuyMessage] = useState(null);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,6 +113,17 @@ const SecretStoreShop = () => {
     setBuyMessage(null);
   };
 
+  // Get unique categories
+  const categories = ['All', ...new Set(products.map(p => p.category))];
+  
+  // Filter products
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
+                          (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
+    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
   if (!user) return null;
 
   const currencyNames = {
@@ -149,18 +162,57 @@ const SecretStoreShop = () => {
           </div>
         </div>
 
+        {/* Search & Filter */}
+        <div style={{ display: 'flex', gap: '15px', marginBottom: '25px', flexWrap: 'wrap' }}>
+          <input 
+            type="text"
+            placeholder="🔍 Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: '200px', padding: '12px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '14px' }}
+          />
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {categories.map(cat => (
+              <button 
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                style={{ 
+                  padding: '10px 18px', 
+                  background: categoryFilter === cat ? '#8b5cf6' : 'rgba(255,255,255,0.05)', 
+                  border: categoryFilter === cat ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '20px', 
+                  color: '#fff', 
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: categoryFilter === cat ? '600' : '400'
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Products Grid */}
         {loading ? (
           <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '60px' }}>Loading products...</p>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.5)' }}>
-            <h2 style={{ marginBottom: '10px' }}>🚧 Coming Soon!</h2>
-            <p>Products will be added here. Stay tuned!</p>
+            {products.length === 0 ? (
+              <>
+                <h2 style={{ marginBottom: '10px' }}>🚧 Coming Soon!</h2>
+                <p>Products will be added here. Stay tuned!</p>
+              </>
+            ) : (
+              <>
+                <h2 style={{ marginBottom: '10px' }}>🔍 No results</h2>
+                <p>Try a different search or category</p>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
-            {products.map(p => (
+            {filteredProducts.map(p => (
               <div key={p.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '15px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
                 {p.image ? (
                   <img src={p.image} alt={p.name} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
