@@ -140,6 +140,29 @@ const SecretStoreAdmin = () => {
     loadProducts();
   };
 
+  const uploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const res = await fetch('/api/secret-store/admin/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProductForm({ ...productForm, image: data.url });
+      } else {
+        alert('Upload failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('Upload error');
+    }
+  };
+
 
   const startEditProduct = (product) => {
     setEditingProduct(product);
@@ -273,7 +296,25 @@ const SecretStoreAdmin = () => {
                 <input style={inputStyle} placeholder="Product name *" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} />
                 <textarea style={{...inputStyle, height: '80px', resize: 'none'}} placeholder="Description" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} />
                 <input style={inputStyle} placeholder="Price in ¥ CNY * (e.g. 99.99)" type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} />
-                <input style={inputStyle} placeholder="Image URL (optional)" value={productForm.image} onChange={e => setProductForm({...productForm, image: e.target.value})} />
+                
+                {/* Image Upload */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '8px' }}>Product Image</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <label style={{ ...btnStyle, background: '#8b5cf6', color: '#fff', cursor: 'pointer' }}>
+                      📷 Upload Image
+                      <input type="file" accept="image/*" onChange={uploadImage} style={{ display: 'none' }} />
+                    </label>
+                    {productForm.image && <span style={{ color: '#22c55e' }}>✓ Image uploaded</span>}
+                  </div>
+                  {productForm.image && (
+                    <div style={{ marginTop: '10px' }}>
+                      <img src={productForm.image} alt="Preview" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <button onClick={() => setProductForm({...productForm, image: ''})} style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕ Remove</button>
+                    </div>
+                  )}
+                </div>
+                
                 <select style={inputStyle} value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})}>
                   <option value="General">General</option>
                   <option value="Chess Sets">Chess Sets</option>

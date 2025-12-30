@@ -5,6 +5,30 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'store');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `product-${Date.now()}${ext}`);
+  }
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
 
 const DATA_FILE = path.join(__dirname, '..', 'data', 'secret-store-users.json');
 const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'secret-store-products.json');
@@ -130,6 +154,15 @@ router.post('/admin/settings', (req, res) => {
   }
   saveSettings(settings);
   res.json({ success: true, settings });
+});
+
+// Admin: Upload product image
+router.post('/admin/upload-image', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image uploaded' });
+  }
+  const imageUrl = `/uploads/store/${req.file.filename}`;
+  res.json({ success: true, url: imageUrl });
 });
 
 
