@@ -59,7 +59,12 @@ async function initTables() {
       )
     `);
     // Ensure image column can hold base64 data
-    await pool.query(`ALTER TABLE secret_store_products ALTER COLUMN image TYPE TEXT`).catch(() => {});
+    try {
+      await pool.query(`ALTER TABLE secret_store_products ALTER COLUMN image TYPE TEXT`);
+      console.log('✅ Image column updated to TEXT');
+    } catch (e) {
+      console.log('ℹ️ Image column already TEXT or table new');
+    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
         id SERIAL PRIMARY KEY,
@@ -208,6 +213,7 @@ router.get('/admin/products', async (req, res) => {
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   try {
     const result = await pool.query(`SELECT * FROM secret_store_products ORDER BY created_at DESC`);
+    console.log('📦 Products loaded:', result.rows.length, 'First image length:', result.rows[0]?.image?.length || 0);
     res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price) })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -217,6 +223,8 @@ router.get('/admin/products', async (req, res) => {
 
 router.post('/admin/products/add', async (req, res) => {
   const { pass, name, description, price, image, category } = req.body;
+  console.log('🛍️ Add product request:', name, 'Image length:', image ? image.length : 0);
+  
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   if (!name || !price) return res.status(400).json({ error: 'Name and price required' });
   try {
@@ -224,8 +232,10 @@ router.post('/admin/products/add', async (req, res) => {
       `INSERT INTO secret_store_products (name, description, price, image, category) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [name, description || '', parseFloat(price), image || '', category || 'General']
     );
+    console.log('✅ Product saved to DB, id:', result.rows[0].id);
     res.json({ success: true, product: result.rows[0] });
   } catch (err) {
+    console.error('❌ DB Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -257,12 +267,20 @@ router.post('/admin/products/delete', async (req, res) => {
 
 // Image upload - store as base64 in response (will be saved to DB with product)
 router.post('/admin/upload-image', upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  console.log('📷 Upload request received');
+  if (!req.file) {
+    console.log('❌ No file in request');
+    return res.status(400).json({ error: 'No image uploaded' });
+  }
+  
+  console.log('📷 File received:', req.file.originalname, req.file.size, 'bytes');
   
   // Convert buffer to base64 data URL (memory storage)
   const base64 = req.file.buffer.toString('base64');
   const mimeType = req.file.mimetype;
   const dataUrl = `data:${mimeType};base64,${base64}`;
+  
+  console.log('✅ Base64 created, length:', dataUrl.length);
   
   res.json({ success: true, url: dataUrl });
 });
