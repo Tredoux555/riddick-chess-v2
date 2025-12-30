@@ -8,11 +8,26 @@ const SecretStoreAdmin = () => {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [defaultCurrency, setDefaultCurrency] = useState('CNY');
   
   // Product form
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General' });
+
+  const currencies = ['CNY', 'USD', 'EUR', 'GBP', 'ZAR', 'JPY', 'KRW', 'INR', 'AUD', 'CAD'];
+  const currencyNames = {
+    CNY: '¥ Chinese Yuan',
+    USD: '$ US Dollar',
+    EUR: '€ Euro',
+    GBP: '£ British Pound',
+    ZAR: 'R South African Rand',
+    JPY: '¥ Japanese Yen',
+    KRW: '₩ Korean Won',
+    INR: '₹ Indian Rupee',
+    AUD: 'A$ Australian Dollar',
+    CAD: 'C$ Canadian Dollar'
+  };
 
   const login = async () => {
     const res = await fetch(`/api/secret-store/admin/users?pass=${password}`);
@@ -25,7 +40,23 @@ const SecretStoreAdmin = () => {
       rejected: data.users?.filter(u => u.status === 'rejected').length || 0
     });
     loadProducts();
+    loadSettings();
     setLoggedIn(true);
+  };
+
+  const loadSettings = async () => {
+    const res = await fetch('/api/secret-store/settings');
+    const data = await res.json();
+    setDefaultCurrency(data.defaultCurrency || 'CNY');
+  };
+
+  const updateCurrency = async (newCurrency) => {
+    await fetch('/api/secret-store/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, defaultCurrency: newCurrency })
+    });
+    setDefaultCurrency(newCurrency);
   };
 
 
@@ -152,7 +183,31 @@ const SecretStoreAdmin = () => {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
           <button onClick={() => setTab('users')} style={{ ...btnStyle, background: tab === 'users' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>👥 Users</button>
           <button onClick={() => setTab('products')} style={{ ...btnStyle, background: tab === 'products' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🛍️ Products ({products.length})</button>
+          <button onClick={() => setTab('settings')} style={{ ...btnStyle, background: tab === 'settings' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⚙️ Settings</button>
         </div>
+
+        {tab === 'settings' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>⚙️ Store Settings</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '10px' }}>Default Currency (prices are stored in this currency)</label>
+              <select 
+                value={defaultCurrency} 
+                onChange={(e) => updateCurrency(e.target.value)}
+                style={{ ...inputStyle, width: 'auto', minWidth: '250px' }}
+              >
+                {currencies.map(c => (
+                  <option key={c} value={c} style={{ background: '#1a1a2e' }}>{currencyNames[c]}</option>
+                ))}
+              </select>
+            </div>
+            
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+              💡 Tip: Set your default currency to where you price your products. Customers can switch currencies in the store and see converted prices.
+            </p>
+          </div>
+        )}
 
         {tab === 'users' && (
           <>
@@ -217,7 +272,7 @@ const SecretStoreAdmin = () => {
                 <h3 style={{ color: '#fff', marginBottom: '15px' }}>{editingProduct ? '✏️ Edit Product' : '➕ Add Product'}</h3>
                 <input style={inputStyle} placeholder="Product name *" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} />
                 <textarea style={{...inputStyle, height: '80px', resize: 'none'}} placeholder="Description" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} />
-                <input style={inputStyle} placeholder="Price * (e.g. 99.99)" type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} />
+                <input style={inputStyle} placeholder="Price in ¥ CNY * (e.g. 99.99)" type="number" step="0.01" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} />
                 <input style={inputStyle} placeholder="Image URL (optional)" value={productForm.image} onChange={e => setProductForm({...productForm, image: e.target.value})} />
                 <select style={inputStyle} value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})}>
                   <option value="General">General</option>
@@ -244,7 +299,7 @@ const SecretStoreAdmin = () => {
                     <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 8px', borderRadius: '4px' }}>{p.category}</span>
                     <h3 style={{ color: '#fff', margin: '10px 0 5px' }}>{p.name}</h3>
                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
-                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>R{p.price.toFixed(2)}</p>
+                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>CNY</span></p>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => startEditProduct(p)} style={{ ...btnStyle, flex: 1, background: '#8b5cf6', color: '#fff' }}>✏️ Edit</button>
                       <button onClick={() => deleteProduct(p.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>

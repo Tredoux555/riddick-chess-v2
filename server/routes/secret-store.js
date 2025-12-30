@@ -8,7 +8,35 @@ const path = require('path');
 
 const DATA_FILE = path.join(__dirname, '..', 'data', 'secret-store-users.json');
 const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'secret-store-products.json');
+const SETTINGS_FILE = path.join(__dirname, '..', 'data', 'secret-store-settings.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
+
+// Currency conversion rates (approximate, from CNY)
+const CURRENCY_RATES = {
+  CNY: 1,        // Chinese Yuan (base)
+  USD: 0.14,     // US Dollar
+  EUR: 0.13,     // Euro
+  GBP: 0.11,     // British Pound
+  ZAR: 2.5,      // South African Rand
+  JPY: 21,       // Japanese Yen
+  KRW: 180,      // Korean Won
+  INR: 11.5,     // Indian Rupee
+  AUD: 0.21,     // Australian Dollar
+  CAD: 0.19      // Canadian Dollar
+};
+
+const CURRENCY_SYMBOLS = {
+  CNY: '¥',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  ZAR: 'R',
+  JPY: '¥',
+  KRW: '₩',
+  INR: '₹',
+  AUD: 'A$',
+  CAD: 'C$'
+};
 
 // Ensure data directory and file exist
 function ensureDataFile() {
@@ -51,6 +79,58 @@ function saveProducts(data) {
   ensureProductsFile();
   fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(data, null, 2));
 }
+
+// Settings functions
+function ensureSettingsFile() {
+  const dataDir = path.join(__dirname, '..', 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(SETTINGS_FILE)) {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ defaultCurrency: 'CNY' }, null, 2));
+  }
+}
+
+function loadSettings() {
+  ensureSettingsFile();
+  return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+}
+
+function saveSettings(data) {
+  ensureSettingsFile();
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2));
+}
+
+// Get currency info
+router.get('/currencies', (req, res) => {
+  res.json({
+    rates: CURRENCY_RATES,
+    symbols: CURRENCY_SYMBOLS,
+    available: Object.keys(CURRENCY_RATES)
+  });
+});
+
+// Get store settings (public)
+router.get('/settings', (req, res) => {
+  const settings = loadSettings();
+  res.json({
+    defaultCurrency: settings.defaultCurrency || 'CNY',
+    symbol: CURRENCY_SYMBOLS[settings.defaultCurrency || 'CNY']
+  });
+});
+
+// Admin: Update settings
+router.post('/admin/settings', (req, res) => {
+  const { pass, defaultCurrency } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  
+  const settings = loadSettings();
+  if (defaultCurrency && CURRENCY_RATES[defaultCurrency]) {
+    settings.defaultCurrency = defaultCurrency;
+  }
+  saveSettings(settings);
+  res.json({ success: true, settings });
+});
 
 
 // Request access
@@ -143,8 +223,22 @@ router.post('/admin/delete', (req, res) => {
 
 // Get all products (public for approved users)
 router.get('/products', (req, res) => {
+  const { currency } = req.query;
   const data = loadProducts();
-  res.json(data.products || []);
+  const settings = loadSettings();
+  const targetCurrency = currency || settings.defaultCurrency || 'CNY';
+  const rate = CURRENCY_RATES[targetCurrency] || 1;
+  const symbol = CURRENCY_SYMBOLS[targetCurrency] || '¥';
+  
+  const products = (data.products || []).map(p => ({
+    ...p,
+    originalPrice: p.price,
+    price: parseFloat((p.price * rate).toFixed(2)),
+    currency: targetCurrency,
+    symbol: symbol
+  }));
+  
+  res.json({ products, currency: targetCurrency, symbol });
 });
 
 // Admin: Add product
