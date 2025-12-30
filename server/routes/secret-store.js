@@ -1,11 +1,14 @@
 /**
- * Secret Store Routes - Approval-based access system
+ * Secret Store Routes - Using Postgres Database
  */
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
+const pool = require('../utils/db');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -23,314 +26,250 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     cb(null, allowed.includes(file.mimetype));
   }
 });
 
-const DATA_FILE = path.join(__dirname, '..', 'data', 'secret-store-users.json');
-const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'secret-store-products.json');
-const SETTINGS_FILE = path.join(__dirname, '..', 'data', 'secret-store-settings.json');
-const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
 
-// Currency conversion rates (approximate, from CNY)
+// Currency conversion rates (from CNY)
 const CURRENCY_RATES = {
-  CNY: 1,        // Chinese Yuan (base)
-  USD: 0.14,     // US Dollar
-  EUR: 0.13,     // Euro
-  GBP: 0.11,     // British Pound
-  ZAR: 2.5,      // South African Rand
-  JPY: 21,       // Japanese Yen
-  KRW: 180,      // Korean Won
-  INR: 11.5,     // Indian Rupee
-  AUD: 0.21,     // Australian Dollar
-  CAD: 0.19      // Canadian Dollar
+  CNY: 1, USD: 0.14, EUR: 0.13, GBP: 0.11, ZAR: 2.5,
+  JPY: 21, KRW: 180, INR: 11.5, AUD: 0.21, CAD: 0.19
 };
 
 const CURRENCY_SYMBOLS = {
-  CNY: '¥',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  ZAR: 'R',
-  JPY: '¥',
-  KRW: '₩',
-  INR: '₹',
-  AUD: 'A$',
-  CAD: 'C$'
+  CNY: '¥', USD: '$', EUR: '€', GBP: '£', ZAR: 'R',
+  JPY: '¥', KRW: '₩', INR: '₹', AUD: 'A$', CAD: 'C$'
 };
 
-// Ensure data directory and file exist
-function ensureDataFile() {
-  const dataDir = path.join(__dirname, '..', 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ users: [] }, null, 2));
-  }
-}
-
-function loadUsers() {
-  ensureDataFile();
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-}
-
-function saveUsers(data) {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-// Products functions
-function ensureProductsFile() {
-  const dataDir = path.join(__dirname, '..', 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(PRODUCTS_FILE)) {
-    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify({ products: [] }, null, 2));
-  }
-}
-
-function loadProducts() {
-  ensureProductsFile();
-  return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
-}
-
-function saveProducts(data) {
-  ensureProductsFile();
-  fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(data, null, 2));
-}
-
-// Settings functions
-function ensureSettingsFile() {
-  const dataDir = path.join(__dirname, '..', 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(SETTINGS_FILE)) {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ defaultCurrency: 'CNY' }, null, 2));
+// Initialize tables on startup
+async function initTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        reason TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        requested_at TIMESTAMP DEFAULT NOW(),
+        approved_at TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2) NOT NULL,
+        image VARCHAR(500),
+        category VARCHAR(100) DEFAULT 'General',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_settings (
+        id SERIAL PRIMARY KEY,
+        key VARCHAR(100) UNIQUE NOT NULL,
+        value TEXT
+      )
+    `);
+    await pool.query(`INSERT INTO secret_store_settings (key, value) VALUES ('defaultCurrency', 'CNY') ON CONFLICT (key) DO NOTHING`);
+    console.log('✅ Secret Store tables initialized');
+  } catch (err) {
+    console.error('Secret Store DB init error:', err.message);
   }
 }
+initTables();
 
-function loadSettings() {
-  ensureSettingsFile();
-  return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-}
 
-function saveSettings(data) {
-  ensureSettingsFile();
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2));
-}
-
-// Get currency info
+// ========== CURRENCIES ==========
 router.get('/currencies', (req, res) => {
-  res.json({
-    rates: CURRENCY_RATES,
-    symbols: CURRENCY_SYMBOLS,
-    available: Object.keys(CURRENCY_RATES)
-  });
+  res.json({ rates: CURRENCY_RATES, symbols: CURRENCY_SYMBOLS, available: Object.keys(CURRENCY_RATES) });
 });
 
-// Get store settings (public)
-router.get('/settings', (req, res) => {
-  const settings = loadSettings();
-  res.json({
-    defaultCurrency: settings.defaultCurrency || 'CNY',
-    symbol: CURRENCY_SYMBOLS[settings.defaultCurrency || 'CNY']
-  });
+router.get('/settings', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT value FROM secret_store_settings WHERE key = 'defaultCurrency'`);
+    const currency = result.rows[0]?.value || 'CNY';
+    res.json({ defaultCurrency: currency, symbol: CURRENCY_SYMBOLS[currency] });
+  } catch (err) {
+    res.json({ defaultCurrency: 'CNY', symbol: '¥' });
+  }
 });
 
-// Admin: Update settings
-router.post('/admin/settings', (req, res) => {
+router.post('/admin/settings', async (req, res) => {
   const { pass, defaultCurrency } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const settings = loadSettings();
-  if (defaultCurrency && CURRENCY_RATES[defaultCurrency]) {
-    settings.defaultCurrency = defaultCurrency;
+  try {
+    await pool.query(`UPDATE secret_store_settings SET value = $1 WHERE key = 'defaultCurrency'`, [defaultCurrency]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  saveSettings(settings);
-  res.json({ success: true, settings });
 });
 
-// Admin: Upload product image
-router.post('/admin/upload-image', upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No image uploaded' });
-  }
-  const imageUrl = `/uploads/store/${req.file.filename}`;
-  res.json({ success: true, url: imageUrl });
-});
-
-
-// Request access
-router.post('/request-access', (req, res) => {
+// ========== USER ACCESS ==========
+router.post('/request-access', async (req, res) => {
   const { name, email, reason } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'Name and email required' });
-  
-  const data = loadUsers();
-  const exists = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (exists) return res.status(400).json({ error: 'Already requested', status: exists.status });
-  
-  data.users.push({
-    id: Date.now().toString(),
-    name,
-    email: email.toLowerCase(),
-    reason: reason || '',
-    status: 'pending',
-    requestedAt: new Date().toISOString()
-  });
-  saveUsers(data);
-  res.json({ success: true, message: 'Request sent! Wait for approval.' });
+  try {
+    const exists = await pool.query(`SELECT * FROM secret_store_users WHERE email = $1`, [email.toLowerCase()]);
+    if (exists.rows.length > 0) return res.status(400).json({ error: 'Already requested', status: exists.rows[0].status });
+    await pool.query(`INSERT INTO secret_store_users (name, email, reason) VALUES ($1, $2, $3)`, [name, email.toLowerCase(), reason || '']);
+    res.json({ success: true, message: 'Request sent! Wait for approval.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Login
-router.post('/login', (req, res) => {
+
+router.post('/login', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });
-  
-  const data = loadUsers();
-  const user = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (!user) return res.status(404).json({ error: 'Not found. Request access first.' });
-  
-  res.json({ 
-    status: user.status, 
-    name: user.name,
-    message: user.status === 'pending' ? 'Still waiting for approval' :
-             user.status === 'rejected' ? 'Access denied' : 'Welcome!'
-  });
+  try {
+    const result = await pool.query(`SELECT * FROM secret_store_users WHERE email = $1`, [email.toLowerCase()]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Not found. Request access first.' });
+    const user = result.rows[0];
+    res.json({ status: user.status, name: user.name, message: user.status === 'approved' ? 'Welcome!' : user.status === 'pending' ? 'Still waiting' : 'Denied' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-
-// Admin: Get all users
-router.get('/admin/users', (req, res) => {
+// ========== ADMIN USERS ==========
+router.get('/admin/users', async (req, res) => {
   const { pass } = req.query;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  res.json(loadUsers());
+  try {
+    const result = await pool.query(`SELECT id, name, email, reason, status, requested_at, approved_at FROM secret_store_users ORDER BY requested_at DESC`);
+    res.json({ users: result.rows.map(u => ({ ...u, requestedAt: u.requested_at, approvedAt: u.approved_at })) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Approve
-router.post('/admin/approve', (req, res) => {
+router.post('/admin/approve', async (req, res) => {
   const { pass, id } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const data = loadUsers();
-  const user = data.users.find(u => u.id === id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  
-  user.status = 'approved';
-  user.approvedAt = new Date().toISOString();
-  saveUsers(data);
-  res.json({ success: true, user });
+  try {
+    await pool.query(`UPDATE secret_store_users SET status = 'approved', approved_at = NOW() WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Reject
-router.post('/admin/reject', (req, res) => {
+router.post('/admin/reject', async (req, res) => {
   const { pass, id } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const data = loadUsers();
-  const user = data.users.find(u => u.id === id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  
-  user.status = 'rejected';
-  saveUsers(data);
-  res.json({ success: true });
+  try {
+    await pool.query(`UPDATE secret_store_users SET status = 'rejected' WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Delete
-router.post('/admin/delete', (req, res) => {
+router.post('/admin/delete', async (req, res) => {
   const { pass, id } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const data = loadUsers();
-  data.users = data.users.filter(u => u.id !== id);
-  saveUsers(data);
-  res.json({ success: true });
+  try {
+    await pool.query(`DELETE FROM secret_store_users WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 // ========== PRODUCTS ==========
-
-// Get all products (public for approved users)
-router.get('/products', (req, res) => {
+router.get('/products', async (req, res) => {
   const { currency } = req.query;
-  const data = loadProducts();
-  const settings = loadSettings();
-  const targetCurrency = currency || settings.defaultCurrency || 'CNY';
-  const rate = CURRENCY_RATES[targetCurrency] || 1;
-  const symbol = CURRENCY_SYMBOLS[targetCurrency] || '¥';
-  
-  const products = (data.products || []).map(p => ({
-    ...p,
-    originalPrice: p.price,
-    price: parseFloat((p.price * rate).toFixed(2)),
-    currency: targetCurrency,
-    symbol: symbol
-  }));
-  
-  res.json({ products, currency: targetCurrency, symbol });
+  try {
+    const settingsRes = await pool.query(`SELECT value FROM secret_store_settings WHERE key = 'defaultCurrency'`);
+    const targetCurrency = currency || settingsRes.rows[0]?.value || 'CNY';
+    const rate = CURRENCY_RATES[targetCurrency] || 1;
+    const symbol = CURRENCY_SYMBOLS[targetCurrency] || '¥';
+    
+    const result = await pool.query(`SELECT * FROM secret_store_products ORDER BY created_at DESC`);
+    const products = result.rows.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      originalPrice: parseFloat(p.price),
+      price: parseFloat((p.price * rate).toFixed(2)),
+      image: p.image,
+      category: p.category,
+      currency: targetCurrency,
+      symbol: symbol
+    }));
+    res.json({ products, currency: targetCurrency, symbol });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Add product
-router.post('/admin/products/add', (req, res) => {
+router.get('/admin/products', async (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    const result = await pool.query(`SELECT * FROM secret_store_products ORDER BY created_at DESC`);
+    res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price) })) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+router.post('/admin/products/add', async (req, res) => {
   const { pass, name, description, price, image, category } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   if (!name || !price) return res.status(400).json({ error: 'Name and price required' });
-  
-  const data = loadProducts();
-  const product = {
-    id: Date.now().toString(),
-    name,
-    description: description || '',
-    price: parseFloat(price),
-    image: image || '',
-    category: category || 'General',
-    createdAt: new Date().toISOString()
-  };
-  data.products.push(product);
-  saveProducts(data);
-  res.json({ success: true, product });
+  try {
+    const result = await pool.query(
+      `INSERT INTO secret_store_products (name, description, price, image, category) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, description || '', parseFloat(price), image || '', category || 'General']
+    );
+    res.json({ success: true, product: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Update product
-router.post('/admin/products/update', (req, res) => {
+router.post('/admin/products/update', async (req, res) => {
   const { pass, id, name, description, price, image, category } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const data = loadProducts();
-  const product = data.products.find(p => p.id === id);
-  if (!product) return res.status(404).json({ error: 'Product not found' });
-  
-  if (name) product.name = name;
-  if (description !== undefined) product.description = description;
-  if (price) product.price = parseFloat(price);
-  if (image !== undefined) product.image = image;
-  if (category) product.category = category;
-  product.updatedAt = new Date().toISOString();
-  
-  saveProducts(data);
-  res.json({ success: true, product });
+  try {
+    await pool.query(
+      `UPDATE secret_store_products SET name = $1, description = $2, price = $3, image = $4, category = $5, updated_at = NOW() WHERE id = $6`,
+      [name, description || '', parseFloat(price), image || '', category || 'General', id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Delete product
-router.post('/admin/products/delete', (req, res) => {
+router.post('/admin/products/delete', async (req, res) => {
   const { pass, id } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  
-  const data = loadProducts();
-  data.products = data.products.filter(p => p.id !== id);
-  saveProducts(data);
-  res.json({ success: true });
+  try {
+    await pool.query(`DELETE FROM secret_store_products WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin: Get all products
-router.get('/admin/products', (req, res) => {
-  const { pass } = req.query;
-  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
-  res.json(loadProducts());
+// Image upload
+router.post('/admin/upload-image', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  res.json({ success: true, url: `/uploads/store/${req.file.filename}` });
 });
 
 module.exports = router;
