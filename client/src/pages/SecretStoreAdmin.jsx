@@ -109,14 +109,24 @@ const SecretStoreAdmin = () => {
   // Product functions
   const addProduct = async () => {
     if (!productForm.name || !productForm.price) { alert('Name and price required'); return; }
-    await fetch('/api/secret-store/admin/products/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pass: password, ...productForm })
-    });
-    setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
-    setShowAddProduct(false);
-    loadProducts();
+    try {
+      const res = await fetch('/api/secret-store/admin/products/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pass: password, ...productForm })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert('Error: ' + (data.error || 'Failed to add product'));
+        return;
+      }
+      alert('✅ Product added successfully!');
+      setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
+      setShowAddProduct(false);
+      loadProducts();
+    } catch (err) {
+      alert('Network error: ' + err.message);
+    }
   };
 
   const updateProduct = async () => {
@@ -144,22 +154,30 @@ const SecretStoreAdmin = () => {
     const file = e.target.files[0];
     if (!file) return;
     
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image too large! Max 5MB');
+      return;
+    }
+    
     const formData = new FormData();
     formData.append('image', file);
     
     try {
+      alert('Uploading image...');
       const res = await fetch('/api/secret-store/admin/upload-image', {
         method: 'POST',
         body: formData
       });
       const data = await res.json();
       if (data.success) {
-        setProductForm({ ...productForm, image: data.url });
+        setProductForm(prev => ({ ...prev, image: data.url }));
+        alert('✅ Image uploaded! Now click Add to save the product.');
       } else {
-        alert('Upload failed: ' + data.error);
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Upload error');
+      alert('Upload error: ' + err.message);
     }
   };
 
