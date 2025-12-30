@@ -14,7 +14,7 @@ const SecretStoreAdmin = () => {
   // Product form
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
 
   const currencies = ['CNY', 'USD', 'EUR', 'GBP', 'ZAR', 'JPY', 'KRW', 'INR', 'AUD', 'CAD'];
   const currencyNames = {
@@ -148,7 +148,7 @@ const SecretStoreAdmin = () => {
         return;
       }
       alert('✅ Product added successfully!');
-      setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
+      setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
       setShowAddProduct(false);
       loadProducts();
     } catch (err) {
@@ -163,7 +163,7 @@ const SecretStoreAdmin = () => {
       body: JSON.stringify({ pass: password, id: editingProduct.id, ...productForm })
     });
     setEditingProduct(null);
-    setProductForm({ name: '', description: '', price: '', image: '', category: 'General' });
+    setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
     loadProducts();
   };
 
@@ -216,7 +216,8 @@ const SecretStoreAdmin = () => {
       description: product.description || '',
       price: product.price.toString(),
       image: product.image || '',
-      category: product.category || 'General'
+      category: product.category || 'General',
+      stock: (product.stock || 0).toString()
     });
   };
 
@@ -386,7 +387,7 @@ const SecretStoreAdmin = () => {
         {tab === 'products' && (
           <>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-              <button onClick={() => { setShowAddProduct(true); setEditingProduct(null); setProductForm({ name: '', description: '', price: '', image: '', category: 'General' }); }} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>➕ Add Product</button>
+              <button onClick={() => { setShowAddProduct(true); setEditingProduct(null); setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' }); }} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>➕ Add Product</button>
               <button onClick={loadProducts} style={{ ...btnStyle, background: '#333', color: '#fff' }}>🔄 Refresh</button>
             </div>
 
@@ -423,6 +424,7 @@ const SecretStoreAdmin = () => {
                   <option value="Clothing">Clothing</option>
                   <option value="Digital">Digital</option>
                 </select>
+                <input style={inputStyle} placeholder="Stock quantity" type="number" min="0" value={productForm.stock} onChange={e => setProductForm({...productForm, stock: e.target.value})} />
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                   <button onClick={editingProduct ? updateProduct : addProduct} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>{editingProduct ? 'Update' : 'Add'}</button>
                   <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); }} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel</button>
@@ -438,7 +440,10 @@ const SecretStoreAdmin = () => {
                   {p.image && <img src={p.image} alt={p.name} style={{ width: '100%', height: '150px', objectFit: 'cover', background: '#222' }} />}
                   {!p.image && <div style={{ width: '100%', height: '150px', background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' }}>No image</div>}
                   <div style={{ padding: '15px' }}>
-                    <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 8px', borderRadius: '4px' }}>{p.category}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 8px', borderRadius: '4px' }}>{p.category}</span>
+                      <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? '#22c55e' : '#ef4444', padding: '4px 8px', borderRadius: '4px' }}>📦 {p.stock || 0} in stock</span>
+                    </div>
                     <h3 style={{ color: '#fff', margin: '10px 0 5px' }}>{p.name}</h3>
                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
                     <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>CNY</span></p>

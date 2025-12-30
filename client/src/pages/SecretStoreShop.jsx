@@ -168,12 +168,32 @@ const SecretStoreShop = () => {
                   <div style={{ width: '100%', height: '200px', background: 'linear-gradient(135deg, #1a1a2e, #16213e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🛍️</div>
                 )}
                 <div style={{ padding: '20px' }}>
-                  <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 10px', borderRadius: '20px' }}>{p.category}</span>
-                  <h3 style={{ color: '#fff', margin: '12px 0 8px', fontSize: '18px' }}>{p.name}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 10px', borderRadius: '20px' }}>{p.category}</span>
+                    <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? '#22c55e' : '#ef4444', padding: '4px 10px', borderRadius: '20px' }}>
+                      {p.stock > 0 ? `📦 ${p.stock} left` : '❌ SOLD OUT'}
+                    </span>
+                  </div>
+                  <h3 style={{ color: '#fff', margin: '0 0 8px', fontSize: '18px' }}>{p.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 15px', minHeight: '40px' }}>{p.description || 'No description'}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: '#22c55e', fontSize: '24px', fontWeight: 'bold' }}>{symbol}{p.price.toFixed(2)}</span>
-                    <button onClick={() => buyProduct(p)} style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', padding: '12px 24px', borderRadius: '8px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>Buy Now</button>
+                    <button 
+                      onClick={() => buyProduct(p)} 
+                      disabled={p.stock <= 0}
+                      style={{ 
+                        background: p.stock > 0 ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : '#444', 
+                        border: 'none', 
+                        padding: '12px 24px', 
+                        borderRadius: '8px', 
+                        color: '#fff', 
+                        fontWeight: '600', 
+                        cursor: p.stock > 0 ? 'pointer' : 'not-allowed',
+                        opacity: p.stock > 0 ? 1 : 0.5
+                      }}
+                    >
+                      {p.stock > 0 ? 'Buy Now' : 'Sold Out'}
+                    </button>
                   </div>
                 </div>
               </div>

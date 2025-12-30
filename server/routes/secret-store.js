@@ -79,6 +79,10 @@ async function initTables() {
         delivered_at TIMESTAMP
       )
     `);
+    
+    // Add stock column if not exists
+    await pool.query(`ALTER TABLE secret_store_products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 10`).catch(() => {});
+    
     console.log('✅ Orders table ready');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
@@ -214,6 +218,7 @@ router.get('/products', async (req, res) => {
       price: parseFloat((p.price * rate).toFixed(2)),
       image: p.image,
       category: p.category,
+      stock: p.stock || 0,
       currency: targetCurrency,
       symbol: symbol
     }));
@@ -229,7 +234,7 @@ router.get('/admin/products', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM secret_store_products ORDER BY created_at DESC`);
     console.log('📦 Products loaded:', result.rows.length, 'First image length:', result.rows[0]?.image?.length || 0);
-    res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price) })) });
+    res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price), stock: p.stock || 0 })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -237,15 +242,15 @@ router.get('/admin/products', async (req, res) => {
 
 
 router.post('/admin/products/add', async (req, res) => {
-  const { pass, name, description, price, image, category } = req.body;
+  const { pass, name, description, price, image, category, stock } = req.body;
   console.log('🛍️ Add product request:', name, 'Image length:', image ? image.length : 0);
   
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   if (!name || !price) return res.status(400).json({ error: 'Name and price required' });
   try {
     const result = await pool.query(
-      `INSERT INTO secret_store_products (name, description, price, image, category) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, description || '', parseFloat(price), image || '', category || 'General']
+      `INSERT INTO secret_store_products (name, description, price, image, category, stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 10]
     );
     console.log('✅ Product saved to DB, id:', result.rows[0].id);
     res.json({ success: true, product: result.rows[0] });
@@ -256,12 +261,12 @@ router.post('/admin/products/add', async (req, res) => {
 });
 
 router.post('/admin/products/update', async (req, res) => {
-  const { pass, id, name, description, price, image, category } = req.body;
+  const { pass, id, name, description, price, image, category, stock } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   try {
     await pool.query(
-      `UPDATE secret_store_products SET name = $1, description = $2, price = $3, image = $4, category = $5, updated_at = NOW() WHERE id = $6`,
-      [name, description || '', parseFloat(price), image || '', category || 'General', id]
+      `UPDATE secret_store_products SET name = $1, description = $2, price = $3, image = $4, category = $5, stock = $6, updated_at = NOW() WHERE id = $7`,
+      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 0, id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -316,13 +321,22 @@ router.post('/order', async (req, res) => {
     }
     const product = productRes.rows[0];
     
+    // Check stock
+    if (product.stock <= 0) {
+      return res.status(400).json({ error: 'Sorry, this product is sold out!' });
+    }
+    
     // Create order
     const result = await pool.query(
       `INSERT INTO secret_store_orders (product_id, product_name, product_price, buyer_name, buyer_email) 
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [productId, product.name, product.price, buyerName, buyerEmail]
     );
-    console.log('🛒 New order:', buyerName, 'bought', product.name);
+    
+    // Decrease stock
+    await pool.query(`UPDATE secret_store_products SET stock = stock - 1 WHERE id = $1`, [productId]);
+    
+    console.log('🛒 New order:', buyerName, 'bought', product.name, '- Stock remaining:', product.stock - 1);
     res.json({ success: true, order: result.rows[0] });
   } catch (err) {
     console.error('❌ Order error:', err.message);
