@@ -4,9 +4,10 @@ import '../styles/SecretStore.css';
 const SecretStoreAdmin = () => {
   const [password, setPassword] = useState('');
   const [loggedIn, setLoggedIn] = useState(false);
-  const [tab, setTab] = useState('users');
+  const [tab, setTab] = useState('orders');
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [defaultCurrency, setDefaultCurrency] = useState('CNY');
   
@@ -41,7 +42,33 @@ const SecretStoreAdmin = () => {
     });
     loadProducts();
     loadSettings();
+    loadOrders();
     setLoggedIn(true);
+  };
+
+  const loadOrders = async () => {
+    const res = await fetch(`/api/secret-store/admin/orders?pass=${password}`);
+    const data = await res.json();
+    setOrders(data.orders || []);
+  };
+
+  const markDelivered = async (id) => {
+    await fetch('/api/secret-store/admin/orders/deliver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadOrders();
+  };
+
+  const deleteOrder = async (id) => {
+    if (!window.confirm('Delete this order?')) return;
+    await fetch('/api/secret-store/admin/orders/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadOrders();
   };
 
   const loadSettings = async () => {
@@ -221,11 +248,67 @@ const SecretStoreAdmin = () => {
         <h1 style={{ color: '#fff', marginBottom: '20px' }}>👑 Secret Store Admin</h1>
         
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
+          <button onClick={() => setTab('orders')} style={{ ...btnStyle, background: tab === 'orders' ? '#22c55e' : 'rgba(255,255,255,0.1)', color: '#fff' }}>📦 Orders ({orders.filter(o => o.status === 'pending').length})</button>
           <button onClick={() => setTab('users')} style={{ ...btnStyle, background: tab === 'users' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>👥 Users</button>
           <button onClick={() => setTab('products')} style={{ ...btnStyle, background: tab === 'products' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🛍️ Products ({products.length})</button>
           <button onClick={() => setTab('settings')} style={{ ...btnStyle, background: tab === 'settings' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⚙️ Settings</button>
         </div>
+
+        {tab === 'orders' && (
+          <>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button onClick={loadOrders} style={{ ...btnStyle, background: '#333', color: '#fff' }}>🔄 Refresh</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '30px' }}>
+              <div style={{ background: 'rgba(251,191,36,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '36px', color: '#fbbf24', margin: '0 0 5px' }}>{orders.filter(o => o.status === 'pending').length}</h3>
+                <p style={{ color: '#fff', margin: 0 }}>Pending Orders</p>
+              </div>
+              <div style={{ background: 'rgba(34,197,94,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{orders.filter(o => o.status === 'delivered').length}</h3>
+                <p style={{ color: '#fff', margin: 0 }}>Delivered</p>
+              </div>
+            </div>
+
+            <h2 style={{ color: '#fff', marginBottom: '15px' }}>📦 Pending Orders</h2>
+            {orders.filter(o => o.status === 'pending').length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No pending orders</p>
+            ) : (
+              orders.filter(o => o.status === 'pending').map(order => (
+                <div key={order.id} style={{ background: 'rgba(251,191,36,0.1)', padding: '20px', borderRadius: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                  <div>
+                    <h3 style={{ color: '#fff', margin: '0 0 5px' }}>{order.product_name}</h3>
+                    <p style={{ color: '#fbbf24', fontSize: '20px', fontWeight: 'bold', margin: '0 0 5px' }}>¥{parseFloat(order.product_price).toFixed(2)}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 5px' }}>👤 {order.buyer_name} ({order.buyer_email})</p>
+                    <small style={{ color: 'rgba(255,255,255,0.4)' }}>Ordered: {new Date(order.ordered_at).toLocaleString()}</small>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => markDelivered(order.id)} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✅ Mark Delivered</button>
+                    <button onClick={() => deleteOrder(order.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>✅ Delivered Orders</h2>
+            {orders.filter(o => o.status === 'delivered').length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No delivered orders yet</p>
+            ) : (
+              orders.filter(o => o.status === 'delivered').map(order => (
+                <div key={order.id} style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ color: '#fff' }}>{order.product_name}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>¥{parseFloat(order.product_price).toFixed(2)}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>{order.buyer_name}</span>
+                  </div>
+                  <button onClick={() => deleteOrder(order.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '5px 15px' }}>🗑</button>
+                </div>
+              ))
+            )}
+          </>
+        )}
 
         {tab === 'settings' && (
           <div style={{ background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '12px' }}>

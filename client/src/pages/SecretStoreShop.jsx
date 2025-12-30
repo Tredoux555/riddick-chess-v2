@@ -69,9 +69,31 @@ const SecretStoreShop = () => {
     navigate('/hehe');
   };
 
-  const buyProduct = (product) => {
+  const buyProduct = async (product) => {
+    // Place the order
+    try {
+      const res = await fetch('/api/secret-store/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          buyerName: user.name,
+          buyerEmail: user.email
+        })
+      });
+      
+      if (!res.ok) {
+        alert('Failed to place order');
+        return;
+      }
+    } catch (err) {
+      alert('Error placing order');
+      return;
+    }
+    
+    // Show the message
     const today = new Date().getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
-    const price = product.price.toFixed(2);
+    const price = product.originalPrice.toFixed(2);
     
     let message;
     if (today === 0 || today === 5 || today === 6) {

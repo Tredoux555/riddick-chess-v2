@@ -58,13 +58,28 @@ async function initTables() {
         updated_at TIMESTAMP
       )
     `);
-    // Ensure image column can hold base64 data
     try {
       await pool.query(`ALTER TABLE secret_store_products ALTER COLUMN image TYPE TEXT`);
       console.log('✅ Image column updated to TEXT');
     } catch (e) {
       console.log('ℹ️ Image column already TEXT or table new');
     }
+    
+    // Orders table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_orders (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES secret_store_products(id),
+        product_name VARCHAR(255),
+        product_price DECIMAL(10,2),
+        buyer_name VARCHAR(255),
+        buyer_email VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        ordered_at TIMESTAMP DEFAULT NOW(),
+        delivered_at TIMESTAMP
+      )
+    `);
+    console.log('✅ Orders table ready');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
         id SERIAL PRIMARY KEY,
@@ -283,6 +298,72 @@ router.post('/admin/upload-image', upload.single('image'), (req, res) => {
   console.log('✅ Base64 created, length:', dataUrl.length);
   
   res.json({ success: true, url: dataUrl });
+});
+
+// ========== ORDERS ==========
+
+// Place an order (for approved users)
+router.post('/order', async (req, res) => {
+  const { productId, buyerName, buyerEmail } = req.body;
+  if (!productId || !buyerName || !buyerEmail) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  try {
+    // Get product details
+    const productRes = await pool.query(`SELECT * FROM secret_store_products WHERE id = $1`, [productId]);
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    const product = productRes.rows[0];
+    
+    // Create order
+    const result = await pool.query(
+      `INSERT INTO secret_store_orders (product_id, product_name, product_price, buyer_name, buyer_email) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [productId, product.name, product.price, buyerName, buyerEmail]
+    );
+    console.log('🛒 New order:', buyerName, 'bought', product.name);
+    res.json({ success: true, order: result.rows[0] });
+  } catch (err) {
+    console.error('❌ Order error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get all orders
+router.get('/admin/orders', async (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    const result = await pool.query(`SELECT * FROM secret_store_orders ORDER BY ordered_at DESC`);
+    res.json({ orders: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Mark order as delivered
+router.post('/admin/orders/deliver', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(`UPDATE secret_store_orders SET status = 'delivered', delivered_at = NOW() WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Delete order
+router.post('/admin/orders/delete', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(`DELETE FROM secret_store_orders WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
