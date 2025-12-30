@@ -58,6 +58,7 @@ app.use('/api/club', require('./routes/club'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/customization', require('./routes/customization'));
 app.use('/api/healthcheck', require('./routes/healthcheck'));
+app.use('/api/secret-store', require('./routes/secret-store'));
 
 // Health check
 app.get('/api/health', (req, res) => {

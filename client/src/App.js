@@ -23,6 +23,9 @@ import Club from './pages/Club';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
+import SecretStore from './pages/SecretStore';
+import SecretStoreShop from './pages/SecretStoreShop';
+import SecretStoreAdmin from './pages/SecretStoreAdmin';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requireAdmin = false, requireClub = false }) => {
@@ -118,6 +121,11 @@ function App() {
           <Route path="/admin/*" element={
             <ProtectedRoute requireAdmin><Admin /></ProtectedRoute>
           } />
+
+          {/* Secret Store - no auth required */}
+          <Route path="/hehe" element={<SecretStore />} />
+          <Route path="/hehe/store" element={<SecretStoreShop />} />
+          <Route path="/admin/hehe" element={<SecretStoreAdmin />} />
 
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" />} />
