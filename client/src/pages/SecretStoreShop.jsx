@@ -12,6 +12,10 @@ const SecretStoreShop = () => {
   const [buyMessage, setBuyMessage] = useState(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [favorites, setFavorites] = useState([]);
+  const [discountCode, setDiscountCode] = useState('');
+  const [activeDiscount, setActiveDiscount] = useState(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,8 +24,10 @@ const SecretStoreShop = () => {
       navigate('/hehe');
       return;
     }
-    setUser(JSON.parse(stored));
+    const userData = JSON.parse(stored);
+    setUser(userData);
     loadCurrencies();
+    loadFavorites(userData.email);
     
     // Check saved currency preference
     const savedCurrency = localStorage.getItem('storeCurrency');
@@ -32,6 +38,54 @@ const SecretStoreShop = () => {
       loadSettings();
     }
   }, [navigate]);
+
+  const loadFavorites = async (email) => {
+    try {
+      const res = await fetch(`/api/secret-store/favorites/${email}`);
+      const data = await res.json();
+      setFavorites(data.favorites?.map(f => f.id) || []);
+    } catch (err) {
+      console.log('Could not load favorites');
+    }
+  };
+
+  const toggleFavorite = async (productId) => {
+    try {
+      const res = await fetch('/api/secret-store/favorites/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, userEmail: user.email })
+      });
+      const data = await res.json();
+      if (data.favorited) {
+        setFavorites([...favorites, productId]);
+      } else {
+        setFavorites(favorites.filter(id => id !== productId));
+      }
+    } catch (err) {
+      console.log('Error toggling favorite');
+    }
+  };
+
+  const applyDiscount = async () => {
+    if (!discountCode.trim()) return;
+    try {
+      const res = await fetch('/api/secret-store/discount/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: discountCode })
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setActiveDiscount(data.discount);
+        alert(`✅ Discount applied! ${data.discount.percent_off}% OFF`);
+      } else {
+        alert('❌ Invalid or expired code');
+      }
+    } catch (err) {
+      alert('Error checking code');
+    }
+  };
 
   const loadSettings = async () => {
     const res = await fetch('/api/secret-store/settings');
@@ -121,8 +175,17 @@ const SecretStoreShop = () => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
                           (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesFavorites = !showFavoritesOnly || favorites.includes(p.id);
+    return matchesSearch && matchesCategory && matchesFavorites;
   });
+
+  // Apply discount to price
+  const getDiscountedPrice = (price) => {
+    if (activeDiscount) {
+      return price * (1 - activeDiscount.percent_off / 100);
+    }
+    return price;
+  };
 
   if (!user) return null;
 
@@ -160,6 +223,27 @@ const SecretStoreShop = () => {
             <span style={{ color: 'rgba(255,255,255,0.6)' }}>Welcome, {user.name}!</span>
             <button onClick={logout} style={{ background: 'none', border: '1px solid #8b5cf6', padding: '8px 16px', borderRadius: '8px', color: '#8b5cf6', cursor: 'pointer' }}>Logout</button>
           </div>
+        </div>
+
+        {/* Discount Code */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input 
+            type="text"
+            placeholder="🎟️ Enter discount code..."
+            value={discountCode}
+            onChange={(e) => setDiscountCode(e.target.value)}
+            style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontSize: '14px', width: '200px' }}
+          />
+          <button onClick={applyDiscount} style={{ padding: '10px 20px', background: '#f59e0b', border: 'none', borderRadius: '10px', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>Apply</button>
+          {activeDiscount && (
+            <span style={{ color: '#22c55e', fontWeight: 'bold' }}>✅ {activeDiscount.percent_off}% OFF applied!</span>
+          )}
+          <button 
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            style={{ marginLeft: 'auto', padding: '10px 20px', background: showFavoritesOnly ? '#ef4444' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', cursor: 'pointer' }}
+          >
+            {showFavoritesOnly ? '❤️ Favorites Only' : '🤍 Show Favorites'}
+          </button>
         </div>
 
         {/* Search & Filter */}
@@ -213,7 +297,20 @@ const SecretStoreShop = () => {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
             {filteredProducts.map(p => (
-              <div key={p.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '15px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div key={p.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '15px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
+                {/* Favorite Button */}
+                <button 
+                  onClick={() => toggleFavorite(p.id)}
+                  style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '20px', zIndex: 10 }}
+                >
+                  {favorites.includes(p.id) ? '❤️' : '🤍'}
+                </button>
+                {/* Sale Badge */}
+                {p.onSale && (
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#ef4444', color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', zIndex: 10 }}>
+                    🔥 SALE
+                  </div>
+                )}
                 {p.image ? (
                   <img src={p.image} alt={p.name} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
                 ) : (
@@ -229,7 +326,17 @@ const SecretStoreShop = () => {
                   <h3 style={{ color: '#fff', margin: '0 0 8px', fontSize: '18px' }}>{p.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 15px', minHeight: '40px' }}>{p.description || 'No description'}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#22c55e', fontSize: '24px', fontWeight: 'bold' }}>{symbol}{p.price.toFixed(2)}</span>
+                    <div>
+                      {p.onSale && (
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textDecoration: 'line-through', marginRight: '8px' }}>{symbol}{p.regularPrice.toFixed(2)}</span>
+                      )}
+                      <span style={{ color: activeDiscount ? '#f59e0b' : '#22c55e', fontSize: '24px', fontWeight: 'bold' }}>
+                        {symbol}{getDiscountedPrice(p.price).toFixed(2)}
+                      </span>
+                      {activeDiscount && (
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginLeft: '5px' }}>(-{activeDiscount.percent_off}%)</span>
+                      )}
+                    </div>
                     <button 
                       onClick={() => buyProduct(p)} 
                       disabled={p.stock <= 0}
