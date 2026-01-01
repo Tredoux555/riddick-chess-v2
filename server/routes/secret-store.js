@@ -83,6 +83,45 @@ async function initTables() {
     // Add stock column if not exists
     await pool.query(`ALTER TABLE secret_store_products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 10`).catch(() => {});
     
+    // Add sale price column
+    await pool.query(`ALTER TABLE secret_store_products ADD COLUMN IF NOT EXISTS sale_price DECIMAL(10,2)`).catch(() => {});
+    
+    // Reviews table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_reviews (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES secret_store_products(id) ON DELETE CASCADE,
+        user_name VARCHAR(255),
+        user_email VARCHAR(255),
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    // Favorites table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_favorites (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES secret_store_products(id) ON DELETE CASCADE,
+        user_email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(product_id, user_email)
+      )
+    `);
+    
+    // Discount codes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_discounts (
+        id SERIAL PRIMARY KEY,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        percent_off INTEGER CHECK (percent_off >= 1 AND percent_off <= 100),
+        active BOOLEAN DEFAULT true,
+        uses_left INTEGER DEFAULT -1,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
     console.log('✅ Orders table ready');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
@@ -215,7 +254,10 @@ router.get('/products', async (req, res) => {
       name: p.name,
       description: p.description,
       originalPrice: parseFloat(p.price),
-      price: parseFloat((p.price * rate).toFixed(2)),
+      price: p.sale_price ? parseFloat((p.sale_price * rate).toFixed(2)) : parseFloat((p.price * rate).toFixed(2)),
+      regularPrice: parseFloat((p.price * rate).toFixed(2)),
+      salePrice: p.sale_price ? parseFloat((p.sale_price * rate).toFixed(2)) : null,
+      onSale: !!p.sale_price,
       image: p.image,
       category: p.category,
       stock: p.stock || 0,
@@ -234,7 +276,7 @@ router.get('/admin/products', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM secret_store_products ORDER BY created_at DESC`);
     console.log('📦 Products loaded:', result.rows.length, 'First image length:', result.rows[0]?.image?.length || 0);
-    res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price), stock: p.stock || 0 })) });
+    res.json({ products: result.rows.map(p => ({ ...p, price: parseFloat(p.price), stock: p.stock || 0, sale_price: p.sale_price ? parseFloat(p.sale_price) : null })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -242,15 +284,15 @@ router.get('/admin/products', async (req, res) => {
 
 
 router.post('/admin/products/add', async (req, res) => {
-  const { pass, name, description, price, image, category, stock } = req.body;
+  const { pass, name, description, price, image, category, stock, sale_price } = req.body;
   console.log('🛍️ Add product request:', name, 'Image length:', image ? image.length : 0);
   
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   if (!name || !price) return res.status(400).json({ error: 'Name and price required' });
   try {
     const result = await pool.query(
-      `INSERT INTO secret_store_products (name, description, price, image, category, stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 10]
+      `INSERT INTO secret_store_products (name, description, price, image, category, stock, sale_price) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 10, sale_price ? parseFloat(sale_price) : null]
     );
     console.log('✅ Product saved to DB, id:', result.rows[0].id);
     res.json({ success: true, product: result.rows[0] });
@@ -261,12 +303,12 @@ router.post('/admin/products/add', async (req, res) => {
 });
 
 router.post('/admin/products/update', async (req, res) => {
-  const { pass, id, name, description, price, image, category, stock } = req.body;
+  const { pass, id, name, description, price, image, category, stock, sale_price } = req.body;
   if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
   try {
     await pool.query(
-      `UPDATE secret_store_products SET name = $1, description = $2, price = $3, image = $4, category = $5, stock = $6, updated_at = NOW() WHERE id = $7`,
-      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 0, id]
+      `UPDATE secret_store_products SET name = $1, description = $2, price = $3, image = $4, category = $5, stock = $6, sale_price = $7, updated_at = NOW() WHERE id = $8`,
+      [name, description || '', parseFloat(price), image || '', category || 'General', parseInt(stock) || 0, sale_price ? parseFloat(sale_price) : null, id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -375,6 +417,172 @@ router.post('/admin/orders/delete', async (req, res) => {
   try {
     await pool.query(`DELETE FROM secret_store_orders WHERE id = $1`, [id]);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== REVIEWS ==========
+router.get('/reviews/:productId', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM secret_store_reviews WHERE product_id = $1 ORDER BY created_at DESC`,
+      [req.params.productId]
+    );
+    const avgResult = await pool.query(
+      `SELECT AVG(rating) as avg, COUNT(*) as count FROM secret_store_reviews WHERE product_id = $1`,
+      [req.params.productId]
+    );
+    res.json({ 
+      reviews: result.rows, 
+      average: parseFloat(avgResult.rows[0].avg) || 0,
+      count: parseInt(avgResult.rows[0].count) || 0
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/reviews/add', async (req, res) => {
+  const { productId, userName, userEmail, rating, comment } = req.body;
+  if (!productId || !userName || !userEmail || !rating) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO secret_store_reviews (product_id, user_name, user_email, rating, comment) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [productId, userName, userEmail, rating, comment || '']
+    );
+    res.json({ success: true, review: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== FAVORITES ==========
+router.get('/favorites/:email', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.* FROM secret_store_favorites f JOIN secret_store_products p ON f.product_id = p.id WHERE f.user_email = $1`,
+      [req.params.email]
+    );
+    res.json({ favorites: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/favorites/toggle', async (req, res) => {
+  const { productId, userEmail } = req.body;
+  if (!productId || !userEmail) return res.status(400).json({ error: 'Missing fields' });
+  try {
+    const exists = await pool.query(
+      `SELECT * FROM secret_store_favorites WHERE product_id = $1 AND user_email = $2`,
+      [productId, userEmail]
+    );
+    if (exists.rows.length > 0) {
+      await pool.query(`DELETE FROM secret_store_favorites WHERE product_id = $1 AND user_email = $2`, [productId, userEmail]);
+      res.json({ success: true, favorited: false });
+    } else {
+      await pool.query(`INSERT INTO secret_store_favorites (product_id, user_email) VALUES ($1, $2)`, [productId, userEmail]);
+      res.json({ success: true, favorited: true });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== DISCOUNT CODES ==========
+router.post('/discount/check', async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'No code provided' });
+  try {
+    const result = await pool.query(
+      `SELECT * FROM secret_store_discounts WHERE UPPER(code) = UPPER($1) AND active = true AND (uses_left = -1 OR uses_left > 0)`,
+      [code]
+    );
+    if (result.rows.length === 0) {
+      return res.json({ valid: false, error: 'Invalid or expired code' });
+    }
+    res.json({ valid: true, discount: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/discount/use', async (req, res) => {
+  const { code } = req.body;
+  try {
+    await pool.query(
+      `UPDATE secret_store_discounts SET uses_left = uses_left - 1 WHERE UPPER(code) = UPPER($1) AND uses_left > 0`,
+      [code]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Manage discount codes
+router.get('/admin/discounts', async (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    const result = await pool.query(`SELECT * FROM secret_store_discounts ORDER BY created_at DESC`);
+    res.json({ discounts: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/discounts/add', async (req, res) => {
+  const { pass, code, percent_off, uses_left } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  if (!code || !percent_off) return res.status(400).json({ error: 'Code and percent required' });
+  try {
+    const result = await pool.query(
+      `INSERT INTO secret_store_discounts (code, percent_off, uses_left) VALUES (UPPER($1), $2, $3) RETURNING *`,
+      [code, percent_off, uses_left || -1]
+    );
+    res.json({ success: true, discount: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/discounts/delete', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(`DELETE FROM secret_store_discounts WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/discounts/toggle', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(`UPDATE secret_store_discounts SET active = NOT active WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== NOTIFICATIONS ==========
+router.get('/admin/notifications', async (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    const pendingOrders = await pool.query(`SELECT COUNT(*) FROM secret_store_orders WHERE status = 'pending'`);
+    const pendingUsers = await pool.query(`SELECT COUNT(*) FROM secret_store_users WHERE status = 'pending'`);
+    res.json({ 
+      pendingOrders: parseInt(pendingOrders.rows[0].count),
+      pendingUsers: parseInt(pendingUsers.rows[0].count)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

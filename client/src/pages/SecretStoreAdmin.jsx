@@ -14,7 +14,11 @@ const SecretStoreAdmin = () => {
   // Product form
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', price: '', image: '', category: 'General', stock: '10', sale_price: '' });
+  
+  // Discounts
+  const [discounts, setDiscounts] = useState([]);
+  const [discountForm, setDiscountForm] = useState({ code: '', percent_off: '', uses_left: '-1' });
 
   const currencies = ['CNY', 'USD', 'EUR', 'GBP', 'ZAR', 'JPY', 'KRW', 'INR', 'AUD', 'CAD'];
   const currencyNames = {
@@ -43,7 +47,44 @@ const SecretStoreAdmin = () => {
     loadProducts();
     loadSettings();
     loadOrders();
+    loadDiscounts();
     setLoggedIn(true);
+  };
+
+  const loadDiscounts = async () => {
+    const res = await fetch(`/api/secret-store/admin/discounts?pass=${password}`);
+    const data = await res.json();
+    setDiscounts(data.discounts || []);
+  };
+
+  const addDiscount = async () => {
+    if (!discountForm.code || !discountForm.percent_off) { alert('Code and percent required'); return; }
+    await fetch('/api/secret-store/admin/discounts/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, ...discountForm, uses_left: parseInt(discountForm.uses_left) })
+    });
+    setDiscountForm({ code: '', percent_off: '', uses_left: '-1' });
+    loadDiscounts();
+  };
+
+  const toggleDiscount = async (id) => {
+    await fetch('/api/secret-store/admin/discounts/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadDiscounts();
+  };
+
+  const deleteDiscount = async (id) => {
+    if (!window.confirm('Delete this discount code?')) return;
+    await fetch('/api/secret-store/admin/discounts/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadDiscounts();
   };
 
   const loadOrders = async () => {
@@ -148,7 +189,7 @@ const SecretStoreAdmin = () => {
         return;
       }
       alert('✅ Product added successfully!');
-      setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
+      setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10', sale_price: '' });
       setShowAddProduct(false);
       loadProducts();
     } catch (err) {
@@ -163,7 +204,7 @@ const SecretStoreAdmin = () => {
       body: JSON.stringify({ pass: password, id: editingProduct.id, ...productForm })
     });
     setEditingProduct(null);
-    setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' });
+    setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10', sale_price: '' });
     loadProducts();
   };
 
@@ -217,7 +258,8 @@ const SecretStoreAdmin = () => {
       price: product.price.toString(),
       image: product.image || '',
       category: product.category || 'General',
-      stock: (product.stock || 0).toString()
+      stock: (product.stock || 0).toString(),
+      sale_price: product.sale_price ? product.sale_price.toString() : ''
     });
   };
 
@@ -253,6 +295,7 @@ const SecretStoreAdmin = () => {
           <button onClick={() => setTab('orders')} style={{ ...btnStyle, background: tab === 'orders' ? '#22c55e' : 'rgba(255,255,255,0.1)', color: '#fff' }}>📦 Orders ({orders.filter(o => o.status === 'pending').length})</button>
           <button onClick={() => setTab('users')} style={{ ...btnStyle, background: tab === 'users' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>👥 Users</button>
           <button onClick={() => setTab('products')} style={{ ...btnStyle, background: tab === 'products' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🛍️ Products ({products.length})</button>
+          <button onClick={() => setTab('discounts')} style={{ ...btnStyle, background: tab === 'discounts' ? '#f59e0b' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🎟️ Discounts ({discounts.length})</button>
           <button onClick={() => setTab('settings')} style={{ ...btnStyle, background: tab === 'settings' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⚙️ Settings</button>
         </div>
 
@@ -342,6 +385,43 @@ const SecretStoreAdmin = () => {
           </div>
         )}
 
+        {tab === 'discounts' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>🎟️ Discount Codes</h2>
+            
+            <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+              <h3 style={{ color: '#fff', marginBottom: '10px' }}>➕ Add New Code</h3>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input style={{ ...inputStyle, flex: 1, minWidth: '150px' }} placeholder="Code (e.g. NEWYEAR10)" value={discountForm.code} onChange={e => setDiscountForm({...discountForm, code: e.target.value})} />
+                <input style={{ ...inputStyle, width: '100px' }} placeholder="% Off" type="number" min="1" max="100" value={discountForm.percent_off} onChange={e => setDiscountForm({...discountForm, percent_off: e.target.value})} />
+                <input style={{ ...inputStyle, width: '120px' }} placeholder="Uses (-1=∞)" type="number" value={discountForm.uses_left} onChange={e => setDiscountForm({...discountForm, uses_left: e.target.value})} />
+                <button onClick={addDiscount} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>Add</button>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '8px' }}>Uses: -1 means unlimited uses</p>
+            </div>
+            
+            <h3 style={{ color: '#fff', marginBottom: '10px' }}>Active Codes</h3>
+            {discounts.length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No discount codes yet</p>
+            ) : (
+              discounts.map(d => (
+                <div key={d.id} style={{ background: d.active ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '18px' }}>{d.code}</span>
+                    <span style={{ color: '#22c55e', marginLeft: '15px' }}>{d.percent_off}% OFF</span>
+                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>Uses left: {d.uses_left === -1 ? '∞' : d.uses_left}</span>
+                    {!d.active && <span style={{ color: '#ef4444', marginLeft: '15px' }}>(Disabled)</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => toggleDiscount(d.id)} style={{ ...btnStyle, background: d.active ? '#ef4444' : '#22c55e', color: '#fff' }}>{d.active ? 'Disable' : 'Enable'}</button>
+                    <button onClick={() => deleteDiscount(d.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {tab === 'users' && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
@@ -395,7 +475,7 @@ const SecretStoreAdmin = () => {
         {tab === 'products' && (
           <>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-              <button onClick={() => { setShowAddProduct(true); setEditingProduct(null); setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10' }); }} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>➕ Add Product</button>
+              <button onClick={() => { setShowAddProduct(true); setEditingProduct(null); setProductForm({ name: '', description: '', price: '', image: '', category: 'General', stock: '10', sale_price: '' }); }} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>➕ Add Product</button>
               <button onClick={loadProducts} style={{ ...btnStyle, background: '#333', color: '#fff' }}>🔄 Refresh</button>
             </div>
 
@@ -433,6 +513,7 @@ const SecretStoreAdmin = () => {
                   <option value="Digital">Digital</option>
                 </select>
                 <input style={inputStyle} placeholder="Stock quantity" type="number" min="0" value={productForm.stock} onChange={e => setProductForm({...productForm, stock: e.target.value})} />
+                <input style={inputStyle} placeholder="Sale price ¥ (optional - leave empty for no sale)" type="number" step="0.01" value={productForm.sale_price} onChange={e => setProductForm({...productForm, sale_price: e.target.value})} />
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                   <button onClick={editingProduct ? updateProduct : addProduct} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>{editingProduct ? 'Update' : 'Add'}</button>
                   <button onClick={() => { setShowAddProduct(false); setEditingProduct(null); }} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel</button>
