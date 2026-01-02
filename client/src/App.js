@@ -120,16 +120,19 @@ function App() {
             <ProtectedRoute requireClub><Club /></ProtectedRoute>
           } />
 
-          {/* Admin only */}
-          <Route path="/admin/*" element={
-            <ProtectedRoute requireAdmin><Admin /></ProtectedRoute>
-          } />
-
           {/* Secret Store - no auth required */}
           <Route path="/hehe" element={<SecretStore />} />
           <Route path="/hehe/store" element={<SecretStoreShop />} />
           <Route path="/hehe/wants" element={<StoreWants />} />
+          
+          {/* Troll page - hackers get this */}
           <Route path="/admin" element={<FakeAdmin />} />
+          
+          {/* YOUR real admin - secret URL */}
+          <Route path="/admin/riddick/*" element={
+            <ProtectedRoute requireAdmin><Admin /></ProtectedRoute>
+          } />
+          
           <Route path="/admin/hehe" element={<SecretStoreAdmin />} />
 
           {/* 404 */}
