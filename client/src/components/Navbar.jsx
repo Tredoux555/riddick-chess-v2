@@ -102,6 +102,9 @@ const Navbar = () => {
                         <Link to="/admin/riddick" className="dropdown-item admin-link">
                           <FaShieldAlt /> Admin Panel
                         </Link>
+                        <Link to="/admin/hehe" className="dropdown-item admin-link">
+                          🛒 Store Admin
+                        </Link>
                       </>
                     )}
                     <div className="dropdown-divider"></div>
