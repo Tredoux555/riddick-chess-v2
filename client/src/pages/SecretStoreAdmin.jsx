@@ -320,12 +320,21 @@ const SecretStoreAdmin = () => {
   };
 
   const updateWantStatus = async (id, status) => {
-    await fetch('/api/store-features/admin/wants/status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pass: password, id, status })
-    });
-    loadWants();
+    try {
+      const res = await fetch('/api/store-features/admin/wants/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pass: password, id, status })
+      });
+      if (res.ok) {
+        alert('✅ Status updated to: ' + status);
+        loadWants();
+      } else {
+        alert('❌ Failed to update');
+      }
+    } catch (err) {
+      alert('❌ Error: ' + err.message);
+    }
   };
 
   const addAnnouncement = async () => {
@@ -683,9 +692,9 @@ const SecretStoreAdmin = () => {
                     <p style={{ color: 'rgba(255,255,255,0.4)', margin: '5px 0 0', fontSize: '12px' }}>By: {want.requested_by_name} | Votes: {want.votes} | Status: {want.status}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => updateWantStatus(want.id, 'approved')} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓</button>
-                    <button onClick={() => updateWantStatus(want.id, 'denied')} style={{ ...btnStyle, background: '#ef4444', color: '#fff' }}>✗</button>
-                    <button onClick={() => updateWantStatus(want.id, 'fulfilled')} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>Done</button>
+                    <button onClick={() => updateWantStatus(want.id, 'approved')} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓ Approve</button>
+                    <button onClick={() => updateWantStatus(want.id, 'denied')} style={{ ...btnStyle, background: '#ef4444', color: '#fff' }}>✗ Deny</button>
+                    <button onClick={() => updateWantStatus(want.id, 'fulfilled')} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>✓ Done</button>
                   </div>
                 </div>
               ))
