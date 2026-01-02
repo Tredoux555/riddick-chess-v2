@@ -59,6 +59,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/customization', require('./routes/customization'));
 app.use('/api/healthcheck', require('./routes/healthcheck'));
 app.use('/api/secret-store', require('./routes/secret-store'));
+app.use('/api/store-features', require('./routes/store-features'));
 
 // Health check
 app.get('/api/health', (req, res) => {
