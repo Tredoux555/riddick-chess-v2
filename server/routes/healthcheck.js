@@ -106,6 +106,66 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
   }
 
   // ========================================
+  // STORE FEATURES TABLES
+  // ========================================
+
+  // Test 10: Store wants table
+  try {
+    const wantsCheck = await pool.query('SELECT COUNT(*) as count FROM store_wants');
+    addTest('Database', 'Store Wants Table', 'pass', { count: parseInt(wantsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Wants Table', 'fail', null, e.message);
+  }
+
+  // Test 11: Store loyalty table
+  try {
+    const loyaltyCheck = await pool.query('SELECT COUNT(*) as count FROM store_loyalty');
+    addTest('Database', 'Store Loyalty Table', 'pass', { count: parseInt(loyaltyCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Loyalty Table', 'fail', null, e.message);
+  }
+
+  // Test 12: Store referrals table
+  try {
+    const referralsCheck = await pool.query('SELECT COUNT(*) as count FROM store_referrals');
+    addTest('Database', 'Store Referrals Table', 'pass', { count: parseInt(referralsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Referrals Table', 'fail', null, e.message);
+  }
+
+  // Test 13: Store flash sales table
+  try {
+    const flashSalesCheck = await pool.query('SELECT COUNT(*) as count FROM store_flash_sales');
+    addTest('Database', 'Store Flash Sales Table', 'pass', { count: parseInt(flashSalesCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Flash Sales Table', 'fail', null, e.message);
+  }
+
+  // Test 14: Store gift cards table
+  try {
+    const giftCardsCheck = await pool.query('SELECT COUNT(*) as count FROM store_gift_cards');
+    addTest('Database', 'Store Gift Cards Table', 'pass', { count: parseInt(giftCardsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Gift Cards Table', 'fail', null, e.message);
+  }
+
+  // Test 15: Store announcements table
+  try {
+    const announcementsCheck = await pool.query('SELECT COUNT(*) as count FROM store_announcements');
+    addTest('Database', 'Store Announcements Table', 'pass', { count: parseInt(announcementsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Announcements Table', 'fail', null, e.message);
+  }
+
+  // Test 16: Store chat table
+  try {
+    const chatCheck = await pool.query('SELECT COUNT(*) as count FROM store_chat');
+    addTest('Database', 'Store Chat Table', 'pass', { count: parseInt(chatCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', 'Store Chat Table', 'fail', null, e.message);
+  }
+
+  // ========================================
   // TABLE SCHEMA TESTS
   // ========================================
 
@@ -814,6 +874,32 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
     : 0;
   
   results.duration = Date.now() - new Date(results.timestamp).getTime();
+
+  // Add store features summary
+  try {
+    const wantsCheck = await pool.query('SELECT COUNT(*) as count FROM store_wants');
+    const loyaltyCheck = await pool.query('SELECT COUNT(*) as count FROM store_loyalty');
+    const referralsCheck = await pool.query('SELECT COUNT(*) as count FROM store_referrals');
+    const flashSalesCheck = await pool.query('SELECT COUNT(*) as count FROM store_flash_sales');
+    const giftCardsCheck = await pool.query('SELECT COUNT(*) as count FROM store_gift_cards');
+    const announcementsCheck = await pool.query('SELECT COUNT(*) as count FROM store_announcements');
+    const chatCheck = await pool.query('SELECT COUNT(*) as count FROM store_chat');
+
+    results.storeFeatures = {
+      wants: { status: 'ok', count: parseInt(wantsCheck.rows[0].count) },
+      loyalty: { status: 'ok', count: parseInt(loyaltyCheck.rows[0].count) },
+      referrals: { status: 'ok', count: parseInt(referralsCheck.rows[0].count) },
+      flashSales: { status: 'ok', count: parseInt(flashSalesCheck.rows[0].count) },
+      giftCards: { status: 'ok', count: parseInt(giftCardsCheck.rows[0].count) },
+      announcements: { status: 'ok', count: parseInt(announcementsCheck.rows[0].count) },
+      chat: { status: 'ok', count: parseInt(chatCheck.rows[0].count) }
+    };
+  } catch (e) {
+    results.storeFeatures = {
+      error: 'Failed to check store features tables',
+      message: e.message
+    };
+  }
 
   res.json(results);
 });
