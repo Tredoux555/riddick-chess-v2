@@ -20,6 +20,19 @@ const SecretStoreAdmin = () => {
   const [discounts, setDiscounts] = useState([]);
   const [discountForm, setDiscountForm] = useState({ code: '', percent_off: '', uses_left: '-1' });
 
+  // New store features
+  const [wants, setWants] = useState([]);
+  const [flashSales, setFlashSales] = useState([]);
+  const [giftCards, setGiftCards] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatReply, setChatReply] = useState('');
+  const [loyaltyUsers, setLoyaltyUsers] = useState([]);
+  const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', type: 'info' });
+  const [flashSaleForm, setFlashSaleForm] = useState({ product_name: '', original_price: '', sale_price: '', ends_at: '' });
+
   const currencies = ['CNY', 'USD', 'EUR', 'GBP', 'ZAR', 'JPY', 'KRW', 'INR', 'AUD', 'CAD'];
   const currencyNames = {
     CNY: '¥ Chinese Yuan',
@@ -49,6 +62,11 @@ const SecretStoreAdmin = () => {
     loadOrders();
     loadDiscounts();
     setLoggedIn(true);
+    loadWants();
+    loadFlashSales();
+    loadAnnouncements();
+    loadChats();
+    loadLoyalty();
   };
 
   const loadDiscounts = async () => {
@@ -263,6 +281,104 @@ const SecretStoreAdmin = () => {
     });
   };
 
+  // New store features functions
+  const loadWants = async () => {
+    const res = await fetch('/api/store-features/wants');
+    const data = await res.json();
+    setWants(data.wants || []);
+  };
+
+  const loadFlashSales = async () => {
+    const res = await fetch('/api/store-features/flash-sales');
+    const data = await res.json();
+    setFlashSales(data.sales || []);
+  };
+
+  const loadAnnouncements = async () => {
+    const res = await fetch('/api/store-features/announcements');
+    const data = await res.json();
+    setAnnouncements(data.announcements || []);
+  };
+
+  const loadChats = async () => {
+    const res = await fetch(`/api/store-features/admin/chat?pass=${password}`);
+    const data = await res.json();
+    setChats(data.chats || []);
+  };
+
+  const loadLoyalty = async () => {
+    const res = await fetch(`/api/store-features/admin/loyalty?pass=${password}`);
+    const data = await res.json();
+    setLoyaltyUsers(data.users || []);
+  };
+
+  const loadChatMessages = async (email) => {
+    const res = await fetch(`/api/store-features/chat/${email}`);
+    const data = await res.json();
+    setChatMessages(data.messages || []);
+    setSelectedChat(email);
+  };
+
+  const updateWantStatus = async (id, status) => {
+    await fetch('/api/store-features/admin/wants/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id, status })
+    });
+    loadWants();
+  };
+
+  const addAnnouncement = async () => {
+    if (!announcementForm.title) return;
+    await fetch('/api/store-features/admin/announcements/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, ...announcementForm })
+    });
+    setAnnouncementForm({ title: '', message: '', type: 'info' });
+    loadAnnouncements();
+  };
+
+  const deleteAnnouncement = async (id) => {
+    await fetch('/api/store-features/admin/announcements/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadAnnouncements();
+  };
+
+  const addFlashSale = async () => {
+    if (!flashSaleForm.product_name || !flashSaleForm.sale_price) return;
+    await fetch('/api/store-features/admin/flash-sales/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, ...flashSaleForm, starts_at: new Date().toISOString(), ends_at: flashSaleForm.ends_at || new Date(Date.now() + 24*60*60*1000).toISOString() })
+    });
+    setFlashSaleForm({ product_name: '', original_price: '', sale_price: '', ends_at: '' });
+    loadFlashSales();
+  };
+
+  const deleteFlashSale = async (id) => {
+    await fetch('/api/store-features/admin/flash-sales/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, id })
+    });
+    loadFlashSales();
+  };
+
+  const sendChatReply = async () => {
+    if (!chatReply.trim() || !selectedChat) return;
+    await fetch('/api/store-features/admin/chat/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass: password, userEmail: selectedChat, message: chatReply })
+    });
+    setChatReply('');
+    loadChatMessages(selectedChat);
+  };
+
   if (!loggedIn) {
     return (
       <div className="secret-store-container">
@@ -296,6 +412,11 @@ const SecretStoreAdmin = () => {
           <button onClick={() => setTab('users')} style={{ ...btnStyle, background: tab === 'users' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>👥 Users</button>
           <button onClick={() => setTab('products')} style={{ ...btnStyle, background: tab === 'products' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🛍️ Products ({products.length})</button>
           <button onClick={() => setTab('discounts')} style={{ ...btnStyle, background: tab === 'discounts' ? '#f59e0b' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🎟️ Discounts ({discounts.length})</button>
+          <button onClick={() => setTab('wants')} style={{ ...btnStyle, background: tab === 'wants' ? '#f59e0b' : 'rgba(255,255,255,0.1)', color: '#fff' }}>🙏 Wants ({wants.filter(w => w.status === 'pending').length})</button>
+          <button onClick={() => setTab('flash')} style={{ ...btnStyle, background: tab === 'flash' ? '#ef4444' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⚡ Flash Sales</button>
+          <button onClick={() => setTab('announce')} style={{ ...btnStyle, background: tab === 'announce' ? '#22c55e' : 'rgba(255,255,255,0.1)', color: '#fff' }}>📢 Announcements</button>
+          <button onClick={() => setTab('loyalty')} style={{ ...btnStyle, background: tab === 'loyalty' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⭐ Loyalty</button>
+          <button onClick={() => setTab('chat')} style={{ ...btnStyle, background: tab === 'chat' ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>💬 Chat ({chats.length})</button>
           <button onClick={() => setTab('settings')} style={{ ...btnStyle, background: tab === 'settings' ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>⚙️ Settings</button>
         </div>
 
@@ -546,6 +667,141 @@ const SecretStoreAdmin = () => {
             </div>
             {products.length === 0 && <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px' }}>No products yet. Add your first product!</p>}
           </>
+        )}
+
+        {tab === 'wants' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>🙏 Product Requests</h2>
+            {wants.length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No requests yet</p>
+            ) : (
+              wants.map(want => (
+                <div key={want.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ color: '#fff', margin: '0 0 5px' }}>{want.title}</h3>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '14px' }}>{want.description}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', margin: '5px 0 0', fontSize: '12px' }}>By: {want.requested_by_name} | Votes: {want.votes} | Status: {want.status}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => updateWantStatus(want.id, 'approved')} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓</button>
+                    <button onClick={() => updateWantStatus(want.id, 'denied')} style={{ ...btnStyle, background: '#ef4444', color: '#fff' }}>✗</button>
+                    <button onClick={() => updateWantStatus(want.id, 'fulfilled')} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>Done</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'flash' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>⚡ Flash Sales</h2>
+            <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+              <h3 style={{ color: '#fff', marginBottom: '10px' }}>Add Flash Sale</h3>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input placeholder="Product name" value={flashSaleForm.product_name} onChange={e => setFlashSaleForm({...flashSaleForm, product_name: e.target.value})} style={inputStyle} />
+                <input placeholder="Original ¥" type="number" value={flashSaleForm.original_price} onChange={e => setFlashSaleForm({...flashSaleForm, original_price: e.target.value})} style={{ ...inputStyle, width: '100px' }} />
+                <input placeholder="Sale ¥" type="number" value={flashSaleForm.sale_price} onChange={e => setFlashSaleForm({...flashSaleForm, sale_price: e.target.value})} style={{ ...inputStyle, width: '100px' }} />
+                <input type="datetime-local" value={flashSaleForm.ends_at} onChange={e => setFlashSaleForm({...flashSaleForm, ends_at: e.target.value})} style={inputStyle} />
+                <button onClick={addFlashSale} style={{ ...btnStyle, background: '#ef4444', color: '#fff' }}>Add Sale</button>
+              </div>
+            </div>
+            {flashSales.map(sale => (
+              <div key={sale.id} style={{ background: 'rgba(239,68,68,0.1)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ color: '#fff', margin: 0 }}>{sale.product_name}</h3>
+                  <p style={{ color: '#ef4444', margin: '5px 0 0' }}>¥{sale.original_price} → ¥{sale.sale_price} | Ends: {new Date(sale.ends_at).toLocaleString()}</p>
+                </div>
+                <button onClick={() => deleteFlashSale(sale.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'announce' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>📢 Announcements</h2>
+            <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+              <input placeholder="Title" value={announcementForm.title} onChange={e => setAnnouncementForm({...announcementForm, title: e.target.value})} style={{ ...inputStyle, marginBottom: '10px' }} />
+              <textarea placeholder="Message" value={announcementForm.message} onChange={e => setAnnouncementForm({...announcementForm, message: e.target.value})} style={{ ...inputStyle, height: '80px', resize: 'none', marginBottom: '10px' }} />
+              <select value={announcementForm.type} onChange={e => setAnnouncementForm({...announcementForm, type: e.target.value})} style={{ ...inputStyle, marginBottom: '10px' }}>
+                <option value="info">ℹ️ Info</option>
+                <option value="sale">🔥 Sale</option>
+                <option value="new">🆕 New</option>
+                <option value="important">⚠️ Important</option>
+              </select>
+              <button onClick={addAnnouncement} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>Post</button>
+            </div>
+            {announcements.map(a => (
+              <div key={a.id} style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ color: '#fff', margin: 0 }}>{a.title}</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', margin: '5px 0 0' }}>{a.message}</p>
+                </div>
+                <button onClick={() => deleteAnnouncement(a.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'loyalty' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>⭐ Loyalty Leaderboard</h2>
+            {loyaltyUsers.length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No loyalty data yet</p>
+            ) : (
+              loyaltyUsers.map((u, i) => (
+                <div key={u.id} style={{ background: i === 0 ? 'rgba(251,191,36,0.2)' : 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '24px' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '⭐'}</span>
+                    <div>
+                      <h3 style={{ color: '#fff', margin: 0 }}>{u.user_name || u.user_email}</h3>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '14px' }}>{u.user_email}</p>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ color: '#fbbf24', margin: 0, fontWeight: 'bold' }}>{u.points} pts</p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '12px' }}>Spent: ¥{parseFloat(u.total_spent).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'chat' && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
+            <h2 style={{ color: '#fff', marginBottom: '20px' }}>💬 Customer Chats</h2>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <div style={{ width: '200px' }}>
+                {chats.map(chat => (
+                  <div key={chat.user_email} onClick={() => loadChatMessages(chat.user_email)} style={{ padding: '10px', background: selectedChat === chat.user_email ? '#8b5cf6' : 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
+                    <p style={{ color: '#fff', margin: 0, fontWeight: 'bold' }}>{chat.user_name || 'Unknown'}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '12px' }}>{chat.user_email}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                {selectedChat ? (
+                  <>
+                    <div style={{ height: '300px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '10px' }}>
+                      {chatMessages.map(msg => (
+                        <div key={msg.id} style={{ marginBottom: '10px', textAlign: msg.is_admin ? 'right' : 'left' }}>
+                          <span style={{ display: 'inline-block', padding: '8px 12px', borderRadius: '12px', background: msg.is_admin ? '#8b5cf6' : 'rgba(255,255,255,0.1)', color: '#fff' }}>{msg.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input placeholder="Reply..." value={chatReply} onChange={e => setChatReply(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendChatReply()} style={{ ...inputStyle, flex: 1 }} />
+                      <button onClick={sendChatReply} style={{ ...btnStyle, background: '#8b5cf6', color: '#fff' }}>Send</button>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Select a chat to view</p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

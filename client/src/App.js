@@ -27,6 +27,7 @@ import SecretStore from './pages/SecretStore';
 import SecretStoreShop from './pages/SecretStoreShop';
 import SecretStoreAdmin from './pages/SecretStoreAdmin';
 import SecretStoreWants from './pages/SecretStoreWants';
+import StoreWants from './pages/StoreWants';
 import FakeAdmin from './pages/FakeAdmin';
 
 // Protected Route wrapper
@@ -127,6 +128,7 @@ function App() {
           {/* Secret Store - no auth required */}
           <Route path="/hehe" element={<SecretStore />} />
           <Route path="/hehe/store" element={<SecretStoreShop />} />
+          <Route path="/hehe/wants" element={<StoreWants />} />
           <Route path="/admin" element={<FakeAdmin />} />
           <Route path="/admin/hehe" element={<SecretStoreAdmin />} />
 

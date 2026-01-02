@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/SecretStore.css';
+import ChatWidget from '../components/ChatWidget';
 
 const SecretStoreShop = () => {
   const [user, setUser] = useState(null);
@@ -210,6 +211,7 @@ const SecretStoreShop = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', flexWrap: 'wrap', gap: '15px' }}>
           <h1 style={{ color: '#fff', margin: 0, fontSize: '28px' }}>🛒 Secret Store</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+            <button onClick={() => navigate('/hehe/wants')} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>🙏 Wants</button>
             {/* Currency Selector */}
             <select 
               value={currency} 
@@ -373,6 +375,7 @@ const SecretStoreShop = () => {
           </div>
         )}
       </div>
+      <ChatWidget user={user} />
     </div>
   );
 };
