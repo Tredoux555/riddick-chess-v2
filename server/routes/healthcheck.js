@@ -106,70 +106,122 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
   }
 
   // ========================================
+  // SECRET STORE TABLES
+  // ========================================
+
+  // Test 10: Secret store users table
+  try {
+    const storeUsersCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_users');
+    addTest('Database', '[Store] Users', 'pass', { count: parseInt(storeUsersCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Users', 'fail', null, e.message);
+  }
+
+  // Test 11: Secret store products table
+  try {
+    const storeProductsCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_products');
+    addTest('Database', '[Store] Products', 'pass', { count: parseInt(storeProductsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Products', 'fail', null, e.message);
+  }
+
+  // Test 12: Secret store orders table
+  try {
+    const storeOrdersCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_orders');
+    addTest('Database', '[Store] Orders', 'pass', { count: parseInt(storeOrdersCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Orders', 'fail', null, e.message);
+  }
+
+  // Test 13: Secret store reviews table
+  try {
+    const storeReviewsCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_reviews');
+    addTest('Database', '[Store] Reviews', 'pass', { count: parseInt(storeReviewsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Reviews', 'fail', null, e.message);
+  }
+
+  // Test 14: Secret store favorites table
+  try {
+    const storeFavoritesCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_favorites');
+    addTest('Database', '[Store] Favorites', 'pass', { count: parseInt(storeFavoritesCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Favorites', 'fail', null, e.message);
+  }
+
+  // Test 15: Secret store discounts table
+  try {
+    const storeDiscountsCheck = await pool.query('SELECT COUNT(*) as count FROM secret_store_discounts');
+    addTest('Database', '[Store] Discounts', 'pass', { count: parseInt(storeDiscountsCheck.rows[0].count) });
+  } catch (e) {
+    addTest('Database', '[Store] Discounts', 'fail', null, e.message);
+  }
+
+  // ========================================
   // STORE FEATURES TABLES
   // ========================================
 
-  // Test 10: Store wants table
+  // Test 16: Store wants table
   try {
     const wantsCheck = await pool.query('SELECT COUNT(*) as count FROM store_wants');
-    addTest('Database', 'Store Wants Table', 'pass', { count: parseInt(wantsCheck.rows[0].count) });
+    addTest('Database', '[Store] Wants', 'pass', { count: parseInt(wantsCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Wants Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Wants', 'fail', null, e.message);
   }
 
-  // Test 11: Store loyalty table
+  // Test 17: Store loyalty table
   try {
     const loyaltyCheck = await pool.query('SELECT COUNT(*) as count FROM store_loyalty');
-    addTest('Database', 'Store Loyalty Table', 'pass', { count: parseInt(loyaltyCheck.rows[0].count) });
+    addTest('Database', '[Store] Loyalty', 'pass', { count: parseInt(loyaltyCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Loyalty Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Loyalty', 'fail', null, e.message);
   }
 
-  // Test 12: Store referrals table
+  // Test 18: Store referrals table
   try {
     const referralsCheck = await pool.query('SELECT COUNT(*) as count FROM store_referrals');
-    addTest('Database', 'Store Referrals Table', 'pass', { count: parseInt(referralsCheck.rows[0].count) });
+    addTest('Database', '[Store] Referrals', 'pass', { count: parseInt(referralsCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Referrals Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Referrals', 'fail', null, e.message);
   }
 
-  // Test 13: Store flash sales table
+  // Test 19: Store flash sales table
   try {
     const flashSalesCheck = await pool.query('SELECT COUNT(*) as count FROM store_flash_sales');
-    addTest('Database', 'Store Flash Sales Table', 'pass', { count: parseInt(flashSalesCheck.rows[0].count) });
+    addTest('Database', '[Store] Flash Sales', 'pass', { count: parseInt(flashSalesCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Flash Sales Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Flash Sales', 'fail', null, e.message);
   }
 
-  // Test 14: Store gift cards table
+  // Test 20: Store gift cards table
   try {
     const giftCardsCheck = await pool.query('SELECT COUNT(*) as count FROM store_gift_cards');
-    addTest('Database', 'Store Gift Cards Table', 'pass', { count: parseInt(giftCardsCheck.rows[0].count) });
+    addTest('Database', '[Store] Gift Cards', 'pass', { count: parseInt(giftCardsCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Gift Cards Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Gift Cards', 'fail', null, e.message);
   }
 
-  // Test 15: Store announcements table
+  // Test 21: Store announcements table
   try {
     const announcementsCheck = await pool.query('SELECT COUNT(*) as count FROM store_announcements');
-    addTest('Database', 'Store Announcements Table', 'pass', { count: parseInt(announcementsCheck.rows[0].count) });
+    addTest('Database', '[Store] Announcements', 'pass', { count: parseInt(announcementsCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Announcements Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Announcements', 'fail', null, e.message);
   }
 
-  // Test 16: Store chat table
+  // Test 22: Store chat table
   try {
     const chatCheck = await pool.query('SELECT COUNT(*) as count FROM store_chat');
-    addTest('Database', 'Store Chat Table', 'pass', { count: parseInt(chatCheck.rows[0].count) });
+    addTest('Database', '[Store] Chat', 'pass', { count: parseInt(chatCheck.rows[0].count) });
   } catch (e) {
-    addTest('Database', 'Store Chat Table', 'fail', null, e.message);
+    addTest('Database', '[Store] Chat', 'fail', null, e.message);
   }
 
   // ========================================
   // TABLE SCHEMA TESTS
   // ========================================
 
-  // Test 10: Check user_ratings has vol columns
+  // Test 23: Check user_ratings has vol columns
   try {
     const cols = await pool.query(`
       SELECT column_name FROM information_schema.columns 
