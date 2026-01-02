@@ -122,6 +122,49 @@ async function initTables() {
       )
     `);
     
+    // WANTS SYSTEM - Let customers request products!
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_wants (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        image_url TEXT,
+        category VARCHAR(100) DEFAULT 'General',
+        requested_by_name VARCHAR(255),
+        requested_by_email VARCHAR(255),
+        votes INTEGER DEFAULT 1,
+        status VARCHAR(50) DEFAULT 'pending',
+        admin_notes TEXT,
+        fulfilled_product_id INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        fulfilled_at TIMESTAMP
+      )
+    `);
+    
+    // Track who voted on what (one vote per user per want)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_want_votes (
+        id SERIAL PRIMARY KEY,
+        want_id INTEGER REFERENCES secret_store_wants(id) ON DELETE CASCADE,
+        user_email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(want_id, user_email)
+      )
+    `);
+    
+    // Comments on wants
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS secret_store_want_comments (
+        id SERIAL PRIMARY KEY,
+        want_id INTEGER REFERENCES secret_store_wants(id) ON DELETE CASCADE,
+        user_name VARCHAR(255),
+        user_email VARCHAR(255),
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    console.log('✅ Wants system tables ready');
     console.log('✅ Orders table ready');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS secret_store_settings (
@@ -583,6 +626,226 @@ router.get('/admin/notifications', async (req, res) => {
       pendingOrders: parseInt(pendingOrders.rows[0].count),
       pendingUsers: parseInt(pendingUsers.rows[0].count)
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== WANTS SYSTEM ==========
+
+// Get all wants (public - for store)
+router.get('/wants', async (req, res) => {
+  const { status, sort, category } = req.query;
+  try {
+    let query = `SELECT * FROM secret_store_wants`;
+    const conditions = [];
+    const params = [];
+    
+    if (status && status !== 'all') {
+      params.push(status);
+      conditions.push(`status = $${params.length}`);
+    }
+    if (category && category !== 'All') {
+      params.push(category);
+      conditions.push(`category = $${params.length}`);
+    }
+    
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+    
+    // Sort options
+    if (sort === 'votes') {
+      query += ` ORDER BY votes DESC, created_at DESC`;
+    } else if (sort === 'oldest') {
+      query += ` ORDER BY created_at ASC`;
+    } else {
+      query += ` ORDER BY created_at DESC`;
+    }
+    
+    const result = await pool.query(query, params);
+    res.json({ wants: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single want with comments
+router.get('/wants/:id', async (req, res) => {
+  try {
+    const want = await pool.query(`SELECT * FROM secret_store_wants WHERE id = $1`, [req.params.id]);
+    if (want.rows.length === 0) {
+      return res.status(404).json({ error: 'Want not found' });
+    }
+    const comments = await pool.query(
+      `SELECT * FROM secret_store_want_comments WHERE want_id = $1 ORDER BY created_at DESC`,
+      [req.params.id]
+    );
+    res.json({ want: want.rows[0], comments: comments.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Submit a new want
+router.post('/wants/submit', async (req, res) => {
+  const { title, description, image_url, category, userName, userEmail } = req.body;
+  if (!title || !userName || !userEmail) {
+    return res.status(400).json({ error: 'Title, name and email required' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO secret_store_wants (title, description, image_url, category, requested_by_name, requested_by_email) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [title, description || '', image_url || '', category || 'General', userName, userEmail]
+    );
+    // Auto-vote for your own want
+    await pool.query(
+      `INSERT INTO secret_store_want_votes (want_id, user_email) VALUES ($1, $2)`,
+      [result.rows[0].id, userEmail]
+    );
+    console.log('🌟 New want submitted:', title, 'by', userName);
+    res.json({ success: true, want: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Vote on a want
+router.post('/wants/vote', async (req, res) => {
+  const { wantId, userEmail } = req.body;
+  if (!wantId || !userEmail) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  try {
+    // Check if already voted
+    const existing = await pool.query(
+      `SELECT * FROM secret_store_want_votes WHERE want_id = $1 AND user_email = $2`,
+      [wantId, userEmail]
+    );
+    
+    if (existing.rows.length > 0) {
+      // Remove vote
+      await pool.query(`DELETE FROM secret_store_want_votes WHERE want_id = $1 AND user_email = $2`, [wantId, userEmail]);
+      await pool.query(`UPDATE secret_store_wants SET votes = votes - 1 WHERE id = $1`, [wantId]);
+      res.json({ success: true, voted: false, message: 'Vote removed' });
+    } else {
+      // Add vote
+      await pool.query(`INSERT INTO secret_store_want_votes (want_id, user_email) VALUES ($1, $2)`, [wantId, userEmail]);
+      await pool.query(`UPDATE secret_store_wants SET votes = votes + 1 WHERE id = $1`, [wantId]);
+      res.json({ success: true, voted: true, message: 'Vote added' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Check if user voted on wants
+router.get('/wants/votes/:email', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT want_id FROM secret_store_want_votes WHERE user_email = $1`,
+      [req.params.email]
+    );
+    res.json({ votedWants: result.rows.map(r => r.want_id) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add comment to want
+router.post('/wants/comment', async (req, res) => {
+  const { wantId, userName, userEmail, comment } = req.body;
+  if (!wantId || !userName || !userEmail || !comment) {
+    return res.status(400).json({ error: 'All fields required' });
+  }
+  try {
+    const result = await pool.query(
+      `INSERT INTO secret_store_want_comments (want_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [wantId, userName, userEmail, comment]
+    );
+    res.json({ success: true, comment: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get trending/top wants
+router.get('/wants/trending', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM secret_store_wants WHERE status = 'pending' ORDER BY votes DESC LIMIT 5`
+    );
+    res.json({ trending: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get all wants with stats
+router.get('/admin/wants', async (req, res) => {
+  const { pass } = req.query;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    const result = await pool.query(`SELECT * FROM secret_store_wants ORDER BY votes DESC, created_at DESC`);
+    const stats = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COUNT(*) FILTER (WHERE status = 'fulfilled') as fulfilled,
+        COUNT(*) FILTER (WHERE status = 'rejected') as rejected
+      FROM secret_store_wants
+    `);
+    res.json({ wants: result.rows, stats: stats.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Update want status
+router.post('/admin/wants/status', async (req, res) => {
+  const { pass, id, status, admin_notes } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    if (status === 'fulfilled') {
+      await pool.query(
+        `UPDATE secret_store_wants SET status = $1, admin_notes = $2, fulfilled_at = NOW() WHERE id = $3`,
+        [status, admin_notes || '', id]
+      );
+    } else {
+      await pool.query(
+        `UPDATE secret_store_wants SET status = $1, admin_notes = $2 WHERE id = $3`,
+        [status, admin_notes || '', id]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Delete want
+router.post('/admin/wants/delete', async (req, res) => {
+  const { pass, id } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(`DELETE FROM secret_store_wants WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Link want to product (mark fulfilled with product)
+router.post('/admin/wants/fulfill', async (req, res) => {
+  const { pass, id, productId } = req.body;
+  if (pass !== ADMIN_PASS) return res.status(401).json({ error: 'Wrong password' });
+  try {
+    await pool.query(
+      `UPDATE secret_store_wants SET status = 'fulfilled', fulfilled_product_id = $1, fulfilled_at = NOW() WHERE id = $2`,
+      [productId, id]
+    );
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
