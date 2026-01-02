@@ -99,7 +99,7 @@ const Navbar = () => {
                     {isAdmin && (
                       <>
                         <div className="dropdown-divider"></div>
-                        <Link to="/admin" className="dropdown-item admin-link">
+                        <Link to="/admin/riddick" className="dropdown-item admin-link">
                           <FaShieldAlt /> Admin Panel
                         </Link>
                       </>

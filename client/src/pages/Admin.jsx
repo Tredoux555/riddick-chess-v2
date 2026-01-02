@@ -17,22 +17,22 @@ const Admin = () => {
       <div className="admin-sidebar">
         <h2><FaShieldAlt /> Admin</h2>
         <nav>
-          <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+          <Link to="/admin/riddick" className={location.pathname === '/admin/riddick' ? 'active' : ''}>
             <FaChartBar /> Dashboard
           </Link>
-          <Link to="/admin/users" className={location.pathname === '/admin/users' ? 'active' : ''}>
+          <Link to="/admin/riddick/users" className={location.pathname === '/admin/riddick/users' ? 'active' : ''}>
             <FaUsers /> Users
           </Link>
-          <Link to="/admin/club" className={location.pathname === '/admin/club' ? 'active' : ''}>
+          <Link to="/admin/riddick/club" className={location.pathname === '/admin/riddick/club' ? 'active' : ''}>
             <FaCrown /> Club Members
           </Link>
-          <Link to="/admin/tournaments" className={location.pathname.includes('/admin/tournaments') ? 'active' : ''}>
+          <Link to="/admin/riddick/tournaments" className={location.pathname.includes('/admin/riddick/tournaments') ? 'active' : ''}>
             <FaTrophy /> Tournaments
           </Link>
-          <Link to="/admin/announcements" className={location.pathname === '/admin/announcements' ? 'active' : ''}>
+          <Link to="/admin/riddick/announcements" className={location.pathname === '/admin/riddick/announcements' ? 'active' : ''}>
             <FaBullhorn /> Announcements
           </Link>
-          <Link to="/admin/health" className={location.pathname === '/admin/health' ? 'active' : ''}>
+          <Link to="/admin/riddick/health" className={location.pathname === '/admin/riddick/health' ? 'active' : ''}>
             <FaHeartbeat /> Health Check
           </Link>
         </nav>
@@ -568,7 +568,7 @@ const TournamentAdmin = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h1>Tournaments</h1>
-        <Link to="/admin/tournaments/create" className="btn btn-primary">Create Tournament</Link>
+        <Link to="/admin/riddick/tournaments/create" className="btn btn-primary">Create Tournament</Link>
       </div>
       {tournaments.map(t => (
         <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px' }}>
@@ -593,7 +593,7 @@ const CreateTournament = () => {
     try {
       await axios.post('/api/tournaments', form);
       toast.success('Tournament created!');
-      window.location.href = '/admin/tournaments';
+      window.location.href = '/admin/riddick/tournaments';
     } catch (err) {
       toast.error('Failed to create tournament');
     }
