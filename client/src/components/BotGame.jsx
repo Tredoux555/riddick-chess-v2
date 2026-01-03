@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
+import { useAuth } from '../contexts/AuthContext';
 
 const BotGame = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [game, setGame] = useState(new Chess());
   const [gameData, setGameData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,9 @@ const BotGame = () => {
 
   const fetchGame = useCallback(async () => {
     try {
-      const res = await fetch(`/api/bots/game/${gameId}`, { credentials: 'include' });
+      const res = await fetch(`/api/bots/game/${gameId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       if (data.error) { console.error(data.error); return; }
       setGameData(data);
@@ -31,7 +35,7 @@ const BotGame = () => {
       }
     } catch (err) { console.error('Failed to fetch game:', err); }
     finally { setLoading(false); }
-  }, [gameId]);
+  }, [gameId, token]);
 
   useEffect(() => { fetchGame(); }, [fetchGame]);
 
@@ -49,8 +53,10 @@ const BotGame = () => {
     try {
       const res = await fetch('/api/bots/move', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ gameId, move: sourceSquare + targetSquare + (move.promotion || '') })
       });
       const data = await res.json();
@@ -69,7 +75,10 @@ const BotGame = () => {
     if (gameOver) return;
     if (!window.confirm('Are you sure you want to resign? 🏳️')) return;
     try {
-      const res = await fetch(`/api/bots/resign/${gameId}`, { method: 'POST', credentials: 'include' });
+      const res = await fetch(`/api/bots/resign/${gameId}`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       if (data.success) { setGameOver(true); setResult(data.result); }
     } catch (err) { console.error('Resign failed:', err); }
@@ -79,8 +88,10 @@ const BotGame = () => {
     try {
       const res = await fetch('/api/analysis/request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ gameId: parseInt(gameId), gameType: 'bot' })
       });
       const data = await res.json();

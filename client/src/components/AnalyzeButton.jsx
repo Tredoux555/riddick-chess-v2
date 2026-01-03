@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const AnalyzeButton = ({ gameId, gameType = 'pvp', pgn, className = '', size = 'normal' }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { token } = useAuth();
 
   const handleAnalyze = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/analysis/request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ gameId, gameType, pgn })
       });
       const data = await res.json();

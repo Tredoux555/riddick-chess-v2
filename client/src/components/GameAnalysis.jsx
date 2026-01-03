@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
+import { useAuth } from '../contexts/AuthContext';
 
 const GameAnalysis = () => {
   const { analysisId } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,13 +26,15 @@ const GameAnalysis = () => {
 
   const fetchAnalysis = useCallback(async () => {
     try {
-      const res = await fetch(`/api/analysis/${analysisId}`, { credentials: 'include' });
+      const res = await fetch(`/api/analysis/${analysisId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       if (data.status === 'completed') { setAnalysis(data); setLoading(false); }
       else if (data.status === 'analyzing' || data.status === 'pending') { setTimeout(fetchAnalysis, 2000); }
       else if (data.status === 'failed') { setError('Analysis failed. Please try again.'); setLoading(false); }
     } catch (err) { console.error('Failed to fetch analysis:', err); setError('Failed to load analysis'); setLoading(false); }
-  }, [analysisId]);
+  }, [analysisId, token]);
 
   useEffect(() => { fetchAnalysis(); }, [fetchAnalysis]);
 
