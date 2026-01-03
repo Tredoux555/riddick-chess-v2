@@ -67,7 +67,7 @@ const BotGame = () => {
 
   const handleResign = async () => {
     if (gameOver) return;
-    if (!confirm('Are you sure you want to resign? 🏳️')) return;
+    if (!window.confirm('Are you sure you want to resign? 🏳️')) return;
     try {
       const res = await fetch(`/api/bots/resign/${gameId}`, { method: 'POST', credentials: 'include' });
       const data = await res.json();
