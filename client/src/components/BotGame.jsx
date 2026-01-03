@@ -53,10 +53,7 @@ const BotGame = () => {
     try {
       const res = await fetch('/api/bots/move', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ gameId, move: sourceSquare + targetSquare + (move.promotion || '') })
       });
       const data = await res.json();
@@ -73,11 +70,10 @@ const BotGame = () => {
 
   const handleResign = async () => {
     if (gameOver) return;
-    if (!window.confirm('Are you sure you want to resign? 🏳️')) return;
+    if (!window.confirm('Are you sure you want to resign?')) return;
     try {
       const res = await fetch(`/api/bots/resign/${gameId}`, { 
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) { setGameOver(true); setResult(data.result); }
@@ -88,10 +84,7 @@ const BotGame = () => {
     try {
       const res = await fetch('/api/analysis/request', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ gameId: parseInt(gameId), gameType: 'bot' })
       });
       const data = await res.json();
@@ -105,71 +98,131 @@ const BotGame = () => {
     customSquareStyles[lastMove.to] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
   }
 
-  if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-6xl mb-4 animate-pulse">♟️</div></div>;
-  if (!gameData) return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-center"><div className="text-6xl mb-4">❌</div><div className="text-white text-xl mb-4">Game not found</div><button onClick={() => navigate('/bots')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold">Back to Bots</button></div></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="text-6xl animate-pulse">♟️</div>
+    </div>
+  );
+
+  if (!gameData) return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-6xl mb-4">❌</div>
+        <div className="text-white text-xl mb-4">Game not found</div>
+        <button onClick={() => navigate('/bots')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold">Back to Bots</button>
+      </div>
+    </div>
+  );
 
   const getResultText = () => {
     if (!result) return '';
-    if (result === '1/2-1/2') return '🤝 Draw!';
+    if (result === '1/2-1/2') return 'Draw!';
     const youWon = (gameData.userColor === 'white' && result === '1-0') || (gameData.userColor === 'black' && result === '0-1');
-    return youWon ? '🎉 You Won!' : `💀 ${gameData.bot.name} Wins!`;
+    return youWon ? 'You Won!' : `${gameData.bot.name} Wins!`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 py-4 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1">
-            <div className="bg-gray-800 rounded-t-2xl p-4 flex items-center justify-between border-b border-gray-700">
-              <div className="flex items-center gap-3"><span className="text-4xl">{gameData.bot.emoji}</span><div><div className="text-white font-bold text-lg">{gameData.bot.name}</div><div className="text-gray-400 text-sm">⭐ {gameData.bot.elo} ELO</div></div></div>
-              {thinking && <div className="flex items-center gap-2 bg-yellow-500/20 px-4 py-2 rounded-full"><span className="animate-bounce">🤔</span><span className="text-yellow-400 font-medium">Thinking...</span></div>}
+    <div className="min-h-screen bg-[#312e2b] py-4 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-4 items-start justify-center">
+          {/* Board Section */}
+          <div className="w-full lg:w-auto">
+            {/* Opponent Info Bar */}
+            <div className="bg-[#262421] rounded-t-lg px-4 py-2 flex items-center gap-3">
+              <span className="text-2xl">{gameData.bot.emoji}</span>
+              <div>
+                <div className="text-white font-semibold">{gameData.bot.name}</div>
+                <div className="text-gray-400 text-xs">{gameData.bot.elo} ELO</div>
+              </div>
+              {thinking && (
+                <div className="ml-auto flex items-center gap-2 text-yellow-400 text-sm">
+                  <span className="animate-pulse">●</span> Thinking...
+                </div>
+              )}
             </div>
-            <div className="bg-gray-700 p-3">
-              <Chessboard position={game.fen()} onPieceDrop={onDrop} boardOrientation={gameData.userColor} customSquareStyles={customSquareStyles} animationDuration={200} />
+            
+            {/* Chess Board - Fixed size */}
+            <div className="bg-[#262421]" style={{ width: '480px', maxWidth: '100vw' }}>
+              <Chessboard 
+                position={game.fen()} 
+                onPieceDrop={onDrop} 
+                boardOrientation={gameData.userColor} 
+                customSquareStyles={customSquareStyles} 
+                animationDuration={200}
+                boardWidth={480}
+                customDarkSquareStyle={{ backgroundColor: '#779556' }}
+                customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+              />
             </div>
-            <div className="bg-gray-800 rounded-b-2xl p-4 flex items-center justify-between border-t border-gray-700">
-              <div className="flex items-center gap-3"><span className="text-4xl">😎</span><div><div className="text-white font-bold text-lg">You</div><div className="text-gray-400 text-sm capitalize">Playing {gameData.userColor}</div></div></div>
-              {!gameOver && game.turn() === gameData.userColor[0] && <div className="bg-green-500/20 px-4 py-2 rounded-full"><span className="text-green-400 font-bold">✨ Your turn!</span></div>}
+            
+            {/* Player Info Bar */}
+            <div className="bg-[#262421] rounded-b-lg px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  {gameData.userColor === 'white' ? 'W' : 'B'}
+                </div>
+                <div>
+                  <div className="text-white font-semibold">You</div>
+                  <div className="text-gray-400 text-xs capitalize">{gameData.userColor}</div>
+                </div>
+              </div>
+              {!gameOver && game.turn() === gameData.userColor[0] && (
+                <div className="text-green-400 text-sm font-medium">Your turn</div>
+              )}
             </div>
           </div>
-          <div className="lg:w-80 space-y-4">
+
+          {/* Side Panel */}
+          <div className="w-full lg:w-72 space-y-3">
+            {/* Game Over Banner */}
             {gameOver && (
-              <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 rounded-2xl p-6 text-center shadow-xl">
-                <div className="text-4xl font-bold text-white mb-2">{getResultText()}</div>
-                <div className="text-white/80 mb-6">vs {gameData.bot.name} {gameData.bot.emoji}</div>
-                <div className="flex flex-col gap-3">
-                  <button onClick={() => navigate('/bots')} className="w-full px-4 py-3 bg-white/20 hover:bg-white/30 rounded-xl text-white font-bold transition-colors">🎮 New Game</button>
-                  <button onClick={handleAnalyze} className="w-full px-4 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-colors">🤖 Analyze with AI</button>
+              <div className="bg-[#262421] rounded-lg p-4 text-center border border-gray-600">
+                <div className="text-2xl font-bold text-white mb-1">{getResultText()}</div>
+                <div className="text-gray-400 text-sm mb-4">vs {gameData.bot.name}</div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => navigate('/bots')} className="w-full py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold text-sm">
+                    New Game
+                  </button>
+                  <button onClick={handleAnalyze} className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold text-sm">
+                    Analyze Game
+                  </button>
                 </div>
               </div>
             )}
-            <div className="bg-gray-800 rounded-2xl p-4">
-              <h3 className="text-white font-bold mb-3 flex items-center gap-2">📜 Move History</h3>
-              <div className="max-h-64 overflow-y-auto">
-                {moveHistory.length === 0 ? <div className="text-gray-500 text-sm text-center py-4">No moves yet</div> : (
-                  <div className="grid grid-cols-2 gap-1 text-sm">
-                    {moveHistory.map((move, idx) => (
-                      <div key={idx} className={`px-3 py-2 rounded-lg font-mono ${idx === moveHistory.length - 1 ? 'bg-yellow-500/20 text-yellow-300' : idx % 2 === 0 ? 'bg-gray-700/80 text-gray-300' : 'bg-gray-700/40 text-gray-400'}`}>
-                        {idx % 2 === 0 && <span className="text-gray-500 mr-1">{Math.floor(idx / 2) + 1}.</span>}{move}
+
+            {/* Move History */}
+            <div className="bg-[#262421] rounded-lg p-3">
+              <h3 className="text-white font-semibold text-sm mb-2">Moves</h3>
+              <div className="max-h-48 overflow-y-auto bg-[#1e1c1a] rounded p-2">
+                {moveHistory.length === 0 ? (
+                  <div className="text-gray-500 text-xs text-center py-2">No moves yet</div>
+                ) : (
+                  <div className="text-xs font-mono">
+                    {Array.from({ length: Math.ceil(moveHistory.length / 2) }).map((_, i) => (
+                      <div key={i} className="flex gap-2 py-0.5">
+                        <span className="text-gray-500 w-6">{i + 1}.</span>
+                        <span className="text-white w-14">{moveHistory[i * 2] || ''}</span>
+                        <span className="text-gray-300 w-14">{moveHistory[i * 2 + 1] || ''}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
-            {!gameOver && <div className="bg-gray-800 rounded-2xl p-4"><button onClick={handleResign} className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 rounded-xl text-white font-bold transition-colors flex items-center justify-center gap-2">🏳️ Resign</button></div>}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-4 border border-gray-700">
-              <h3 className="text-yellow-400 font-bold mb-3 flex items-center gap-2">💡 Chess Tips</h3>
-              <ul className="text-gray-400 text-sm space-y-2">
-                <li>• Control the center with your pawns</li>
-                <li>• Develop your knights and bishops early</li>
-                <li>• Castle to protect your king</li>
-                <li>• Think about your opponent's threats!</li>
-              </ul>
-            </div>
+
+            {/* Resign Button */}
+            {!gameOver && (
+              <button onClick={handleResign} className="w-full py-2 bg-red-600/80 hover:bg-red-600 rounded-lg text-white font-semibold text-sm">
+                Resign
+              </button>
+            )}
+
+            {/* Back Link */}
+            <button onClick={() => navigate('/bots')} className="w-full text-gray-400 hover:text-white text-sm py-2">
+              ← Back to Bots
+            </button>
           </div>
         </div>
-        <div className="text-center mt-8"><button onClick={() => navigate('/bots')} className="text-gray-400 hover:text-white transition-colors">← Back to Bot Selection</button></div>
       </div>
     </div>
   );
