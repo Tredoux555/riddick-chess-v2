@@ -31,6 +31,11 @@ import SecretStoreWants from './pages/SecretStoreWants';
 import StoreWants from './pages/StoreWants';
 import FakeAdmin from './pages/FakeAdmin';
 
+// Bot and Analysis components
+import BotSelection from './components/BotSelection';
+import BotGame from './components/BotGame';
+import GameAnalysis from './components/GameAnalysis';
+
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requireAdmin = false, requireClub = false }) => {
   const { user, loading } = useAuth();
@@ -94,6 +99,9 @@ function App() {
           <Route path="/tournament/:id" element={
             <ProtectedRoute><Tournament /></ProtectedRoute>
           } />
+          <Route path="/bots" element={<ProtectedRoute><BotSelection /></ProtectedRoute>} />
+          <Route path="/bot-game/:gameId" element={<ProtectedRoute><BotGame /></ProtectedRoute>} />
+          <Route path="/analysis/:analysisId" element={<ProtectedRoute><GameAnalysis /></ProtectedRoute>} />
           <Route path="/puzzles" element={
             <ProtectedRoute><Puzzles /></ProtectedRoute>
           } />

@@ -410,6 +410,7 @@ async function initDatabase() {
       LIMIT 100;
     `);
 
+    await initBotTables(client);
     console.log('✅ Database initialized successfully!');
   } catch (err) {
     console.error('❌ Database initialization error:', err.message);
@@ -420,3 +421,84 @@ async function initDatabase() {
 }
 
 module.exports = { initDatabase, pool };
+
+// Add bot tables function - call this from initDatabase
+async function initBotTables(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS bots (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      elo INTEGER NOT NULL,
+      emoji VARCHAR(10),
+      description TEXT,
+      skill_level INTEGER NOT NULL,
+      depth INTEGER DEFAULT 10,
+      think_time INTEGER DEFAULT 1000,
+      personality TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS bot_games (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      bot_id INTEGER REFERENCES bots(id),
+      pgn TEXT,
+      fen TEXT DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      moves TEXT[],
+      user_color VARCHAR(5) DEFAULT 'white',
+      result VARCHAR(20),
+      status VARCHAR(20) DEFAULT 'ongoing',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS game_analyses (
+      id SERIAL PRIMARY KEY,
+      game_id INTEGER,
+      game_type VARCHAR(20) DEFAULT 'pvp',
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      pgn TEXT NOT NULL,
+      white_accuracy DECIMAL(5,2),
+      black_accuracy DECIMAL(5,2),
+      analysis_data JSONB,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW(),
+      completed_at TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS move_evaluations (
+      id SERIAL PRIMARY KEY,
+      analysis_id INTEGER REFERENCES game_analyses(id) ON DELETE CASCADE,
+      move_number INTEGER NOT NULL,
+      color VARCHAR(5) NOT NULL,
+      move_played VARCHAR(10) NOT NULL,
+      best_move VARCHAR(10),
+      eval_before DECIMAL(6,2),
+      eval_after DECIMAL(6,2),
+      eval_change DECIMAL(6,2),
+      classification VARCHAR(20),
+      is_book_move BOOLEAN DEFAULT FALSE,
+      is_forced BOOLEAN DEFAULT FALSE
+    );
+
+    INSERT INTO bots (name, elo, emoji, description, skill_level, depth, think_time, personality) 
+    SELECT * FROM (VALUES
+      ('Baby Bot', 400, '🐣', 'Just learning to play! Perfect for absolute beginners.', 0, 1, 500, 'Makes random-ish moves, very easy to beat'),
+      ('Beginner Bot', 800, '🤖', 'A friendly opponent for new players.', 3, 3, 800, 'Plays simple moves, occasionally blunders'),
+      ('Intermediate Bot', 1200, '🧠', 'A solid club player level opponent.', 8, 8, 1000, 'Knows basic tactics, rarely blunders'),
+      ('Advanced Bot', 1600, '💪', 'A tough opponent that will challenge you!', 12, 12, 1500, 'Strong tactics, good positional understanding'),
+      ('Master Bot', 2000, '🎓', 'Near-expert level play. Very difficult!', 16, 15, 2000, 'Excellent strategy, finds deep tactics'),
+      ('Stockfish', 3200, '💀', 'MAXIMUM DESTRUCTION - You will probably lose!', 20, 20, 3000, 'Perfect play. No mercy. Good luck!')
+    ) AS v(name, elo, emoji, description, skill_level, depth, think_time, personality)
+    WHERE NOT EXISTS (SELECT 1 FROM bots LIMIT 1);
+
+    CREATE INDEX IF NOT EXISTS idx_bot_games_user ON bot_games(user_id);
+    CREATE INDEX IF NOT EXISTS idx_bot_games_status ON bot_games(status);
+    CREATE INDEX IF NOT EXISTS idx_game_analyses_user ON game_analyses(user_id);
+    CREATE INDEX IF NOT EXISTS idx_game_analyses_status ON game_analyses(status);
+    CREATE INDEX IF NOT EXISTS idx_move_evaluations_analysis ON move_evaluations(analysis_id);
+  `);
+  console.log('✅ Bot tables initialized!');
+}
+
+module.exports.initBotTables = initBotTables;

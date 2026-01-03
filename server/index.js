@@ -76,6 +76,8 @@ app.use('/api/customization', require('./routes/customization'));
 app.use('/api/healthcheck', require('./routes/healthcheck'));
 app.use('/api/secret-store', require('./routes/secret-store'));
 app.use('/api/store-features', require('./routes/store-features'));
+app.use('/api/bots', require('./routes/bots'));
+app.use('/api/analysis', require('./routes/analysis'));
 
 // TEMPORARY - Delete after use!
 app.get('/api/fix-missing-ratings', async (req, res) => {
