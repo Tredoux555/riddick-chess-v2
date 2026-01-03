@@ -63,9 +63,50 @@ const Admin = () => {
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
+  const [bannedIPs, setBannedIPs] = useState([]);
+  const [newBanIP, setNewBanIP] = useState('');
+  const [banReason, setBanReason] = useState('');
+
   useEffect(() => {
     axios.get('/api/admin/stats').then(r => setStats(r.data)).catch(console.error);
+    fetchBannedIPs();
   }, []);
+
+  const fetchBannedIPs = async () => {
+    try {
+      const res = await axios.get('/api/admin/banned-ips');
+      setBannedIPs(res.data);
+    } catch (err) {
+      console.error('Failed to fetch banned IPs:', err);
+    }
+  };
+
+  const handleBanIP = async () => {
+    if (!newBanIP) return alert('Enter an IP address');
+    try {
+      await axios.post('/api/admin/ban-ip', {
+        ip_address: newBanIP,
+        reason: banReason
+      });
+      setNewBanIP('');
+      setBanReason('');
+      fetchBannedIPs();
+      toast.success(`Banned IP: ${newBanIP}`);
+    } catch (err) {
+      toast.error('Failed to ban IP');
+    }
+  };
+
+  const handleUnbanIP = async (ip) => {
+    if (!window.confirm(`Unban ${ip}?`)) return;
+    try {
+      await axios.delete(`/api/admin/unban-ip/${encodeURIComponent(ip)}`);
+      fetchBannedIPs();
+      toast.success(`Unbanned IP: ${ip}`);
+    } catch (err) {
+      toast.error('Failed to unban IP');
+    }
+  };
   
   if (!stats) return <div className="spinner"></div>;
   
@@ -80,6 +121,53 @@ const Dashboard = () => {
         <div className="stat-card"><div className="stat-value">{stats.clubMembers}</div><div className="stat-label">Club Members</div></div>
         <div className="stat-card"><div className="stat-value">{stats.activeTournaments}</div><div className="stat-label">Active Tournaments</div></div>
       </div>
+
+      {/* IP Ban Section */}
+      <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '20px', marginTop: '20px', border: '2px solid #ef4444' }}>
+        <h3 style={{ color: '#ef4444', marginTop: 0 }}>🚫 IP Ban Management</h3>
+        
+        {/* Ban new IP */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="IP Address (e.g. 192.168.1.1)"
+            value={newBanIP}
+            onChange={(e) => setNewBanIP(e.target.value)}
+            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #333', background: '#0a0a0f', color: '#fff', minWidth: '150px' }}
+          />
+          <input
+            type="text"
+            placeholder="Reason (optional)"
+            value={banReason}
+            onChange={(e) => setBanReason(e.target.value)}
+            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #333', background: '#0a0a0f', color: '#fff', minWidth: '150px' }}
+          />
+          <button onClick={handleBanIP} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+            🔨 Ban IP
+          </button>
+        </div>
+
+        {/* Banned IPs list */}
+        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+          {bannedIPs.length === 0 ? (
+            <p style={{ color: '#94a3b8' }}>No banned IPs</p>
+          ) : (
+            bannedIPs.map((ban) => (
+              <div key={ban.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '8px' }}>
+                <div>
+                  <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{ban.ip_address}</span>
+                  <span style={{ color: '#94a3b8', marginLeft: '10px', fontSize: '12px' }}>{ban.reason}</span>
+                  <span style={{ color: '#666', marginLeft: '10px', fontSize: '12px' }}>{new Date(ban.banned_at).toLocaleDateString()}</span>
+                </div>
+                <button onClick={() => handleUnbanIP(ban.ip_address)} style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+                  Unban
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <style jsx>{`
         h1 { margin-bottom: 24px; }
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }

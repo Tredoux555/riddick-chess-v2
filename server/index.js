@@ -34,6 +34,22 @@ const io = new Server(server, {
 const { initializeSocket, userSockets } = require('./sockets');
 initializeSocket(io);
 
+// IP Ban middleware - add this early, after app is created
+const pool = require('./utils/db');
+app.use(async (req, res, next) => {
+  try {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+    const result = await pool.query('SELECT * FROM banned_ips WHERE ip_address = $1', [ip]);
+    if (result.rows.length > 0) {
+      return res.status(403).send('<h1>🚫 You have been banned from Riddick Chess</h1><p>Contact admin if you think this is a mistake.</p>');
+    }
+    req.userIP = ip; // Store IP for later use
+    next();
+  } catch (err) {
+    next(); // If DB error, let them through
+  }
+});
+
 // Middleware
 app.use(cors({
   origin: corsOrigin,

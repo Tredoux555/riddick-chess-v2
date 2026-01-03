@@ -570,4 +570,43 @@ router.post('/reports/:id/review', authenticateToken, requireAdmin, async (req, 
   }
 });
 
+// ============================================
+// IP BAN MANAGEMENT
+// ============================================
+
+// Get all banned IPs
+router.get('/banned-ips', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM banned_ips ORDER BY banned_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Ban an IP
+router.post('/ban-ip', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { ip_address, reason } = req.body;
+    await pool.query(
+      'INSERT INTO banned_ips (ip_address, reason, banned_by) VALUES ($1, $2, $3) ON CONFLICT (ip_address) DO NOTHING',
+      [ip_address, reason || 'No reason provided', req.user.username || 'admin']
+    );
+    res.json({ success: true, message: `Banned IP: ${ip_address}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Unban an IP
+router.delete('/unban-ip/:ip', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const ip = decodeURIComponent(req.params.ip);
+    await pool.query('DELETE FROM banned_ips WHERE ip_address = $1', [ip]);
+    res.json({ success: true, message: `Unbanned IP: ${ip}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
