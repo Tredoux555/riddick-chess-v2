@@ -5,7 +5,7 @@ const { Chess } = require('chess.js');
 const { authenticateToken } = require('../middleware/auth');
 const { botEngine } = require('../services/botEngine');
 
-router.get('/list', authenticateToken, async (req, res) => {
+router.get('/list', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name, elo, emoji, description, personality FROM bots ORDER BY elo ASC');
     res.json(result.rows);
