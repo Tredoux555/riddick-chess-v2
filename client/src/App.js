@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 
 // Layout
 import Navbar from './components/Navbar';
+import ShareButton from './components/ShareButton';
 
 // Pages
 import Home from './pages/Home';
@@ -139,6 +140,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+      <ShareButton />
     </div>
   );
 }
