@@ -1,3 +1,4 @@
+const pool = require('../utils/db');
 const express = require('express');
 const router = express.Router();
 const { botEngine } = require('../services/botEngine');
@@ -10,22 +11,22 @@ router.post('/request', async (req, res) => {
     let gamePgn = pgn;
     if (gameId && !pgn) {
       const table = gameType === 'bot' ? 'bot_games' : 'games';
-      const result = await req.app.locals.pool.query(`SELECT pgn FROM ${table} WHERE id = $1`, [gameId]);
+      const result = await pool.query(`SELECT pgn FROM ${table} WHERE id = $1`, [gameId]);
       if (result.rows.length === 0 || !result.rows[0].pgn) return res.status(404).json({ error: 'Game not found or no PGN available' });
       gamePgn = result.rows[0].pgn;
     }
     if (!gamePgn) return res.status(400).json({ error: 'PGN required' });
-    const existingAnalysis = await req.app.locals.pool.query(
+    const existingAnalysis = await pool.query(
       `SELECT * FROM game_analyses WHERE user_id = $1 AND pgn = $2 AND status = 'completed' ORDER BY created_at DESC LIMIT 1`,
       [userId, gamePgn]
     );
     if (existingAnalysis.rows.length > 0) return res.json({ analysisId: existingAnalysis.rows[0].id, status: 'completed', cached: true });
-    const analysisResult = await req.app.locals.pool.query(
+    const analysisResult = await pool.query(
       `INSERT INTO game_analyses (game_id, game_type, user_id, pgn, status) VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
       [gameId, gameType, userId, gamePgn]
     );
     const analysisId = analysisResult.rows[0].id;
-    processAnalysis(analysisId, gamePgn, req.app.locals.pool);
+    processAnalysis(analysisId, gamePgn, pool);
     res.json({ analysisId, status: 'pending', message: 'Analysis started! This may take a minute...' });
   } catch (err) {
     console.error('Error requesting analysis:', err);
@@ -58,13 +59,13 @@ router.get('/:analysisId', async (req, res) => {
   try {
     const { analysisId } = req.params;
     const userId = req.user?.id;
-    const result = await req.app.locals.pool.query(`SELECT * FROM game_analyses WHERE id = $1 AND user_id = $2`, [analysisId, userId]);
+    const result = await pool.query(`SELECT * FROM game_analyses WHERE id = $1 AND user_id = $2`, [analysisId, userId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Analysis not found' });
     const analysis = result.rows[0];
     if (analysis.status !== 'completed') {
       return res.json({ analysisId: analysis.id, status: analysis.status, message: analysis.status === 'analyzing' ? 'Analysis in progress...' : analysis.status === 'failed' ? 'Analysis failed. Please try again.' : 'Analysis pending...' });
     }
-    const movesResult = await req.app.locals.pool.query(
+    const movesResult = await pool.query(
       `SELECT * FROM move_evaluations WHERE analysis_id = $1 ORDER BY move_number, CASE WHEN color = 'white' THEN 0 ELSE 1 END`,
       [analysisId]
     );
@@ -92,7 +93,7 @@ router.get('/history/list', async (req, res) => {
     const userId = req.user?.id;
     const { limit = 20, offset = 0 } = req.query;
     if (!userId) return res.status(401).json({ error: 'Must be logged in' });
-    const result = await req.app.locals.pool.query(
+    const result = await pool.query(
       `SELECT id, game_type, white_accuracy, black_accuracy, status, created_at, completed_at FROM game_analyses WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );

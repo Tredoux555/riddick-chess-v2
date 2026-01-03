@@ -1,3 +1,4 @@
+const pool = require('../utils/db');
 const express = require('express');
 const router = express.Router();
 const { Chess } = require('chess.js');
@@ -5,7 +6,7 @@ const { botEngine } = require('../services/botEngine');
 
 router.get('/list', async (req, res) => {
   try {
-    const result = await req.app.locals.pool.query('SELECT id, name, elo, emoji, description, personality FROM bots ORDER BY elo ASC');
+    const result = await pool.query('SELECT id, name, elo, emoji, description, personality FROM bots ORDER BY elo ASC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching bots:', err);
@@ -19,11 +20,11 @@ router.post('/start', async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Must be logged in to play bots' });
     if (userColor === 'random') userColor = Math.random() < 0.5 ? 'white' : 'black';
-    const botResult = await req.app.locals.pool.query('SELECT * FROM bots WHERE id = $1', [botId]);
+    const botResult = await pool.query('SELECT * FROM bots WHERE id = $1', [botId]);
     if (botResult.rows.length === 0) return res.status(404).json({ error: 'Bot not found' });
     const bot = botResult.rows[0];
     const startingFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-    const gameResult = await req.app.locals.pool.query(
+    const gameResult = await pool.query(
       `INSERT INTO bot_games (user_id, bot_id, fen, user_color, moves, status) VALUES ($1, $2, $3, $4, $5, 'ongoing') RETURNING *`,
       [userId, botId, startingFen, userColor, []]
     );
@@ -36,7 +37,7 @@ router.post('/start', async (req, res) => {
       const chess = new Chess();
       chess.move(botMove, { sloppy: true });
       currentFen = chess.fen();
-      await req.app.locals.pool.query(`UPDATE bot_games SET fen = $1, moves = array_append(moves, $2), updated_at = NOW() WHERE id = $3`, [currentFen, botMove, game.id]);
+      await pool.query(`UPDATE bot_games SET fen = $1, moves = array_append(moves, $2), updated_at = NOW() WHERE id = $3`, [currentFen, botMove, game.id]);
     }
     res.json({ gameId: game.id, bot: { id: bot.id, name: bot.name, elo: bot.elo, emoji: bot.emoji }, fen: currentFen, userColor, botMove, moves: botMove ? [botMove] : [] });
   } catch (err) {
@@ -50,7 +51,7 @@ router.post('/move', async (req, res) => {
     const { gameId, move } = req.body;
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Must be logged in' });
-    const gameResult = await req.app.locals.pool.query(
+    const gameResult = await pool.query(
       `SELECT bg.*, b.skill_level, b.depth, b.think_time, b.name as bot_name FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2 AND bg.status = 'ongoing'`,
       [gameId, userId]
     );
@@ -81,7 +82,7 @@ router.post('/move', async (req, res) => {
     const pgnChess = new Chess();
     for (const m of moves) pgnChess.move(m, { sloppy: true });
     const pgn = pgnChess.pgn();
-    await req.app.locals.pool.query(`UPDATE bot_games SET fen = $1, moves = $2, status = $3, result = $4, pgn = $5, updated_at = NOW() WHERE id = $6`, [chess.fen(), moves, status, result, pgn, gameId]);
+    await pool.query(`UPDATE bot_games SET fen = $1, moves = $2, status = $3, result = $4, pgn = $5, updated_at = NOW() WHERE id = $6`, [chess.fen(), moves, status, result, pgn, gameId]);
     res.json({ success: true, fen: chess.fen(), userMove: move, botMove, moves, isGameOver: status === 'completed', result, isCheck: chess.isCheck(), pgn: status === 'completed' ? pgn : null });
   } catch (err) {
     console.error('Error making move:', err);
@@ -93,7 +94,7 @@ router.get('/game/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
     const userId = req.user?.id;
-    const result = await req.app.locals.pool.query(
+    const result = await pool.query(
       `SELECT bg.*, b.name as bot_name, b.emoji as bot_emoji, b.elo as bot_elo FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2`,
       [gameId, userId]
     );
@@ -111,7 +112,7 @@ router.post('/resign/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
     const userId = req.user?.id;
-    const result = await req.app.locals.pool.query(
+    const result = await pool.query(
       `UPDATE bot_games SET status = 'completed', result = CASE WHEN user_color = 'white' THEN '0-1' ELSE '1-0' END, updated_at = NOW() WHERE id = $1 AND user_id = $2 AND status = 'ongoing' RETURNING *`,
       [gameId, userId]
     );
@@ -128,7 +129,7 @@ router.get('/history', async (req, res) => {
     const userId = req.user?.id;
     const { limit = 20, offset = 0 } = req.query;
     if (!userId) return res.status(401).json({ error: 'Must be logged in' });
-    const result = await req.app.locals.pool.query(
+    const result = await pool.query(
       `SELECT bg.id, bg.result, bg.user_color, bg.status, bg.created_at, b.name as bot_name, b.emoji as bot_emoji, b.elo as bot_elo FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.user_id = $1 ORDER BY bg.created_at DESC LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );
