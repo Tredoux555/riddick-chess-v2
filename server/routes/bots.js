@@ -1,10 +1,11 @@
-const pool = require('../utils/db');
 const express = require('express');
 const router = express.Router();
+const pool = require('../utils/db');
 const { Chess } = require('chess.js');
+const { authenticateToken } = require('../middleware/auth');
 const { botEngine } = require('../services/botEngine');
 
-router.get('/list', async (req, res) => {
+router.get('/list', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name, elo, emoji, description, personality FROM bots ORDER BY elo ASC');
     res.json(result.rows);
@@ -14,7 +15,7 @@ router.get('/list', async (req, res) => {
   }
 });
 
-router.post('/start', async (req, res) => {
+router.post('/start', authenticateToken, async (req, res) => {
   try {
     let { botId, userColor = 'white' } = req.body;
     const userId = req.user?.id;
@@ -32,7 +33,6 @@ router.post('/start', async (req, res) => {
     let botMove = null;
     let currentFen = startingFen;
     if (userColor === 'black') {
-      await new Promise(resolve => setTimeout(resolve, bot.think_time));
       botMove = botEngine.getBestMove(startingFen, bot.skill_level, bot.depth);
       const chess = new Chess();
       chess.move(botMove, { sloppy: true });
@@ -46,7 +46,7 @@ router.post('/start', async (req, res) => {
   }
 });
 
-router.post('/move', async (req, res) => {
+router.post('/move', authenticateToken, async (req, res) => {
   try {
     const { gameId, move } = req.body;
     const userId = req.user?.id;
@@ -66,7 +66,6 @@ router.post('/move', async (req, res) => {
       else result = '1/2-1/2';
       status = 'completed';
     } else {
-      await new Promise(resolve => setTimeout(resolve, Math.min(game.think_time, 2000)));
       botMove = botEngine.getBestMove(chess.fen(), game.skill_level, game.depth);
       if (botMove) {
         chess.move(botMove, { sloppy: true });
@@ -90,7 +89,7 @@ router.post('/move', async (req, res) => {
   }
 });
 
-router.get('/game/:gameId', async (req, res) => {
+router.get('/game/:gameId', authenticateToken, async (req, res) => {
   try {
     const { gameId } = req.params;
     const userId = req.user?.id;
@@ -108,7 +107,7 @@ router.get('/game/:gameId', async (req, res) => {
   }
 });
 
-router.post('/resign/:gameId', async (req, res) => {
+router.post('/resign/:gameId', authenticateToken, async (req, res) => {
   try {
     const { gameId } = req.params;
     const userId = req.user?.id;
@@ -124,7 +123,7 @@ router.post('/resign/:gameId', async (req, res) => {
   }
 });
 
-router.get('/history', async (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
   try {
     const userId = req.user?.id;
     const { limit = 20, offset = 0 } = req.query;

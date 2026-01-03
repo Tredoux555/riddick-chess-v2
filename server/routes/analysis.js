@@ -1,9 +1,10 @@
-const pool = require('../utils/db');
 const express = require('express');
 const router = express.Router();
+const pool = require('../utils/db');
+const { authenticateToken } = require('../middleware/auth');
 const { botEngine } = require('../services/botEngine');
 
-router.post('/request', async (req, res) => {
+router.post('/request', authenticateToken, async (req, res) => {
   try {
     const { gameId, gameType = 'pvp', pgn } = req.body;
     const userId = req.user?.id;
@@ -55,7 +56,7 @@ async function processAnalysis(analysisId, pgn, pool) {
   }
 }
 
-router.get('/:analysisId', async (req, res) => {
+router.get('/:analysisId', authenticateToken, async (req, res) => {
   try {
     const { analysisId } = req.params;
     const userId = req.user?.id;
@@ -76,7 +77,7 @@ router.get('/:analysisId', async (req, res) => {
   }
 });
 
-router.post('/position', async (req, res) => {
+router.post('/position', authenticateToken, async (req, res) => {
   try {
     const { fen } = req.body;
     if (!fen) return res.status(400).json({ error: 'FEN required' });
@@ -88,7 +89,7 @@ router.post('/position', async (req, res) => {
   }
 });
 
-router.get('/history/list', async (req, res) => {
+router.get('/history/list', authenticateToken, async (req, res) => {
   try {
     const userId = req.user?.id;
     const { limit = 20, offset = 0 } = req.query;
