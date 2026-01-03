@@ -93,9 +93,11 @@ const ShareButton = () => {
               <button onClick={copyLink} style={{ background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold' }}>Copy</button>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href={`https://twitter.com/intent/tweet?text=Check%20out%20Riddick%20Chess!&url=${websiteUrl}`} target="_blank" rel="noopener noreferrer" style={{ background: '#1da1f2', color: 'white', padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Twitter</a>
               <a href={`https://wa.me/?text=Check%20out%20Riddick%20Chess!%20${websiteUrl}`} target="_blank" rel="noopener noreferrer" style={{ background: '#25d366', color: 'white', padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>WhatsApp</a>
+              <a href={`weixin://`} onClick={(e) => { e.preventDefault(); alert('Screenshot the QR code and share on WeChat!'); }} style={{ background: '#07c160', color: 'white', padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', cursor: 'pointer' }}>WeChat</a>
+              <a href={`https://www.xiaohongshu.com`} onClick={(e) => { e.preventDefault(); alert('Screenshot the QR code and share on RedNote!'); }} style={{ background: '#fe2c55', color: 'white', padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', cursor: 'pointer' }}>RedNote</a>
             </div>
 
             <button onClick={() => setShowModal(false)} style={{ marginTop: '20px', background: 'transparent', color: '#94a3b8', border: '1px solid #94a3b8', borderRadius: '10px', padding: '10px 30px', cursor: 'pointer' }}>Close</button>
