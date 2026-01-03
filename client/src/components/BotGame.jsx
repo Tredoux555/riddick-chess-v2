@@ -4,6 +4,35 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useAuth } from '../contexts/AuthContext';
 
+// Chess.com style piece images
+const pieceTheme = (piece) => {
+  const pieceMap = {
+    wK: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wk.png',
+    wQ: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wq.png',
+    wR: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png',
+    wB: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wb.png',
+    wN: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wn.png',
+    wP: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png',
+    bK: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bk.png',
+    bQ: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bq.png',
+    bR: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/br.png',
+    bB: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bb.png',
+    bN: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bn.png',
+    bP: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bp.png',
+  };
+  return pieceMap[piece];
+};
+
+const customPieces = () => {
+  const pieces = {};
+  ['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'].forEach(p => {
+    pieces[p] = ({ squareWidth }) => (
+      <img src={pieceTheme(p)} alt={p} style={{ width: squareWidth, height: squareWidth }} />
+    );
+  });
+  return pieces;
+};
+
 const BotGame = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
@@ -99,17 +128,17 @@ const BotGame = () => {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-6xl animate-pulse">♟️</div>
+    <div style={{ minHeight: '100vh', background: '#312e2b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: '64px' }}>♟️</div>
     </div>
   );
 
   if (!gameData) return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-6xl mb-4">❌</div>
-        <div className="text-white text-xl mb-4">Game not found</div>
-        <button onClick={() => navigate('/bots')} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold">Back to Bots</button>
+    <div style={{ minHeight: '100vh', background: '#312e2b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center', color: 'white' }}>
+        <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
+        <div style={{ fontSize: '20px', marginBottom: '16px' }}>Game not found</div>
+        <button onClick={() => navigate('/bots')} style={{ padding: '12px 24px', background: '#81b64c', border: 'none', borderRadius: '4px', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>Back to Bots</button>
       </div>
     </div>
   );
@@ -118,110 +147,117 @@ const BotGame = () => {
     if (!result) return '';
     if (result === '1/2-1/2') return 'Draw!';
     const youWon = (gameData.userColor === 'white' && result === '1-0') || (gameData.userColor === 'black' && result === '0-1');
-    return youWon ? 'You Won!' : `${gameData.bot.name} Wins!`;
+    return youWon ? '🎉 You Won!' : `${gameData.bot.name} Wins!`;
+  };
+
+  const styles = {
+    container: { minHeight: '100vh', background: '#312e2b', padding: '20px' },
+    wrapper: { maxWidth: '900px', margin: '0 auto', display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' },
+    boardSection: { background: '#262421', borderRadius: '8px', overflow: 'hidden' },
+    playerBar: { padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', background: '#1e1c1a' },
+    playerName: { color: 'white', fontWeight: 'bold', fontSize: '14px' },
+    playerElo: { color: '#999', fontSize: '12px' },
+    emoji: { fontSize: '28px' },
+    thinking: { marginLeft: 'auto', color: '#f0c36d', fontSize: '13px' },
+    sidebar: { width: '280px', display: 'flex', flexDirection: 'column', gap: '12px' },
+    panel: { background: '#262421', borderRadius: '8px', padding: '16px' },
+    panelTitle: { color: 'white', fontWeight: 'bold', fontSize: '14px', marginBottom: '12px' },
+    moveList: { background: '#1e1c1a', borderRadius: '4px', padding: '8px', maxHeight: '200px', overflowY: 'auto' },
+    moveRow: { display: 'flex', gap: '8px', padding: '2px 0', fontFamily: 'monospace', fontSize: '13px' },
+    moveNum: { color: '#666', width: '24px' },
+    moveWhite: { color: 'white', width: '60px' },
+    moveBlack: { color: '#ccc', width: '60px' },
+    button: { width: '100%', padding: '12px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' },
+    btnGreen: { background: '#81b64c', color: 'white' },
+    btnBlue: { background: '#5d9cec', color: 'white' },
+    btnRed: { background: '#e74c3c', color: 'white' },
+    btnGray: { background: 'transparent', color: '#999', border: 'none' },
+    resultBanner: { background: 'linear-gradient(135deg, #81b64c, #5d9cec)', borderRadius: '8px', padding: '20px', textAlign: 'center' },
+    resultText: { color: 'white', fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' },
+    resultSub: { color: 'rgba(255,255,255,0.8)', marginBottom: '16px' },
+    yourTurn: { marginLeft: 'auto', color: '#81b64c', fontSize: '13px', fontWeight: 'bold' },
   };
 
   return (
-    <div className="min-h-screen bg-[#312e2b] py-4 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-4 items-start justify-center">
-          {/* Board Section */}
-          <div className="w-full lg:w-auto">
-            {/* Opponent Info Bar */}
-            <div className="bg-[#262421] rounded-t-lg px-4 py-2 flex items-center gap-3">
-              <span className="text-2xl">{gameData.bot.emoji}</span>
-              <div>
-                <div className="text-white font-semibold">{gameData.bot.name}</div>
-                <div className="text-gray-400 text-xs">{gameData.bot.elo} ELO</div>
-              </div>
-              {thinking && (
-                <div className="ml-auto flex items-center gap-2 text-yellow-400 text-sm">
-                  <span className="animate-pulse">●</span> Thinking...
-                </div>
-              )}
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
+        {/* Board Section */}
+        <div style={styles.boardSection}>
+          {/* Opponent Bar */}
+          <div style={styles.playerBar}>
+            <span style={styles.emoji}>{gameData.bot.emoji}</span>
+            <div>
+              <div style={styles.playerName}>{gameData.bot.name}</div>
+              <div style={styles.playerElo}>{gameData.bot.elo} ELO</div>
             </div>
-            
-            {/* Chess Board - Fixed size */}
-            <div className="bg-[#262421]" style={{ width: '480px', maxWidth: '100vw' }}>
-              <Chessboard 
-                position={game.fen()} 
-                onPieceDrop={onDrop} 
-                boardOrientation={gameData.userColor} 
-                customSquareStyles={customSquareStyles} 
-                animationDuration={200}
-                boardWidth={480}
-                customDarkSquareStyle={{ backgroundColor: '#779556' }}
-                customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
-              />
-            </div>
-            
-            {/* Player Info Bar */}
-            <div className="bg-[#262421] rounded-b-lg px-4 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  {gameData.userColor === 'white' ? 'W' : 'B'}
-                </div>
-                <div>
-                  <div className="text-white font-semibold">You</div>
-                  <div className="text-gray-400 text-xs capitalize">{gameData.userColor}</div>
-                </div>
-              </div>
-              {!gameOver && game.turn() === gameData.userColor[0] && (
-                <div className="text-green-400 text-sm font-medium">Your turn</div>
-              )}
-            </div>
+            {thinking && <div style={styles.thinking}>🤔 Thinking...</div>}
           </div>
+          
+          {/* Chess Board */}
+          <Chessboard 
+            position={game.fen()} 
+            onPieceDrop={onDrop} 
+            boardOrientation={gameData.userColor} 
+            customSquareStyles={customSquareStyles} 
+            animationDuration={200}
+            boardWidth={480}
+            customDarkSquareStyle={{ backgroundColor: '#779556' }}
+            customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+            customPieces={customPieces()}
+          />
+          
+          {/* Player Bar */}
+          <div style={styles.playerBar}>
+            <div style={{ width: '28px', height: '28px', background: '#81b64c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '12px' }}>
+              You
+            </div>
+            <div>
+              <div style={styles.playerName}>You</div>
+              <div style={styles.playerElo}>{gameData.userColor}</div>
+            </div>
+            {!gameOver && game.turn() === gameData.userColor[0] && <div style={styles.yourTurn}>Your turn</div>}
+          </div>
+        </div>
 
-          {/* Side Panel */}
-          <div className="w-full lg:w-72 space-y-3">
-            {/* Game Over Banner */}
-            {gameOver && (
-              <div className="bg-[#262421] rounded-lg p-4 text-center border border-gray-600">
-                <div className="text-2xl font-bold text-white mb-1">{getResultText()}</div>
-                <div className="text-gray-400 text-sm mb-4">vs {gameData.bot.name}</div>
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => navigate('/bots')} className="w-full py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold text-sm">
-                    New Game
-                  </button>
-                  <button onClick={handleAnalyze} className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold text-sm">
-                    Analyze Game
-                  </button>
-                </div>
+        {/* Sidebar */}
+        <div style={styles.sidebar}>
+          {/* Game Over Banner */}
+          {gameOver && (
+            <div style={styles.resultBanner}>
+              <div style={styles.resultText}>{getResultText()}</div>
+              <div style={styles.resultSub}>vs {gameData.bot.name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={() => navigate('/bots')} style={{ ...styles.button, ...styles.btnGreen }}>🎮 New Game</button>
+                <button onClick={handleAnalyze} style={{ ...styles.button, ...styles.btnBlue }}>🤖 Analyze Game</button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Move History */}
-            <div className="bg-[#262421] rounded-lg p-3">
-              <h3 className="text-white font-semibold text-sm mb-2">Moves</h3>
-              <div className="max-h-48 overflow-y-auto bg-[#1e1c1a] rounded p-2">
-                {moveHistory.length === 0 ? (
-                  <div className="text-gray-500 text-xs text-center py-2">No moves yet</div>
-                ) : (
-                  <div className="text-xs font-mono">
-                    {Array.from({ length: Math.ceil(moveHistory.length / 2) }).map((_, i) => (
-                      <div key={i} className="flex gap-2 py-0.5">
-                        <span className="text-gray-500 w-6">{i + 1}.</span>
-                        <span className="text-white w-14">{moveHistory[i * 2] || ''}</span>
-                        <span className="text-gray-300 w-14">{moveHistory[i * 2 + 1] || ''}</span>
-                      </div>
-                    ))}
+          {/* Move History */}
+          <div style={styles.panel}>
+            <div style={styles.panelTitle}>📜 Moves</div>
+            <div style={styles.moveList}>
+              {moveHistory.length === 0 ? (
+                <div style={{ color: '#666', textAlign: 'center', padding: '10px' }}>No moves yet</div>
+              ) : (
+                Array.from({ length: Math.ceil(moveHistory.length / 2) }).map((_, i) => (
+                  <div key={i} style={styles.moveRow}>
+                    <span style={styles.moveNum}>{i + 1}.</span>
+                    <span style={styles.moveWhite}>{moveHistory[i * 2] || ''}</span>
+                    <span style={styles.moveBlack}>{moveHistory[i * 2 + 1] || ''}</span>
                   </div>
-                )}
-              </div>
+                ))
+              )}
             </div>
-
-            {/* Resign Button */}
-            {!gameOver && (
-              <button onClick={handleResign} className="w-full py-2 bg-red-600/80 hover:bg-red-600 rounded-lg text-white font-semibold text-sm">
-                Resign
-              </button>
-            )}
-
-            {/* Back Link */}
-            <button onClick={() => navigate('/bots')} className="w-full text-gray-400 hover:text-white text-sm py-2">
-              ← Back to Bots
-            </button>
           </div>
+
+          {/* Resign Button */}
+          {!gameOver && (
+            <button onClick={handleResign} style={{ ...styles.button, ...styles.btnRed }}>🏳️ Resign</button>
+          )}
+
+          {/* Back Link */}
+          <button onClick={() => navigate('/bots')} style={{ ...styles.button, ...styles.btnGray }}>← Back to Bots</button>
         </div>
       </div>
     </div>
