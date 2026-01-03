@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, FaCrown } from 'react-icons/fa';
+import ShareSection from '../components/ShareSection';
 
 const Home = () => {
   const { user, isClubMember } = useAuth();
@@ -76,6 +77,8 @@ const Home = () => {
             <p>Exclusive content and events for verified club members</p>
           </div>
         </div>
+
+        <ShareSection />
 
         <style jsx>{`
           .landing-page {
@@ -254,6 +257,8 @@ const Home = () => {
           </div>
         )}
       </div>
+
+      <ShareSection />
 
       <style jsx>{`
         .welcome-section {
