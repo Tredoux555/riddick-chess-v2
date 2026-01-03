@@ -77,6 +77,23 @@ app.use('/api/healthcheck', require('./routes/healthcheck'));
 app.use('/api/secret-store', require('./routes/secret-store'));
 app.use('/api/store-features', require('./routes/store-features'));
 
+// TEMPORARY - Delete after use!
+app.get('/api/fix-missing-ratings', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      INSERT INTO ratings (user_id, bullet, blitz, rapid, classical, bullet_rd, blitz_rd, rapid_rd, classical_rd, bullet_vol, blitz_vol, rapid_vol, classical_vol)
+      SELECT u.id, 1200, 1200, 1200, 1200, 350, 350, 350, 350, 0.06, 0.06, 0.06, 0.06
+      FROM users u
+      LEFT JOIN ratings r ON u.id = r.user_id
+      WHERE r.id IS NULL
+      RETURNING user_id
+    `);
+    res.json({ fixed: result.rows.length, users: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
