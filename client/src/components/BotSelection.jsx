@@ -13,7 +13,7 @@ const BotSelection = () => {
 
   const fetchBots = async () => {
     try {
-      const res = await fetch('/api/bots/list');
+      const res = await fetch('/api/bots/list', { credentials: 'include' });
       const data = await res.json();
       setBots(data);
     } catch (err) { console.error('Failed to fetch bots:', err); }
