@@ -41,6 +41,7 @@ const Game = () => {
   const [reconnectCountdown, setReconnectCountdown] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingPromotion, setPendingPromotion] = useState(null);
+  const [tournamentId, setTournamentId] = useState(null);
 
   useEffect(() => {
     preloadSounds();
@@ -86,6 +87,11 @@ const Game = () => {
       if (data.status === 'completed' || data.completed) {
         setGameOver(true);
         setResult(data.result);
+      }
+      
+      // Check if this is a tournament game
+      if (data.tournamentId) {
+        setTournamentId(data.tournamentId);
       }
     });
 
@@ -452,9 +458,15 @@ const Game = () => {
                   )}
                 </div>
               )}
-              <button className="btn btn-primary" onClick={() => navigate('/play')}>
-                Play Again
-              </button>
+              {tournamentId ? (
+                <button className="btn btn-primary" onClick={() => navigate(`/tournament/${tournamentId}`)}>
+                  🏆 Back to Tournament
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => navigate('/play')}>
+                  Play Again
+                </button>
+              )}
             </div>
           )}
 

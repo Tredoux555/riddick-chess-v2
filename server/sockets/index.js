@@ -31,7 +31,7 @@ class GameState {
     this.lastMoveTime = Date.now();
     this.timerInterval = null;
     this.status = gameData.status || 'active';
-    this.tournamentId = gameData.tournament_id;
+    this.tournamentId = gameData.tournament_id || gameData.tournamentId;
     this.rated = gameData.rated !== false;
     this.drawOffer = null; // 'w' or 'b' if draw offered
     this.disconnectedPlayer = null;
@@ -301,6 +301,16 @@ function initializeSocket(io) {
         }
         
         const gameData = result.rows[0];
+        
+        // Check if this is a tournament game
+        const tournamentCheck = await pool.query(
+          'SELECT tournament_id FROM tournament_pairings WHERE game_id = $1 LIMIT 1',
+          [gameId]
+        );
+        if (tournamentCheck.rows.length > 0) {
+          gameData.tournament_id = tournamentCheck.rows[0].tournament_id;
+        }
+        
         if (gameData.status === 'completed') {
           return socket.emit('game:state', { ...gameData, completed: true });
         }
