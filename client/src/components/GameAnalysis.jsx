@@ -4,6 +4,51 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useAuth } from '../contexts/AuthContext';
 
+// Board theme colors
+const BOARD_THEMES = {
+  classic: { light: '#f0d9b5', dark: '#b58863' },
+  blue: { light: '#dee3e6', dark: '#8ca2ad' },
+  green: { light: '#eeeed2', dark: '#769656' },
+  purple: { light: '#e8e0f0', dark: '#7b61a8' },
+  wood: { light: '#e8d0aa', dark: '#a87c50' }
+};
+
+// Piece set URLs (using lichess CDN - works in China)
+const PIECE_URLS = {
+  neo: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150',
+  cburnett: 'https://lichess1.org/assets/piece/cburnett',
+  merida: 'https://lichess1.org/assets/piece/merida',
+  alpha: 'https://lichess1.org/assets/piece/alpha',
+  classic: 'https://lichess1.org/assets/piece/maestro'
+};
+
+// Create custom pieces from piece set
+const createPieces = (pieceSet) => {
+  const baseUrl = PIECE_URLS[pieceSet] || PIECE_URLS.cburnett;
+  const isChessCom = baseUrl.includes('chesscomfiles');
+  const pieces = {};
+  const pieceMap = {
+    wK: isChessCom ? 'wk.png' : 'wK.svg',
+    wQ: isChessCom ? 'wq.png' : 'wQ.svg',
+    wR: isChessCom ? 'wr.png' : 'wR.svg',
+    wB: isChessCom ? 'wb.png' : 'wB.svg',
+    wN: isChessCom ? 'wn.png' : 'wN.svg',
+    wP: isChessCom ? 'wp.png' : 'wP.svg',
+    bK: isChessCom ? 'bk.png' : 'bK.svg',
+    bQ: isChessCom ? 'bq.png' : 'bQ.svg',
+    bR: isChessCom ? 'br.png' : 'bR.svg',
+    bB: isChessCom ? 'bb.png' : 'bB.svg',
+    bN: isChessCom ? 'bn.png' : 'bN.svg',
+    bP: isChessCom ? 'bp.png' : 'bP.svg',
+  };
+  Object.entries(pieceMap).forEach(([piece, file]) => {
+    pieces[piece] = ({ squareWidth }) => (
+      <img src={`${baseUrl}/${file}`} alt={piece} style={{ width: squareWidth, height: squareWidth }} />
+    );
+  });
+  return pieces;
+};
+
 const GameAnalysis = () => {
   const { analysisId } = useParams();
   const navigate = useNavigate();
@@ -14,6 +59,29 @@ const GameAnalysis = () => {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [game, setGame] = useState(new Chess());
   const [autoPlay, setAutoPlay] = useState(false);
+  const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'cburnett' });
+
+  // Fetch user preferences
+  useEffect(() => {
+    const fetchPrefs = async () => {
+      try {
+        const res = await fetch('/api/customization/preferences', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPreferences({
+            board_theme: data.board_theme || 'green',
+            piece_set: data.piece_set || 'cburnett'
+          });
+        }
+      } catch (err) { console.log('Using default preferences'); }
+    };
+    if (token) fetchPrefs();
+  }, [token]);
+
+  const boardTheme = BOARD_THEMES[preferences.board_theme] || BOARD_THEMES.green;
+  const customPieces = createPieces(preferences.piece_set);
 
   const classifications = {
     brilliant: { icon: '✨', color: 'text-cyan-400', bg: 'bg-cyan-500/20', label: 'Brilliant!' },
@@ -131,7 +199,7 @@ const GameAnalysis = () => {
                 </div>
               ) : <div className="text-gray-400 text-center">Starting position • Use arrows to navigate</div>}
             </div>
-            <div className="bg-gray-700 p-3"><Chessboard position={game.fen()} boardOrientation="white" arePiecesDraggable={false} animationDuration={200}/></div>
+            <div className="bg-gray-700 p-3"><Chessboard position={game.fen()} boardOrientation="white" arePiecesDraggable={false} animationDuration={200} customLightSquareStyle={{ backgroundColor: boardTheme.light }} customDarkSquareStyle={{ backgroundColor: boardTheme.dark }} customPieces={customPieces}/></div>
             <div className="bg-gray-800 rounded-b-2xl p-4">
               <div className="flex items-center justify-center gap-3">
                 <button onClick={goToStart} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-xl">⏮️</button>

@@ -4,6 +4,58 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useAuth } from '../contexts/AuthContext';
 
+// Board theme colors
+const BOARD_THEMES = {
+  classic: { light: '#f0d9b5', dark: '#b58863' },
+  blue: { light: '#dee3e6', dark: '#8ca2ad' },
+  green: { light: '#eeeed2', dark: '#769656' },
+  purple: { light: '#e8e0f0', dark: '#7b61a8' },
+  wood: { light: '#e8d0aa', dark: '#a87c50' }
+};
+
+// Piece set URLs (using lichess CDN - open source)
+const PIECE_URLS = {
+  neo: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150',
+  cburnett: 'https://lichess1.org/assets/piece/cburnett',
+  merida: 'https://lichess1.org/assets/piece/merida',
+  alpha: 'https://lichess1.org/assets/piece/alpha',
+  classic: 'https://lichess1.org/assets/piece/maestro'
+};
+
+// Create custom pieces from piece set
+const createPieces = (pieceSet) => {
+  const baseUrl = PIECE_URLS[pieceSet] || PIECE_URLS.cburnett;
+  const isChessCom = baseUrl.includes('chesscomfiles');
+  const pieces = {};
+  
+  const pieceMap = {
+    wK: isChessCom ? 'wk.png' : 'wK.svg',
+    wQ: isChessCom ? 'wq.png' : 'wQ.svg',
+    wR: isChessCom ? 'wr.png' : 'wR.svg',
+    wB: isChessCom ? 'wb.png' : 'wB.svg',
+    wN: isChessCom ? 'wn.png' : 'wN.svg',
+    wP: isChessCom ? 'wp.png' : 'wP.svg',
+    bK: isChessCom ? 'bk.png' : 'bK.svg',
+    bQ: isChessCom ? 'bq.png' : 'bQ.svg',
+    bR: isChessCom ? 'br.png' : 'bR.svg',
+    bB: isChessCom ? 'bb.png' : 'bB.svg',
+    bN: isChessCom ? 'bn.png' : 'bN.svg',
+    bP: isChessCom ? 'bp.png' : 'bP.svg',
+  };
+  
+  Object.entries(pieceMap).forEach(([piece, file]) => {
+    pieces[piece] = ({ squareWidth }) => (
+      <img 
+        src={`${baseUrl}/${file}`} 
+        alt={piece} 
+        style={{ width: squareWidth, height: squareWidth }} 
+      />
+    );
+  });
+  
+  return pieces;
+};
+
 const BotGame = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
@@ -16,6 +68,26 @@ const BotGame = () => {
   const [gameOver, setGameOver] = useState(false);
   const [result, setResult] = useState(null);
   const [lastMove, setLastMove] = useState(null);
+  const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'neo' });
+
+  // Fetch user preferences
+  useEffect(() => {
+    const fetchPrefs = async () => {
+      try {
+        const res = await fetch('/api/customization/preferences', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPreferences({
+            board_theme: data.board_theme || 'green',
+            piece_set: data.piece_set || 'neo'
+          });
+        }
+      } catch (err) { console.log('Using default preferences'); }
+    };
+    if (token) fetchPrefs();
+  }, [token]);
 
   const fetchGame = useCallback(async () => {
     try {
@@ -92,97 +164,311 @@ const BotGame = () => {
     } catch (err) { console.error('Analysis request failed:', err); }
   };
 
-  const squareStyles = {};
+  // Format moves for display (pair them up)
+  const formatMoves = () => {
+    const pairs = [];
+    for (let i = 0; i < moveHistory.length; i += 2) {
+      pairs.push({
+        number: Math.floor(i / 2) + 1,
+        white: moveHistory[i] || '',
+        black: moveHistory[i + 1] || ''
+      });
+    }
+    return pairs;
+  };
+
+  // Get board colors from theme
+  const boardTheme = BOARD_THEMES[preferences.board_theme] || BOARD_THEMES.green;
+  const customPieces = createPieces(preferences.piece_set);
+
+  // Highlight squares for last move
+  const customSquareStyles = {};
   if (lastMove) {
-    squareStyles[lastMove.from] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
-    squareStyles[lastMove.to] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
+    customSquareStyles[lastMove.from] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
+    customSquareStyles[lastMove.to] = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
   }
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#312e2b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ fontSize: '48px' }}>♟️ Loading...</div>
-    </div>
-  );
-
-  if (!gameData) return (
-    <div style={{ minHeight: '100vh', background: '#312e2b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-        <div>Game not found</div>
-        <button onClick={() => navigate('/bots')} style={{ marginTop: '16px', padding: '12px 24px', background: '#81b64c', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Back to Bots</button>
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loading}>Loading game...</div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  const resultText = result === '1/2-1/2' ? 'Draw!' : 
-    ((gameData.userColor === 'white' && result === '1-0') || (gameData.userColor === 'black' && result === '0-1')) ? '🎉 You Won!' : `${gameData.bot.name} Wins!`;
+  if (!gameData) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.error}>
+          <h2>Game not found</h2>
+          <button style={styles.button} onClick={() => navigate('/bots')}>Back to Bots</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#312e2b', padding: '20px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {/* Board */}
-          <div>
-            <div style={{ background: '#262421', padding: '10px 16px', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '24px' }}>{gameData.bot.emoji}</span>
-              <div>
-                <div style={{ color: 'white', fontWeight: 'bold' }}>{gameData.bot.name}</div>
-                <div style={{ color: '#999', fontSize: '12px' }}>{gameData.bot.elo} ELO</div>
-              </div>
-              {thinking && <span style={{ marginLeft: 'auto', color: '#f0c36d' }}>🤔 Thinking...</span>}
-            </div>
+    <div style={styles.container}>
+      <div style={styles.gameArea}>
+        {/* Left side - Board */}
+        <div style={styles.boardSection}>
+          {/* Opponent info (bot) */}
+          <div style={styles.playerInfo}>
+            <span style={styles.botEmoji}>{gameData.bot?.emoji || '🤖'}</span>
+            <span style={styles.playerName}>{gameData.bot?.name || 'Bot'}</span>
+            <span style={styles.elo}>({gameData.bot?.elo || '?'})</span>
+            {thinking && <span style={styles.thinkingIndicator}>Thinking...</span>}
+          </div>
+
+          {/* Chess board */}
+          <div style={styles.boardWrapper}>
             <Chessboard
               position={game.fen()}
               onPieceDrop={onDrop}
-              boardOrientation={gameData.userColor}
-              customSquareStyles={squareStyles}
-              boardWidth={Math.min(480, window.innerWidth - 40)}
-              customDarkSquareStyle={{ backgroundColor: '#779556' }}
-              customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+              boardOrientation={gameData.userColor || 'white'}
+              customBoardStyle={{
+                borderRadius: '4px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+              }}
+              customLightSquareStyle={{ backgroundColor: boardTheme.light }}
+              customDarkSquareStyle={{ backgroundColor: boardTheme.dark }}
+              customSquareStyles={customSquareStyles}
+              customPieces={customPieces}
+              arePiecesDraggable={!gameOver && !thinking}
             />
-            <div style={{ background: '#262421', padding: '10px 16px', borderRadius: '0 0 8px 8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '24px', height: '24px', background: '#81b64c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: 'bold' }}>You</div>
-              <div>
-                <div style={{ color: 'white', fontWeight: 'bold' }}>You</div>
-                <div style={{ color: '#999', fontSize: '12px', textTransform: 'capitalize' }}>{gameData.userColor}</div>
-              </div>
-              {!gameOver && game.turn() === gameData.userColor[0] && <span style={{ marginLeft: 'auto', color: '#81b64c', fontWeight: 'bold' }}>Your turn</span>}
+          </div>
+
+          {/* Your info */}
+          <div style={styles.playerInfo}>
+            <span style={styles.playerName}>You</span>
+            <span style={styles.colorBadge}>({gameData.userColor})</span>
+          </div>
+        </div>
+
+        {/* Right side - Sidebar */}
+        <div style={styles.sidebar}>
+          {/* Game status */}
+          {gameOver && (
+            <div style={styles.gameOverBanner}>
+              <h3 style={styles.gameOverTitle}>Game Over</h3>
+              <p style={styles.resultText}>
+                {result === 'white' ? 'White wins!' : 
+                 result === 'black' ? 'Black wins!' : 
+                 'Draw!'}
+              </p>
+            </div>
+          )}
+
+          {/* Move history */}
+          <div style={styles.moveHistorySection}>
+            <h3 style={styles.sectionTitle}>Moves</h3>
+            <div style={styles.moveList}>
+              {formatMoves().map((pair) => (
+                <div key={pair.number} style={styles.movePair}>
+                  <span style={styles.moveNumber}>{pair.number}.</span>
+                  <span style={styles.moveWhite}>{pair.white}</span>
+                  <span style={styles.moveBlack}>{pair.black}</span>
+                </div>
+              ))}
+              {moveHistory.length === 0 && (
+                <p style={styles.noMoves}>No moves yet</p>
+              )}
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div style={{ width: '260px' }}>
-            {gameOver && (
-              <div style={{ background: 'linear-gradient(135deg, #81b64c, #5d9cec)', borderRadius: '8px', padding: '20px', textAlign: 'center', marginBottom: '12px' }}>
-                <div style={{ color: 'white', fontSize: '22px', fontWeight: 'bold', marginBottom: '8px' }}>{resultText}</div>
-                <div style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>vs {gameData.bot.name}</div>
-                <button onClick={() => navigate('/bots')} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', color: 'white', fontWeight: 'bold', cursor: 'pointer', marginBottom: '8px' }}>🎮 New Game</button>
-                <button onClick={handleAnalyze} style={{ width: '100%', padding: '10px', background: 'white', border: 'none', borderRadius: '6px', color: '#333', fontWeight: 'bold', cursor: 'pointer' }}>🤖 Analyze</button>
-              </div>
+          {/* Action buttons */}
+          <div style={styles.actions}>
+            {!gameOver && (
+              <button style={styles.resignButton} onClick={handleResign}>
+                🏳️ Resign
+              </button>
             )}
-            <div style={{ background: '#262421', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
-              <div style={{ color: 'white', fontWeight: 'bold', marginBottom: '8px' }}>📜 Moves</div>
-              <div style={{ background: '#1e1c1a', borderRadius: '4px', padding: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                {moveHistory.length === 0 ? (
-                  <div style={{ color: '#666', textAlign: 'center' }}>No moves yet</div>
-                ) : (
-                  Array.from({ length: Math.ceil(moveHistory.length / 2) }).map((_, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px', fontFamily: 'monospace', fontSize: '13px', padding: '2px 0' }}>
-                      <span style={{ color: '#666', width: '24px' }}>{i + 1}.</span>
-                      <span style={{ color: 'white', width: '50px' }}>{moveHistory[i * 2]}</span>
-                      <span style={{ color: '#aaa', width: '50px' }}>{moveHistory[i * 2 + 1] || ''}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            {!gameOver && <button onClick={handleResign} style={{ width: '100%', padding: '12px', background: '#c0392b', border: 'none', borderRadius: '6px', color: 'white', fontWeight: 'bold', cursor: 'pointer', marginBottom: '12px' }}>🏳️ Resign</button>}
-            <button onClick={() => navigate('/bots')} style={{ width: '100%', padding: '10px', background: 'transparent', border: 'none', color: '#999', cursor: 'pointer' }}>← Back to Bots</button>
+            {gameOver && (
+              <button style={styles.analyzeButton} onClick={handleAnalyze}>
+                📊 Analyze Game
+              </button>
+            )}
+            <button style={styles.backButton} onClick={() => navigate('/bots')}>
+              ← Back to Bots
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Styles
+const styles = {
+  container: {
+    minHeight: '100vh',
+    backgroundColor: '#1a1a2e',
+    padding: '20px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start'
+  },
+  loading: {
+    color: '#fff',
+    fontSize: '1.5rem',
+    marginTop: '100px'
+  },
+  error: {
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: '100px'
+  },
+  gameArea: {
+    display: 'flex',
+    gap: '30px',
+    maxWidth: '1000px',
+    width: '100%'
+  },
+  boardSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  boardWrapper: {
+    width: '500px',
+    height: '500px'
+  },
+  playerInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 15px',
+    backgroundColor: '#16213e',
+    borderRadius: '8px',
+    color: '#fff'
+  },
+  botEmoji: {
+    fontSize: '1.5rem'
+  },
+  playerName: {
+    fontWeight: 'bold',
+    fontSize: '1.1rem'
+  },
+  elo: {
+    color: '#888',
+    fontSize: '0.9rem'
+  },
+  colorBadge: {
+    color: '#888',
+    fontSize: '0.9rem'
+  },
+  thinkingIndicator: {
+    marginLeft: 'auto',
+    color: '#ffc107',
+    animation: 'pulse 1s infinite'
+  },
+  sidebar: {
+    width: '280px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+  },
+  gameOverBanner: {
+    backgroundColor: '#0f3460',
+    padding: '15px',
+    borderRadius: '8px',
+    textAlign: 'center'
+  },
+  gameOverTitle: {
+    color: '#e94560',
+    margin: '0 0 5px 0',
+    fontSize: '1.3rem'
+  },
+  resultText: {
+    color: '#fff',
+    margin: 0,
+    fontSize: '1.1rem'
+  },
+  moveHistorySection: {
+    backgroundColor: '#16213e',
+    borderRadius: '8px',
+    padding: '15px',
+    flex: 1,
+    maxHeight: '350px',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  sectionTitle: {
+    color: '#fff',
+    margin: '0 0 10px 0',
+    fontSize: '1rem',
+    borderBottom: '1px solid #333',
+    paddingBottom: '8px'
+  },
+  moveList: {
+    overflowY: 'auto',
+    flex: 1
+  },
+  movePair: {
+    display: 'grid',
+    gridTemplateColumns: '30px 1fr 1fr',
+    gap: '5px',
+    padding: '4px 0',
+    color: '#ccc',
+    fontSize: '0.95rem'
+  },
+  moveNumber: {
+    color: '#888'
+  },
+  moveWhite: {
+    color: '#fff'
+  },
+  moveBlack: {
+    color: '#aaa'
+  },
+  noMoves: {
+    color: '#666',
+    fontStyle: 'italic',
+    margin: 0
+  },
+  actions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  button: {
+    padding: '12px 20px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold'
+  },
+  resignButton: {
+    padding: '12px 20px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    backgroundColor: '#dc3545',
+    color: '#fff'
+  },
+  analyzeButton: {
+    padding: '12px 20px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    backgroundColor: '#28a745',
+    color: '#fff'
+  },
+  backButton: {
+    padding: '12px 20px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    backgroundColor: '#6c757d',
+    color: '#fff'
+  }
 };
 
 export default BotGame;
