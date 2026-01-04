@@ -18,27 +18,36 @@ const Tournament = () => {
     loadTournament();
     loadActiveGames();
     
-    // Auto-refresh every 2 seconds for real-time updates
+    // Silent refresh every 3 seconds (no loading spinner)
     const interval = setInterval(() => {
-      loadTournament();
+      silentRefresh();
       loadActiveGames();
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [id]);
 
+  // Initial load - shows loading spinner
   const loadTournament = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await axios.get(`/api/tournaments/${id}`);
-      console.log('Tournament data:', response.data);
       setTournament(response.data);
     } catch (err) {
       console.error('Failed to load tournament:', err);
       setError(err.message);
-      toast.error('Failed to load tournament');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Silent refresh - no spinner, no error toast
+  const silentRefresh = async () => {
+    try {
+      const response = await axios.get(`/api/tournaments/${id}`);
+      setTournament(response.data);
+    } catch (err) {
+      // Silent fail
     }
   };
 
