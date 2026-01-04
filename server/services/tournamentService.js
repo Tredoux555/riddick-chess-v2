@@ -370,11 +370,11 @@ class TournamentService {
 
     // Get participants sorted by rating
     const participants = await pool.query(`
-      SELECT tp.user_id, ur.blitz_rating as rating
+      SELECT tp.user_id, COALESCE(ur.blitz_rating, 1500) as rating
       FROM tournament_participants tp
-      JOIN user_ratings ur ON tp.user_id = ur.user_id
-      WHERE tp.tournament_id = $1 AND tp.is_withdrawn = FALSE
-      ORDER BY ur.blitz_rating DESC
+      LEFT JOIN user_ratings ur ON tp.user_id = ur.user_id
+      WHERE tp.tournament_id = $1 AND (tp.is_withdrawn = FALSE OR tp.is_withdrawn IS NULL)
+      ORDER BY COALESCE(ur.blitz_rating, 1500) DESC
     `, [tournamentId]);
 
     if (participants.rows.length < 2) {
