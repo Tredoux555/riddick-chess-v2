@@ -162,4 +162,49 @@ router.post('/:id/next-round', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
+// Process forfeits for inactive players (admin only)
+router.post('/:id/process-forfeits', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await tournamentService.processForfeits(req.params.id);
+    res.json({ success: true, forfeitsProcessed: result.processed });
+  } catch (error) {
+    console.error('Process forfeits error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get inactive players (admin only)
+router.get('/:id/inactive-players', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 12;
+    const players = await tournamentService.getInactivePlayers(req.params.id, hours);
+    res.json(players);
+  } catch (error) {
+    console.error('Get inactive players error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Check-in for tournament
+router.post('/:id/check-in', authenticateToken, async (req, res) => {
+  try {
+    const result = await tournamentService.checkInPlayer(req.params.id, req.user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Check-in error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update player activity (called when player is active in tournament)
+router.post('/:id/activity', authenticateToken, async (req, res) => {
+  try {
+    await tournamentService.updatePlayerActivity(req.params.id, req.user.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update activity error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

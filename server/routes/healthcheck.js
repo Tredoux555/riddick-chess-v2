@@ -621,6 +621,72 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
     addTest('Schema', '[Tournament] Participant Columns', 'fail', null, e.message);
   }
 
+  // Test: Tournament no-show protection columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'tournament_participants' 
+      AND column_name IN ('last_activity', 'games_forfeited', 'is_active', 'checked_in')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    const required = ['last_activity', 'games_forfeited', 'is_active', 'checked_in'];
+    const missing = required.filter(c => !found.includes(c));
+    if (missing.length > 0) {
+      addTest('Schema', '[Tournament] No-Show Protection', 'warn', { missing }, 'Run init-db to add no-show protection columns');
+    } else {
+      addTest('Schema', '[Tournament] No-Show Protection', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', '[Tournament] No-Show Protection', 'fail', null, e.message);
+  }
+
+  // Test: Tournament forfeit columns in pairings
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'tournament_pairings' 
+      AND column_name IN ('forfeit_deadline', 'is_forfeited', 'forfeited_by')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    if (found.length < 3) {
+      addTest('Schema', '[Tournament] Forfeit Tracking', 'warn', { found }, 'Forfeit tracking columns not fully set up');
+    } else {
+      addTest('Schema', '[Tournament] Forfeit Tracking', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', '[Tournament] Forfeit Tracking', 'fail', null, e.message);
+  }
+
+  // Test: Tournament extended settings columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'tournaments' 
+      AND column_name IN ('registration_start', 'registration_end', 'tournament_end', 'forfeit_hours')
+    `);
+    const found = cols.rows.map(r => r.column_name);
+    if (found.length < 4) {
+      addTest('Schema', '[Tournament] Extended Settings', 'warn', { found }, 'Extended tournament settings not fully set up');
+    } else {
+      addTest('Schema', '[Tournament] Extended Settings', 'pass', { columns: found });
+    }
+  } catch (e) {
+    addTest('Schema', '[Tournament] Extended Settings', 'fail', null, e.message);
+  }
+
+  // Test: Forfeited games count
+  try {
+    const forfeited = await pool.query(`SELECT COUNT(*) as count FROM tournament_pairings WHERE is_forfeited = TRUE`);
+    const totalForfeits = await pool.query(`SELECT COALESCE(SUM(games_forfeited), 0) as count FROM tournament_participants`);
+    addTest('Features', '[Tournament] Forfeit System', 'pass', {
+      forfeitedPairings: parseInt(forfeited.rows[0].count),
+      totalPlayerForfeits: parseInt(totalForfeits.rows[0].count)
+    });
+  } catch (e) {
+    // Tables might not have these columns yet
+    addTest('Features', '[Tournament] Forfeit System', 'warn', null, 'Forfeit tracking not available: ' + e.message);
+  }
+
   // Test 33: Puzzle system
   try {
     const totalPuzzles = await pool.query(`SELECT COUNT(*) as count FROM puzzles`);

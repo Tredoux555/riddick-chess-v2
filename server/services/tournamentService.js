@@ -1,6 +1,7 @@
 /**
  * Tournament Service
  * Handles Swiss-system tournaments with Buchholz tiebreakers
+ * Includes No-Show Protection System
  */
 
 const pool = require('../utils/db');
@@ -21,16 +22,207 @@ class TournamentService {
       maxPlayers = 32,
       totalRounds = 5,
       prizeDescription,
-      startTime
+      startTime,
+      registrationStart,
+      registrationEnd,
+      tournamentEnd,
+      forfeitHours = 24,
+      isArena = false
     } = data;
 
     const result = await pool.query(`
-      INSERT INTO tournaments (name, description, created_by, type, time_control, increment, max_players, total_rounds, prize_description, start_time)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO tournaments (
+        name, description, created_by, type, time_control, increment, 
+        max_players, total_rounds, prize_description, start_time,
+        registration_start, registration_end, tournament_end, forfeit_hours, is_arena
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
-    `, [name, description, createdBy, type, timeControl, increment, maxPlayers, totalRounds, prizeDescription, startTime]);
+    `, [
+      name, description, createdBy, type, timeControl, increment,
+      maxPlayers, totalRounds, prizeDescription, startTime,
+      registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena
+    ]);
 
     return result.rows[0];
+  }
+
+  /**
+   * Check for and process forfeits (call this periodically)
+   */
+  async processForfeits(tournamentId) {
+    const tournament = await pool.query(`
+      SELECT forfeit_hours FROM tournaments WHERE id = $1
+    `, [tournamentId]);
+
+    if (tournament.rows.length === 0) return { processed: 0 };
+
+    const forfeitHours = tournament.rows[0].forfeit_hours || 24;
+    
+    // Find pairings that have exceeded forfeit deadline
+    const expiredPairings = await pool.query(`
+      SELECT tp.*, g.status as game_status, g.white_player_id, g.black_player_id
+      FROM tournament_pairings tp
+      LEFT JOIN games g ON tp.game_id = g.id
+      WHERE tp.tournament_id = $1 
+        AND tp.result IS NULL 
+        AND tp.is_bye = FALSE
+        AND tp.created_at < NOW() - INTERVAL '1 hour' * $2
+        AND (g.status IS NULL OR g.status = 'waiting' OR g.status = 'active')
+    `, [tournamentId, forfeitHours]);
+
+    let processed = 0;
+    
+    for (const pairing of expiredPairings.rows) {
+      // Check which player(s) didn't show up
+      const whiteActivity = await this.getPlayerLastActivity(tournamentId, pairing.white_player_id);
+      const blackActivity = await this.getPlayerLastActivity(tournamentId, pairing.black_player_id);
+
+      const whiteNoShow = !whiteActivity || (Date.now() - new Date(whiteActivity).getTime()) > forfeitHours * 60 * 60 * 1000;
+      const blackNoShow = !blackActivity || (Date.now() - new Date(blackActivity).getTime()) > forfeitHours * 60 * 60 * 1000;
+
+      let result = null;
+      let forfeitedBy = null;
+
+      if (whiteNoShow && blackNoShow) {
+        // Both no-show - double forfeit (0-0)
+        result = '0-0';
+        await this.incrementForfeit(tournamentId, pairing.white_player_id);
+        await this.incrementForfeit(tournamentId, pairing.black_player_id);
+      } else if (whiteNoShow) {
+        // White forfeits - black wins
+        result = '0-1';
+        forfeitedBy = pairing.white_player_id;
+        await this.incrementForfeit(tournamentId, pairing.white_player_id);
+        await this.awardForfeitWin(tournamentId, pairing.black_player_id);
+      } else if (blackNoShow) {
+        // Black forfeits - white wins
+        result = '1-0';
+        forfeitedBy = pairing.black_player_id;
+        await this.incrementForfeit(tournamentId, pairing.black_player_id);
+        await this.awardForfeitWin(tournamentId, pairing.white_player_id);
+      }
+
+      if (result) {
+        await pool.query(`
+          UPDATE tournament_pairings 
+          SET result = $1, is_forfeited = TRUE, forfeited_by = $2
+          WHERE id = $3
+        `, [result, forfeitedBy, pairing.id]);
+
+        // Update game status if exists
+        if (pairing.game_id) {
+          await pool.query(`
+            UPDATE games SET status = 'completed', result = $1 WHERE id = $2
+          `, [result, pairing.game_id]);
+        }
+
+        processed++;
+      }
+    }
+
+    // Check if round is complete after processing forfeits
+    if (processed > 0) {
+      const currentRound = await pool.query(`
+        SELECT current_round FROM tournaments WHERE id = $1
+      `, [tournamentId]);
+      
+      if (currentRound.rows[0]?.current_round > 0) {
+        const unfinished = await pool.query(`
+          SELECT COUNT(*) FROM tournament_pairings
+          WHERE tournament_id = $1 AND round = $2 AND result IS NULL AND is_bye = FALSE
+        `, [tournamentId, currentRound.rows[0].current_round]);
+
+        if (parseInt(unfinished.rows[0].count) === 0) {
+          await this.completeRound(tournamentId, currentRound.rows[0].current_round);
+        }
+      }
+    }
+
+    return { processed };
+  }
+
+  /**
+   * Get player's last activity in tournament
+   */
+  async getPlayerLastActivity(tournamentId, userId) {
+    const result = await pool.query(`
+      SELECT last_activity FROM tournament_participants
+      WHERE tournament_id = $1 AND user_id = $2
+    `, [tournamentId, userId]);
+    return result.rows[0]?.last_activity;
+  }
+
+  /**
+   * Update player activity timestamp
+   */
+  async updatePlayerActivity(tournamentId, userId) {
+    await pool.query(`
+      UPDATE tournament_participants 
+      SET last_activity = NOW()
+      WHERE tournament_id = $1 AND user_id = $2
+    `, [tournamentId, userId]);
+  }
+
+  /**
+   * Increment forfeit count and possibly auto-withdraw
+   */
+  async incrementForfeit(tournamentId, userId) {
+    const result = await pool.query(`
+      UPDATE tournament_participants 
+      SET games_forfeited = games_forfeited + 1
+      WHERE tournament_id = $1 AND user_id = $2
+      RETURNING games_forfeited
+    `, [tournamentId, userId]);
+
+    // Auto-withdraw after 2 forfeits
+    if (result.rows[0]?.games_forfeited >= 2) {
+      await pool.query(`
+        UPDATE tournament_participants 
+        SET is_withdrawn = TRUE, is_active = FALSE
+        WHERE tournament_id = $1 AND user_id = $2
+      `, [tournamentId, userId]);
+    }
+  }
+
+  /**
+   * Award forfeit win (score + activity update)
+   */
+  async awardForfeitWin(tournamentId, userId) {
+    await pool.query(`
+      UPDATE tournament_participants 
+      SET score = score + 1, games_played = games_played + 1, last_activity = NOW()
+      WHERE tournament_id = $1 AND user_id = $2
+    `, [tournamentId, userId]);
+  }
+
+  /**
+   * Check-in a player for the tournament
+   */
+  async checkInPlayer(tournamentId, userId) {
+    await pool.query(`
+      UPDATE tournament_participants 
+      SET checked_in = TRUE, last_activity = NOW()
+      WHERE tournament_id = $1 AND user_id = $2
+    `, [tournamentId, userId]);
+    return { success: true };
+  }
+
+  /**
+   * Get inactive players who should be warned/withdrawn
+   */
+  async getInactivePlayers(tournamentId, hoursInactive = 12) {
+    const result = await pool.query(`
+      SELECT tp.user_id, u.username, tp.last_activity, tp.games_played, tp.games_forfeited
+      FROM tournament_participants tp
+      JOIN users u ON tp.user_id = u.id
+      WHERE tp.tournament_id = $1 
+        AND tp.is_withdrawn = FALSE
+        AND tp.is_active = TRUE
+        AND tp.last_activity < NOW() - INTERVAL '1 hour' * $2
+      ORDER BY tp.last_activity ASC
+    `, [tournamentId, hoursInactive]);
+    return result.rows;
   }
 
   /**
