@@ -49,6 +49,23 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Delete a tournament (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const pool = require('../utils/db');
+    
+    // Delete in correct order (foreign keys)
+    await pool.query('DELETE FROM tournament_pairings WHERE tournament_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM tournament_participants WHERE tournament_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM tournaments WHERE id = $1', [req.params.id]);
+    
+    res.json({ success: true, message: 'Tournament deleted' });
+  } catch (error) {
+    console.error('Delete tournament error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get a specific tournament (MUST be after /my and /user/:userId)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

@@ -672,6 +672,17 @@ const TournamentAdmin = () => {
       setCreating(false);
     }
   };
+
+  const deleteTournament = async (id, name) => {
+    if (!window.confirm(`🗑️ DELETE tournament?\n\n"${name}"\n\nThis cannot be undone!`)) return;
+    try {
+      await axios.delete(`/api/tournaments/${id}`);
+      toast.success('Tournament deleted');
+      loadTournaments();
+    } catch (err) {
+      toast.error('Failed to delete tournament');
+    }
+  };
   
   return (
     <div>
@@ -695,11 +706,20 @@ const TournamentAdmin = () => {
         </div>
       )}
       {tournaments.map(t => (
-        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px' }}>
-          <h3>{t.name}</h3>
-          <p style={{ color: 'var(--text-muted)' }}>
-            {t.status} • {t.participant_count || 0} players
-          </p>
+        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>{t.name}</h3>
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+              {t.status} • {t.participant_count || 0} players • ID: {t.id}
+            </p>
+          </div>
+          <button 
+            onClick={() => deleteTournament(t.id, t.name)}
+            className="btn btn-sm"
+            style={{ background: '#ef4444', color: 'white' }}
+          >
+            <FaTrash /> Delete
+          </button>
         </div>
       ))}
     </div>
