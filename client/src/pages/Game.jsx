@@ -40,6 +40,7 @@ const Game = () => {
   const [opponentDisconnected, setOpponentDisconnected] = useState(false);
   const [reconnectCountdown, setReconnectCountdown] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [pendingPromotion, setPendingPromotion] = useState(null);
 
   useEffect(() => {
     preloadSounds();
@@ -231,10 +232,15 @@ const Game = () => {
     // Check for promotion
     const isPromotion = piece[1] === 'P' && (targetSquare[1] === '8' || targetSquare[1] === '1');
     
+    if (isPromotion) {
+      // Store pending promotion and let the dialog handle it
+      setPendingPromotion({ from: sourceSquare, to: targetSquare });
+      return true; // Allow the visual move, promotion dialog will appear
+    }
+    
     const move = {
       from: sourceSquare,
-      to: targetSquare,
-      promotion: isPromotion ? 'q' : undefined
+      to: targetSquare
     };
 
     // Validate move locally first
@@ -251,6 +257,36 @@ const Game = () => {
     
     return true;
   }, [game, gameOver, isSpectating, playerColor, gameId, makeMove]);
+
+  const onPromotionPieceSelect = useCallback((piece) => {
+    if (!pendingPromotion) return false;
+    
+    const promotionPiece = piece[1]?.toLowerCase() || 'q'; // Get piece type (q, r, b, n)
+    
+    const move = {
+      from: pendingPromotion.from,
+      to: pendingPromotion.to,
+      promotion: promotionPiece
+    };
+
+    // Validate move
+    const testGame = new Chess(game.fen());
+    const result = testGame.move(move);
+    
+    if (!result) {
+      setPendingPromotion(null);
+      return false;
+    }
+
+    // Send move to server
+    makeMove(gameId, move);
+    
+    // Update UI
+    setGame(testGame);
+    setPendingPromotion(null);
+    
+    return true;
+  }, [pendingPromotion, game, gameId, makeMove]);
 
   const handleResign = () => {
     if (window.confirm('Are you sure you want to resign?')) {
@@ -377,6 +413,9 @@ const Game = () => {
               customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
               customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
               animationDuration={200}
+              showPromotionDialog={!!pendingPromotion}
+              promotionToSquare={pendingPromotion?.to}
+              onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
 
