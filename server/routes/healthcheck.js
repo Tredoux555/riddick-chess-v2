@@ -601,6 +601,145 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
   }
 
   // ========================================
+  // BOT & ANALYSIS SYSTEM
+  // ========================================
+
+  // Test: Bots table
+  try {
+    const bots = await pool.query('SELECT COUNT(*) as count FROM bots WHERE is_active = true');
+    const count = parseInt(bots.rows[0].count);
+    if (count === 0) {
+      addTest('Database', '[Bots] Bots Table', 'warn', { count }, 'No active bots found! Should have 6 bots seeded.');
+    } else {
+      addTest('Database', '[Bots] Bots Table', 'pass', { activeBots: count });
+    }
+  } catch (e) {
+    addTest('Database', '[Bots] Bots Table', 'fail', null, e.message);
+  }
+
+  // Test: Bot games table
+  try {
+    const botGames = await pool.query('SELECT COUNT(*) as count FROM bot_games');
+    const activeGames = await pool.query(`SELECT COUNT(*) as count FROM bot_games WHERE status = 'active'`);
+    const completedGames = await pool.query(`SELECT COUNT(*) as count FROM bot_games WHERE status = 'completed'`);
+    addTest('Database', '[Bots] Bot Games', 'pass', {
+      total: parseInt(botGames.rows[0].count),
+      active: parseInt(activeGames.rows[0].count),
+      completed: parseInt(completedGames.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', '[Bots] Bot Games', 'fail', null, e.message);
+  }
+
+  // Test: Game analyses table
+  try {
+    const analyses = await pool.query('SELECT COUNT(*) as count FROM game_analyses');
+    const completed = await pool.query(`SELECT COUNT(*) as count FROM game_analyses WHERE status = 'completed'`);
+    const pending = await pool.query(`SELECT COUNT(*) as count FROM game_analyses WHERE status IN ('pending', 'analyzing')`);
+    addTest('Database', '[Analysis] Analyses', 'pass', {
+      total: parseInt(analyses.rows[0].count),
+      completed: parseInt(completed.rows[0].count),
+      pending: parseInt(pending.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', '[Analysis] Analyses', 'fail', null, e.message);
+  }
+
+  // Test: Move evaluations table
+  try {
+    const evals = await pool.query('SELECT COUNT(*) as count FROM move_evaluations');
+    addTest('Database', '[Analysis] Move Evaluations', 'pass', {
+      totalEvaluations: parseInt(evals.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', '[Analysis] Move Evaluations', 'fail', null, e.message);
+  }
+
+  // Test: Bot list API
+  try {
+    const botList = await pool.query('SELECT id, name, emoji, elo, skill_level FROM bots WHERE is_active = true ORDER BY elo');
+    addTest('API', '[Bots] List Bots', 'pass', {
+      botsAvailable: botList.rows.length,
+      bots: botList.rows.map(b => `${b.emoji} ${b.name} (${b.elo})`)
+    });
+  } catch (e) {
+    addTest('API', '[Bots] List Bots', 'fail', null, e.message);
+  }
+
+  // Test: Bot engine service
+  try {
+    const botEngine = require('../services/botEngine');
+    if (typeof botEngine.getBestMove === 'function') {
+      addTest('Services', 'Bot Engine', 'pass', { 
+        methods: ['getBestMove', 'evaluatePosition'] 
+      });
+    } else {
+      addTest('Services', 'Bot Engine', 'warn', null, 'getBestMove method not found');
+    }
+  } catch (e) {
+    addTest('Services', 'Bot Engine', 'fail', null, e.message);
+  }
+
+  // Test: User's bot game history
+  try {
+    const userBotGames = await pool.query(`
+      SELECT COUNT(*) as count FROM bot_games WHERE user_id = $1
+    `, [req.user.id]);
+    addTest('API', '[Bots] User Bot Games', 'pass', {
+      userBotGames: parseInt(userBotGames.rows[0].count)
+    });
+  } catch (e) {
+    addTest('API', '[Bots] User Bot Games', 'fail', null, e.message);
+  }
+
+  // Test: User's analysis history
+  try {
+    const userAnalyses = await pool.query(`
+      SELECT COUNT(*) as count FROM game_analyses WHERE user_id = $1
+    `, [req.user.id]);
+    addTest('API', '[Analysis] User Analyses', 'pass', {
+      userAnalyses: parseInt(userAnalyses.rows[0].count)
+    });
+  } catch (e) {
+    addTest('API', '[Analysis] User Analyses', 'fail', null, e.message);
+  }
+
+  // Test: Bot games integrity (no orphans)
+  try {
+    const orphanedBotGames = await pool.query(`
+      SELECT COUNT(*) as count FROM bot_games bg
+      LEFT JOIN users u ON bg.user_id = u.id
+      LEFT JOIN bots b ON bg.bot_id = b.id
+      WHERE u.id IS NULL OR b.id IS NULL
+    `);
+    const count = parseInt(orphanedBotGames.rows[0].count);
+    if (count > 0) {
+      addTest('Integrity', 'Bot Games Orphans', 'warn', { orphanedCount: count }, 'Bot games with missing user or bot');
+    } else {
+      addTest('Integrity', 'Bot Games Orphans', 'pass');
+    }
+  } catch (e) {
+    addTest('Integrity', 'Bot Games Orphans', 'fail', null, e.message);
+  }
+
+  // Test: Analysis integrity (no orphans)
+  try {
+    const orphanedAnalyses = await pool.query(`
+      SELECT COUNT(*) as count FROM game_analyses ga
+      LEFT JOIN users u ON ga.user_id = u.id
+      WHERE u.id IS NULL
+    `);
+    const count = parseInt(orphanedAnalyses.rows[0].count);
+    if (count > 0) {
+      addTest('Integrity', 'Analysis Orphans', 'warn', { orphanedCount: count }, 'Analyses with missing user');
+    } else {
+      addTest('Integrity', 'Analysis Orphans', 'pass');
+    }
+  } catch (e) {
+    addTest('Integrity', 'Analysis Orphans', 'fail', null, e.message);
+  }
+
+  // ========================================
   // CLUB TABLES
   // ========================================
 
