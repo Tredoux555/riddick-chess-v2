@@ -246,12 +246,12 @@ class TournamentService {
     // Get participants
     const participants = await pool.query(`
       SELECT tp.*, u.username, u.avatar,
-             ur.blitz_rating as rating
+             COALESCE(ur.blitz_rating, 1500) as rating
       FROM tournament_participants tp
       JOIN users u ON tp.user_id = u.id
       LEFT JOIN user_ratings ur ON u.id = ur.user_id
-      WHERE tp.tournament_id = $1 AND tp.is_withdrawn = FALSE
-      ORDER BY tp.score DESC, tp.buchholz DESC, ur.blitz_rating DESC
+      WHERE tp.tournament_id = $1 AND (tp.is_withdrawn = FALSE OR tp.is_withdrawn IS NULL)
+      ORDER BY tp.score DESC, tp.buchholz DESC, COALESCE(ur.blitz_rating, 1500) DESC
     `, [tournamentId]);
 
     // Check if user is registered
@@ -550,6 +550,8 @@ class TournamentService {
    * Record a game result in tournament
    */
   async recordResult(tournamentId, gameId, result) {
+    console.log(`Recording tournament result: tournament=${tournamentId}, game=${gameId}, result=${result}`);
+    
     // Get the pairing
     const pairing = await pool.query(`
       SELECT * FROM tournament_pairings
@@ -557,10 +559,12 @@ class TournamentService {
     `, [tournamentId, gameId]);
 
     if (pairing.rows.length === 0) {
+      console.log('Pairing not found for tournament result');
       throw new Error('Pairing not found');
     }
 
     const { white_player_id, black_player_id, round } = pairing.rows[0];
+    console.log(`Found pairing: white=${white_player_id}, black=${black_player_id}, round=${round}`);
 
     // Update pairing result
     await pool.query(`
@@ -575,15 +579,19 @@ class TournamentService {
       case '1/2-1/2': whiteScore = 0.5; blackScore = 0.5; break;
     }
 
+    console.log(`Updating scores: white ${white_player_id} +${whiteScore}, black ${black_player_id} +${blackScore}`);
+
     await pool.query(`
-      UPDATE tournament_participants SET score = score + $1
+      UPDATE tournament_participants SET score = score + $1, games_played = COALESCE(games_played, 0) + 1
       WHERE tournament_id = $2 AND user_id = $3
     `, [whiteScore, tournamentId, white_player_id]);
 
     await pool.query(`
-      UPDATE tournament_participants SET score = score + $1
+      UPDATE tournament_participants SET score = score + $1, games_played = COALESCE(games_played, 0) + 1
       WHERE tournament_id = $2 AND user_id = $3
     `, [blackScore, tournamentId, black_player_id]);
+
+    console.log('Scores updated successfully');
 
     // Check if round is complete
     const unfinished = await pool.query(`
