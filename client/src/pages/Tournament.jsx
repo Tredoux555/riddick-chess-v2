@@ -18,8 +18,11 @@ const Tournament = () => {
     loadTournament();
     loadActiveGames();
     
-    // Refresh active games every 30 seconds
-    const interval = setInterval(loadActiveGames, 30000);
+    // Auto-refresh every 2 seconds for real-time updates
+    const interval = setInterval(() => {
+      loadTournament();
+      loadActiveGames();
+    }, 2000);
     return () => clearInterval(interval);
   }, [id]);
 
