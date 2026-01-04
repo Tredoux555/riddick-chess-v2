@@ -68,6 +68,7 @@ const BotGame = () => {
   const [gameOver, setGameOver] = useState(false);
   const [result, setResult] = useState(null);
   const [lastMove, setLastMove] = useState(null);
+  const [pendingPromotion, setPendingPromotion] = useState(null);
   const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'neo' });
 
   // Fetch user preferences
@@ -111,13 +112,27 @@ const BotGame = () => {
 
   useEffect(() => { fetchGame(); }, [fetchGame]);
 
-  const onDrop = async (sourceSquare, targetSquare) => {
+  const onDrop = async (sourceSquare, targetSquare, piece) => {
     if (gameOver || thinking) return false;
     const isWhiteTurn = game.turn() === 'w';
     const isYourTurn = (gameData.userColor === 'white' && isWhiteTurn) || (gameData.userColor === 'black' && !isWhiteTurn);
     if (!isYourTurn) return false;
+    
+    // Check for promotion
+    const isPawn = piece && piece[1] === 'P';
+    const isPromotion = isPawn && (targetSquare[1] === '8' || targetSquare[1] === '1');
+    
+    if (isPromotion) {
+      setPendingPromotion({ from: sourceSquare, to: targetSquare });
+      return true;
+    }
+    
+    return executeMove(sourceSquare, targetSquare, null);
+  };
+
+  const executeMove = async (sourceSquare, targetSquare, promotion) => {
     const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+    const move = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: promotion || undefined });
     if (!move) return false;
     setGame(gameCopy);
     setLastMove({ from: sourceSquare, to: targetSquare });
@@ -137,6 +152,14 @@ const BotGame = () => {
       if (data.isGameOver) { setGameOver(true); setResult(data.result); }
     } catch (err) { console.error('Move failed:', err); setGame(new Chess(game.fen())); }
     finally { setThinking(false); }
+    return true;
+  };
+
+  const onPromotionPieceSelect = (piece) => {
+    if (!pendingPromotion) return false;
+    const promotionPiece = piece ? piece[1]?.toLowerCase() : 'q';
+    executeMove(pendingPromotion.from, pendingPromotion.to, promotionPiece);
+    setPendingPromotion(null);
     return true;
   };
 
@@ -235,6 +258,9 @@ const BotGame = () => {
               customSquareStyles={customSquareStyles}
               customPieces={customPieces}
               arePiecesDraggable={!gameOver && !thinking}
+              showPromotionDialog={!!pendingPromotion}
+              promotionToSquare={pendingPromotion?.to}
+              onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
 
