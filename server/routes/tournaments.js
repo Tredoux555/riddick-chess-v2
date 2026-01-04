@@ -247,31 +247,37 @@ router.post('/create-official-tournament', authenticateToken, requireAdmin, asyn
       RETURNING *
     `, [
       "Riddick from G5-1's Official Tournament",
-      `The schoolwide official back-to-school tournament to have fun. Anyone can join!
-
-返校官方锦标赛，欢乐至上。欢迎所有人参加！
+      `🏆 The schoolwide official back-to-school tournament! Anyone can join!
+返校官方锦标赛！欢迎所有人参加！
 
 📅 SCHEDULE / 时间安排:
-• Registration / 报名: Mon Jan 5th - Fri Jan 9th 5PM
+• Sign up / 报名: Mon Jan 5th - Fri Jan 9th 5PM
 • Tournament / 比赛: Fri Jan 9th 5PM - Sun Jan 11th 6PM  
-• Finals / 决赛: Mon Jan 12th at Recess (in person! / 当面对决！)
+• Finals / 决赛: Mon Jan 12th at Recess (in person! 当面对决！)
+
+⏱️ GAME FORMAT / 比赛形式:
+• 10 minutes per player (no extra time)
+• 每人10分钟（无加时）
 
 ⚠️ RULES / 规则:
-• You have 24 hours to play each game or you forfeit / 每场比赛必须在24小时内完成，否则判负
-• 2 forfeits = automatic withdrawal / 两次弃权将被自动退出比赛
-• Top 2 players play finals in person! / 前两名选手将进行现场决赛！`,
+• You have 8 HOURS to play each game or forfeit
+• 每场比赛必须在8小时内完成，否则判负
+• 2 forfeits = kicked out / 两次弃权=退出比赛
+• Top 2 play finals IN PERSON! / 前两名现场决赛！
+
+🎯 Come have fun! 来玩吧！`,
       'swiss',
       600,    // 10 minutes
       0,      // no increment
-      1500,   // max players
-      9,      // rounds
+      500,    // max players (realistic)
+      6,      // 6 rounds (good for up to 64 players, can extend)
       'upcoming',
       0,
-      '2026-01-09T09:00:00Z',  // Fri Jan 9 5PM Beijing
+      '2026-01-09T09:00:00Z',  // Fri Jan 9 5PM Beijing = 9AM UTC
       '2026-01-04T16:00:00Z',  // Mon Jan 5 midnight Beijing
       '2026-01-09T09:00:00Z',  // Registration ends when tournament starts
       '2026-01-11T10:00:00Z',  // Sun Jan 11 6PM Beijing
-      24,
+      8,      // 8 HOURS to play each game
       false,
       req.user.id
     ]);
