@@ -700,11 +700,16 @@ function initializeSocket(io) {
         const { white_player_id, black_player_id } = result.rows[0];
         const recipientId = userId === white_player_id ? black_player_id : white_player_id;
 
-        // Save to database
+        // Get IP address
+        const ipAddress = socket.handshake.headers['x-forwarded-for']?.split(',')[0] || 
+                          socket.handshake.address || 
+                          'unknown';
+
+        // Save to database with IP
         await pool.query(`
-          INSERT INTO messages (sender_id, receiver_id, game_id, content)
-          VALUES ($1, $2, $3, $4)
-        `, [userId, recipientId, gId, filtered]);
+          INSERT INTO messages (sender_id, receiver_id, game_id, content, ip_address)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [userId, recipientId, gId, filtered, ipAddress]);
 
         const messageData = {
           from: userId,

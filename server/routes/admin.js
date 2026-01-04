@@ -609,4 +609,118 @@ router.delete('/unban-ip/:ip', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
+// ============================================
+// CHAT MONITORING
+// ============================================
+
+// Get all chat messages with user info and IPs
+router.get('/chats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { limit = 100, gameId, userId, search } = req.query;
+    
+    let query = `
+      SELECT m.*, 
+             s.username as sender_username, 
+             r.username as receiver_username,
+             g.id as game_id
+      FROM messages m
+      LEFT JOIN users s ON m.sender_id = s.id
+      LEFT JOIN users r ON m.receiver_id = r.id
+      LEFT JOIN games g ON m.game_id = g.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+    
+    if (gameId) {
+      query += ` AND m.game_id = $${paramIndex++}`;
+      params.push(gameId);
+    }
+    
+    if (userId) {
+      query += ` AND (m.sender_id = $${paramIndex} OR m.receiver_id = $${paramIndex++})`;
+      params.push(userId);
+    }
+    
+    if (search) {
+      query += ` AND m.content ILIKE $${paramIndex++}`;
+      params.push(`%${search}%`);
+    }
+    
+    query += ` ORDER BY m.created_at DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit));
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get chats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get chat messages for a specific game
+router.get('/chats/game/:gameId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const result = await pool.query(`
+      SELECT m.*, 
+             s.username as sender_username, 
+             r.username as receiver_username
+      FROM messages m
+      LEFT JOIN users s ON m.sender_id = s.id
+      LEFT JOIN users r ON m.receiver_id = r.id
+      WHERE m.game_id = $1
+      ORDER BY m.created_at ASC
+    `, [gameId]);
+    
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all chats by a specific user
+router.get('/chats/user/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const result = await pool.query(`
+      SELECT m.*, 
+             s.username as sender_username, 
+             r.username as receiver_username
+      FROM messages m
+      LEFT JOIN users s ON m.sender_id = s.id
+      LEFT JOIN users r ON m.receiver_id = r.id
+      WHERE m.sender_id = $1 OR m.receiver_id = $1
+      ORDER BY m.created_at DESC
+      LIMIT 200
+    `, [userId]);
+    
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get users by IP address
+router.get('/users-by-ip/:ip', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const ip = decodeURIComponent(req.params.ip);
+    
+    const result = await pool.query(`
+      SELECT DISTINCT u.id, u.username, u.email, u.created_at, u.is_banned,
+             COUNT(m.id) as message_count
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.ip_address = $1
+      GROUP BY u.id, u.username, u.email, u.created_at, u.is_banned
+    `, [ip]);
+    
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

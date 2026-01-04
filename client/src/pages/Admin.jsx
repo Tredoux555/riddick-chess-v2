@@ -6,7 +6,7 @@ import {
   FaUsers, FaTrophy, FaShieldAlt, FaChartBar, FaCrown, FaBan, FaCheck, 
   FaHeartbeat, FaDownload, FaSync, FaCheckCircle, FaTimesCircle, 
   FaExclamationTriangle, FaEdit, FaTrash, FaKey, FaLink, FaVolumeMute,
-  FaStar, FaTimes, FaUserCog, FaBullhorn
+  FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments
 } from 'react-icons/fa';
 
 const Admin = () => {
@@ -32,6 +32,9 @@ const Admin = () => {
           <Link to="/admin/riddick/announcements" className={location.pathname === '/admin/riddick/announcements' ? 'active' : ''}>
             <FaBullhorn /> Announcements
           </Link>
+          <Link to="/admin/riddick/chats" className={location.pathname === '/admin/riddick/chats' ? 'active' : ''}>
+            <FaComments /> Chat Monitor
+          </Link>
           <Link to="/admin/riddick/health" className={location.pathname === '/admin/riddick/health' ? 'active' : ''}>
             <FaHeartbeat /> Health Check
           </Link>
@@ -45,6 +48,7 @@ const Admin = () => {
           <Route path="tournaments" element={<TournamentAdmin />} />
           <Route path="tournaments/create" element={<CreateTournament />} />
           <Route path="announcements" element={<Announcements />} />
+          <Route path="chats" element={<ChatMonitor />} />
           <Route path="health" element={<HealthCheck />} />
         </Routes>
       </div>
@@ -756,6 +760,136 @@ const CreateTournament = () => {
         <div className="form-group"><label>Start Time</label><input type="datetime-local" className="form-input" value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} /></div>
         <button type="submit" className="btn btn-primary">Create Tournament</button>
       </form>
+    </div>
+  );
+};
+
+const ChatMonitor = () => {
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState({ search: '', limit: 100 });
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [usersByIp, setUsersByIp] = useState([]);
+
+  useEffect(() => { loadChats(); }, []);
+
+  const loadChats = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filter.search) params.append('search', filter.search);
+      params.append('limit', filter.limit);
+      const r = await axios.get(`/api/admin/chats?${params}`);
+      setChats(r.data);
+    } catch (err) {
+      toast.error('Failed to load chats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const lookupIP = async (ip) => {
+    if (!ip || ip === 'unknown') return toast.error('No IP available');
+    try {
+      const r = await axios.get(`/api/admin/users-by-ip/${encodeURIComponent(ip)}`);
+      setUsersByIp(r.data);
+      toast.success(`Found ${r.data.length} user(s) with this IP`);
+    } catch (err) {
+      toast.error('IP lookup failed');
+    }
+  };
+
+  const banIP = async (ip) => {
+    if (!ip || ip === 'unknown') return toast.error('No IP available');
+    if (!window.confirm(`Ban IP ${ip}?`)) return;
+    try {
+      await axios.post('/api/admin/ban-ip', { ip_address: ip, reason: 'Banned by admin' });
+      toast.success(`IP ${ip} banned`);
+    } catch (err) {
+      toast.error('Failed to ban IP');
+    }
+  };
+
+  const formatTime = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleString();
+  };
+
+  return (
+    <div>
+      <h1><FaComments /> Chat Monitor</h1>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>View all chat messages and IP addresses</p>
+
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        <input
+          type="text"
+          placeholder="Search messages..."
+          value={filter.search}
+          onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}
+        />
+        <select
+          value={filter.limit}
+          onChange={(e) => setFilter({ ...filter, limit: e.target.value })}
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}
+        >
+          <option value={50}>Last 50</option>
+          <option value={100}>Last 100</option>
+          <option value={200}>Last 200</option>
+          <option value={500}>Last 500</option>
+        </select>
+        <button onClick={loadChats} className="btn btn-primary"><FaSync /> Refresh</button>
+      </div>
+
+      {usersByIp.length > 0 && (
+        <div style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          <h3>Users with selected IP:</h3>
+          {usersByIp.map(u => (
+            <div key={u.id} style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{u.username} ({u.email}) - {u.message_count} messages {u.is_banned && '🚫 BANNED'}</span>
+            </div>
+          ))}
+          <button onClick={() => setUsersByIp([])} className="btn btn-sm">Close</button>
+        </div>
+      )}
+
+      {loading ? (
+        <p>Loading chats...</p>
+      ) : chats.length === 0 ? (
+        <p>No chat messages found</p>
+      ) : (
+        <div style={{ background: 'var(--bg-secondary)', borderRadius: '8px', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-tertiary)' }}>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Time</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>From</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>To</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Message</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>IP</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {chats.map(chat => (
+                <tr key={chat.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '10px', fontSize: '12px', color: 'var(--text-secondary)' }}>{formatTime(chat.created_at)}</td>
+                  <td style={{ padding: '10px' }}>{chat.sender_username || `User #${chat.sender_id}`}</td>
+                  <td style={{ padding: '10px' }}>{chat.receiver_username || `User #${chat.receiver_id}`}</td>
+                  <td style={{ padding: '10px', maxWidth: '300px', wordBreak: 'break-word' }}>{chat.content}</td>
+                  <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '12px' }}>{chat.ip_address || '-'}</td>
+                  <td style={{ padding: '10px' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => lookupIP(chat.ip_address)} className="btn btn-sm" title="Lookup IP">🔍</button>
+                      <button onClick={() => banIP(chat.ip_address)} className="btn btn-sm btn-danger" title="Ban IP">🚫</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
