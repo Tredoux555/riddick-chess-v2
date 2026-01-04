@@ -147,6 +147,16 @@ class GameState {
     `, [result, reason, this.chess.pgn(), this.chess.fen(), 
         Math.floor(this.whiteTime / 1000), Math.floor(this.blackTime / 1000), this.id]);
 
+    // Update tournament FIRST (before rating changes)
+    if (this.tournamentId) {
+      try {
+        await tournamentService.recordResult(this.tournamentId, this.id, result);
+        console.log(`Tournament ${this.tournamentId} result recorded: ${result}`);
+      } catch (err) {
+        console.error('Failed to record tournament result:', err);
+      }
+    }
+
     // Update ratings if rated game
     if (this.rated && result !== '*') {
       const ratingChanges = await ratingService.updateRatings(
@@ -175,11 +185,6 @@ class GameState {
           moveCount: this.chess.history().length,
           isBackRankMate: this.isBackRankMate()
         });
-      }
-
-      // Update tournament if applicable
-      if (this.tournamentId) {
-        await tournamentService.recordResult(this.tournamentId, this.id, result);
       }
 
       return ratingChanges;
