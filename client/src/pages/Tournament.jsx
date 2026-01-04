@@ -73,6 +73,22 @@ const Tournament = () => {
     }
   };
 
+  const handleStartTournament = async () => {
+    const playerCount = tournament.participants?.length || 0;
+    if (playerCount < 2) {
+      toast.error('Need at least 2 players to start!');
+      return;
+    }
+    if (!window.confirm(`Start tournament with ${playerCount} players?\n\nThis will generate Round 1 pairings.`)) return;
+    try {
+      await axios.post(`/api/tournaments/${id}/start`);
+      toast.success('🏆 Tournament started! Round 1 pairings generated.');
+      loadTournament();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to start tournament');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'white' }}>
@@ -127,7 +143,7 @@ const Tournament = () => {
         <div>Status: <strong>{tournament.status}</strong></div>
       </div>
 
-      <div style={{ marginTop: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+      <div style={{ marginTop: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
         {canRegister && (
           <button 
             onClick={handleRegister}
@@ -148,6 +164,17 @@ const Tournament = () => {
               </button>
             )}
           </>
+        )}
+        
+        {/* Admin: Start Tournament */}
+        {isAdmin && tournament.status === 'upcoming' && (
+          <button 
+            onClick={handleStartTournament}
+            style={{ padding: '10px 20px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            <FaPlay style={{ marginRight: '6px' }} />
+            Start Tournament
+          </button>
         )}
       </div>
 
