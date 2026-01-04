@@ -4,7 +4,6 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { useAuth } from '../contexts/AuthContext';
 
-// Board theme colors
 const BOARD_THEMES = {
   classic: { light: '#f0d9b5', dark: '#b58863' },
   blue: { light: '#dee3e6', dark: '#8ca2ad' },
@@ -13,7 +12,6 @@ const BOARD_THEMES = {
   wood: { light: '#e8d0aa', dark: '#a87c50' }
 };
 
-// Piece set URLs (using lichess CDN - works in China)
 const PIECE_URLS = {
   neo: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150',
   cburnett: 'https://lichess1.org/assets/piece/cburnett',
@@ -22,24 +20,17 @@ const PIECE_URLS = {
   classic: 'https://lichess1.org/assets/piece/maestro'
 };
 
-// Create custom pieces from piece set
 const createPieces = (pieceSet) => {
   const baseUrl = PIECE_URLS[pieceSet] || PIECE_URLS.cburnett;
   const isChessCom = baseUrl.includes('chesscomfiles');
   const pieces = {};
   const pieceMap = {
-    wK: isChessCom ? 'wk.png' : 'wK.svg',
-    wQ: isChessCom ? 'wq.png' : 'wQ.svg',
-    wR: isChessCom ? 'wr.png' : 'wR.svg',
-    wB: isChessCom ? 'wb.png' : 'wB.svg',
-    wN: isChessCom ? 'wn.png' : 'wN.svg',
-    wP: isChessCom ? 'wp.png' : 'wP.svg',
-    bK: isChessCom ? 'bk.png' : 'bK.svg',
-    bQ: isChessCom ? 'bq.png' : 'bQ.svg',
-    bR: isChessCom ? 'br.png' : 'bR.svg',
-    bB: isChessCom ? 'bb.png' : 'bB.svg',
-    bN: isChessCom ? 'bn.png' : 'bN.svg',
-    bP: isChessCom ? 'bp.png' : 'bP.svg',
+    wK: isChessCom ? 'wk.png' : 'wK.svg', wQ: isChessCom ? 'wq.png' : 'wQ.svg',
+    wR: isChessCom ? 'wr.png' : 'wR.svg', wB: isChessCom ? 'wb.png' : 'wB.svg',
+    wN: isChessCom ? 'wn.png' : 'wN.svg', wP: isChessCom ? 'wp.png' : 'wP.svg',
+    bK: isChessCom ? 'bk.png' : 'bK.svg', bQ: isChessCom ? 'bq.png' : 'bQ.svg',
+    bR: isChessCom ? 'br.png' : 'bR.svg', bB: isChessCom ? 'bb.png' : 'bB.svg',
+    bN: isChessCom ? 'bn.png' : 'bN.svg', bP: isChessCom ? 'bp.png' : 'bP.svg',
   };
   Object.entries(pieceMap).forEach(([piece, file]) => {
     pieces[piece] = ({ squareWidth }) => (
@@ -47,6 +38,20 @@ const createPieces = (pieceSet) => {
     );
   });
   return pieces;
+};
+
+// Chess.com style classifications
+const CLASSIFICATIONS = {
+  brilliant: { icon: '!!', color: '#1baca6', bg: '#1baca620', label: 'Brilliant' },
+  best: { icon: '★', color: '#96bc4b', bg: '#96bc4b20', label: 'Best' },
+  excellent: { icon: '!', color: '#96bc4b', bg: '#96bc4b20', label: 'Excellent' },
+  good: { icon: '●', color: '#95af8a', bg: '#95af8a20', label: 'Good' },
+  book: { icon: '📖', color: '#a88865', bg: '#a8886520', label: 'Book' },
+  inaccuracy: { icon: '?!', color: '#f7c631', bg: '#f7c63120', label: 'Inaccuracy' },
+  mistake: { icon: '?', color: '#e6912c', bg: '#e6912c20', label: 'Mistake' },
+  blunder: { icon: '??', color: '#ca3431', bg: '#ca343120', label: 'Blunder' },
+  forced: { icon: '→', color: '#888888', bg: '#88888820', label: 'Forced' },
+  great: { icon: '!', color: '#96bc4b', bg: '#96bc4b20', label: 'Great' }
 };
 
 const GameAnalysis = () => {
@@ -59,9 +64,9 @@ const GameAnalysis = () => {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [game, setGame] = useState(new Chess());
   const [autoPlay, setAutoPlay] = useState(false);
-  const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'cburnett' });
+  const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'neo' });
+  const [flipped, setFlipped] = useState(false);
 
-  // Fetch user preferences
   useEffect(() => {
     const fetchPrefs = async () => {
       try {
@@ -70,10 +75,7 @@ const GameAnalysis = () => {
         });
         if (res.ok) {
           const data = await res.json();
-          setPreferences({
-            board_theme: data.board_theme || 'green',
-            piece_set: data.piece_set || 'cburnett'
-          });
+          setPreferences({ board_theme: data.board_theme || 'green', piece_set: data.piece_set || 'neo' });
         }
       } catch (err) { console.log('Using default preferences'); }
     };
@@ -83,15 +85,6 @@ const GameAnalysis = () => {
   const boardTheme = BOARD_THEMES[preferences.board_theme] || BOARD_THEMES.green;
   const customPieces = createPieces(preferences.piece_set);
 
-  const classifications = {
-    brilliant: { icon: '✨', color: 'text-cyan-400', bg: 'bg-cyan-500/20', label: 'Brilliant!' },
-    great: { icon: '⭐', color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Great Move' },
-    good: { icon: '✅', color: 'text-green-400', bg: 'bg-green-500/20', label: 'Good' },
-    inaccuracy: { icon: '⚠️', color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'Inaccuracy' },
-    mistake: { icon: '❌', color: 'text-orange-400', bg: 'bg-orange-500/20', label: 'Mistake' },
-    blunder: { icon: '💀', color: 'text-red-400', bg: 'bg-red-500/20', label: 'Blunder!' }
-  };
-
   const fetchAnalysis = useCallback(async () => {
     try {
       const res = await fetch(`/api/analysis/${analysisId}`, {
@@ -100,8 +93,8 @@ const GameAnalysis = () => {
       const data = await res.json();
       if (data.status === 'completed') { setAnalysis(data); setLoading(false); }
       else if (data.status === 'analyzing' || data.status === 'pending') { setTimeout(fetchAnalysis, 2000); }
-      else if (data.status === 'failed') { setError('Analysis failed. Please try again.'); setLoading(false); }
-    } catch (err) { console.error('Failed to fetch analysis:', err); setError('Failed to load analysis'); setLoading(false); }
+      else if (data.status === 'failed') { setError('Analysis failed'); setLoading(false); }
+    } catch (err) { setError('Failed to load'); setLoading(false); }
   }, [analysisId, token]);
 
   useEffect(() => { fetchAnalysis(); }, [fetchAnalysis]);
@@ -110,7 +103,9 @@ const GameAnalysis = () => {
     if (!analysis?.moves) return;
     const chess = new Chess();
     for (let i = 0; i < currentMoveIndex; i++) {
-      if (analysis.moves[i]) { try { chess.move(analysis.moves[i].move_played, { sloppy: true }); } catch (e) {} }
+      if (analysis.moves[i]) { 
+        try { chess.move(analysis.moves[i].move_played || analysis.moves[i].move, { sloppy: true }); } catch (e) {} 
+      }
     }
     setGame(chess);
   }, [currentMoveIndex, analysis]);
@@ -119,117 +114,312 @@ const GameAnalysis = () => {
     if (!autoPlay || !analysis?.moves) return;
     const interval = setInterval(() => {
       setCurrentMoveIndex(prev => { if (prev >= analysis.moves.length) { setAutoPlay(false); return prev; } return prev + 1; });
-    }, 1500);
+    }, 1200);
     return () => clearInterval(interval);
   }, [autoPlay, analysis]);
 
-  const goToStart = () => setCurrentMoveIndex(0);
-  const goBack = () => setCurrentMoveIndex(Math.max(0, currentMoveIndex - 1));
-  const goForward = () => setCurrentMoveIndex(Math.min(analysis?.moves?.length || 0, currentMoveIndex + 1));
-  const goToEnd = () => setCurrentMoveIndex(analysis?.moves?.length || 0);
-
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowLeft') goBack();
-      if (e.key === 'ArrowRight') goForward();
+      if (e.key === 'ArrowLeft') setCurrentMoveIndex(prev => Math.max(0, prev - 1));
+      if (e.key === 'ArrowRight') setCurrentMoveIndex(prev => Math.min(analysis?.moves?.length || 0, prev + 1));
       if (e.key === ' ') { e.preventDefault(); setAutoPlay(prev => !prev); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentMoveIndex, analysis]);
+  }, [analysis]);
 
-  const getAccuracyColor = (accuracy) => {
-    const acc = parseFloat(accuracy);
-    if (acc >= 90) return 'text-green-400';
-    if (acc >= 80) return 'text-yellow-400';
-    if (acc >= 70) return 'text-orange-400';
-    return 'text-red-400';
+  // Get current evaluation for the eval bar
+  const getCurrentEval = () => {
+    if (currentMoveIndex === 0) return 0.2;
+    const move = analysis?.moves[currentMoveIndex - 1];
+    if (!move) return 0;
+    return parseFloat(move.eval_after || move.evalAfter || 0);
+  };
+
+  // Convert eval to percentage for the bar (white's perspective)
+  const evalToPercent = (evalScore) => {
+    if (typeof evalScore === 'string' && evalScore.includes('M')) {
+      return evalScore.includes('-') ? 0 : 100;
+    }
+    const e = parseFloat(evalScore) || 0;
+    // Sigmoid-like function: 50 + 50 * tanh(eval / 4)
+    const percent = 50 + 50 * Math.tanh(e / 4);
+    return Math.max(0, Math.min(100, percent));
+  };
+
+  const formatEval = (evalScore) => {
+    if (!evalScore) return '0.0';
+    if (typeof evalScore === 'string' && evalScore.includes('M')) return evalScore;
+    const e = parseFloat(evalScore);
+    if (isNaN(e)) return '0.0';
+    return e > 0 ? `+${e.toFixed(1)}` : e.toFixed(1);
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-8xl mb-6 animate-pulse">🤖</div>
-        <div className="text-white text-2xl mb-3">Analyzing your game...</div>
-        <div className="text-gray-400 mb-6">This may take a minute</div>
-        <div className="flex justify-center gap-2">{[0,1,2].map(i => <div key={i} className="w-4 h-4 bg-purple-500 rounded-full animate-bounce" style={{animationDelay:`${i*0.2}s`}}/>)}</div>
+    <div style={styles.loadingContainer}>
+      <div style={styles.loadingBox}>
+        <div style={styles.spinner}></div>
+        <h2 style={{ color: '#fff', margin: '20px 0 10px' }}>Analyzing your game...</h2>
+        <p style={{ color: '#888' }}>This may take a minute</p>
       </div>
     </div>
   );
 
-  if (error) return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-center"><div className="text-6xl mb-4">❌</div><div className="text-white text-xl mb-4">{error}</div><button onClick={() => navigate(-1)} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-bold">Go Back</button></div></div>;
+  if (error) return (
+    <div style={styles.loadingContainer}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '20px' }}>❌</div>
+        <p style={{ color: '#fff', marginBottom: '20px' }}>{error}</p>
+        <button onClick={() => navigate(-1)} style={styles.backButton}>Go Back</button>
+      </div>
+    </div>
+  );
+
   if (!analysis) return null;
 
   const currentMove = analysis.moves[currentMoveIndex - 1];
+  const currentEval = getCurrentEval();
+  const evalPercent = evalToPercent(currentEval);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 py-4 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6"><h1 className="text-4xl font-bold text-white mb-2">🤖 AI Game Analysis</h1><p className="text-gray-400">See how well you played!</p></div>
-        <div className="grid grid-cols-2 gap-4 mb-6 max-w-md mx-auto">
-          <div className="bg-gray-800 rounded-2xl p-5 text-center border border-gray-700"><div className="text-3xl mb-2">⬜</div><div className={`text-4xl font-bold ${getAccuracyColor(analysis.whiteAccuracy)}`}>{analysis.whiteAccuracy}%</div><div className="text-gray-400 text-sm mt-1">White Accuracy</div></div>
-          <div className="bg-gray-800 rounded-2xl p-5 text-center border border-gray-700"><div className="text-3xl mb-2">⬛</div><div className={`text-4xl font-bold ${getAccuracyColor(analysis.blackAccuracy)}`}>{analysis.blackAccuracy}%</div><div className="text-gray-400 text-sm mt-1">Black Accuracy</div></div>
-        </div>
-        {analysis.summary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-w-2xl mx-auto">
-            {['white','black'].map(color => (
-              <div key={color} className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
-                <div className="text-center mb-4"><span className="text-2xl mr-2">{color==='white'?'⬜':'⬛'}</span><span className="text-white font-bold capitalize">{color}</span></div>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(analysis.summary[color]||{}).map(([type,count]) => {
-                    const config = classifications[type];
-                    if (!config || count === 0) return null;
-                    return <div key={type} className={`${config.bg} rounded-xl p-2 text-center`}><div className="text-xl">{config.icon}</div><div className={`font-bold ${config.color}`}>{count}</div><div className="text-xs text-gray-400">{type}</div></div>;
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1">
-            <div className={`rounded-t-2xl p-4 ${currentMove ? classifications[currentMove.classification]?.bg || 'bg-gray-800' : 'bg-gray-800'}`}>
-              {currentMove ? (
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="text-3xl">{classifications[currentMove.classification]?.icon || '•'}</span><div><span className="text-white font-bold text-lg">{currentMove.move_number}.{currentMove.color==='black'?'..':''} {currentMove.move_played}</span><span className={`ml-3 ${classifications[currentMove.classification]?.color}`}>{classifications[currentMove.classification]?.label}</span></div></div>
-                    <div className="text-right"><div className="text-gray-400 text-sm">Evaluation</div><div className={`font-bold ${parseFloat(currentMove.eval_after)>0?'text-white':'text-gray-400'}`}>{parseFloat(currentMove.eval_after)>0?'+':''}{currentMove.eval_after}</div></div>
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
+        <button onClick={() => navigate(-1)} style={styles.backLink}>← Back</button>
+        <h1 style={styles.title}>Game Review</h1>
+        <button onClick={() => setFlipped(!flipped)} style={styles.flipButton}>🔄 Flip</button>
+      </div>
+
+      <div style={styles.mainContent}>
+        {/* Left: Accuracy Cards */}
+        <div style={styles.leftPanel}>
+          {/* Accuracy Cards */}
+          <div style={styles.accuracyCard}>
+            <div style={styles.accuracyHeader}>
+              <span style={styles.playerIcon}>⬜</span>
+              <span style={styles.playerName}>White</span>
+            </div>
+            <div style={{...styles.accuracyValue, color: getAccuracyColor(analysis.whiteAccuracy)}}>
+              {analysis.whiteAccuracy}%
+            </div>
+            <div style={styles.accuracyLabel}>Accuracy</div>
+            <div style={styles.moveBreakdown}>
+              {Object.entries(analysis.summary?.white || {}).map(([type, count]) => {
+                if (count === 0 || !CLASSIFICATIONS[type]) return null;
+                return (
+                  <div key={type} style={styles.breakdownItem}>
+                    <span style={{...styles.classIcon, color: CLASSIFICATIONS[type].color}}>
+                      {CLASSIFICATIONS[type].icon}
+                    </span>
+                    <span style={styles.breakdownCount}>{count}</span>
                   </div>
-                  {currentMove.best_move && currentMove.best_move !== currentMove.move_played && <div className="mt-2 text-sm text-gray-400 bg-black/20 rounded-lg px-3 py-2">💡 Best move was: <span className="text-green-400 font-mono font-bold">{currentMove.best_move}</span></div>}
-                </div>
-              ) : <div className="text-gray-400 text-center">Starting position • Use arrows to navigate</div>}
-            </div>
-            <div className="bg-gray-700 p-3"><Chessboard position={game.fen()} boardOrientation="white" arePiecesDraggable={false} animationDuration={200} customLightSquareStyle={{ backgroundColor: boardTheme.light }} customDarkSquareStyle={{ backgroundColor: boardTheme.dark }} customPieces={customPieces}/></div>
-            <div className="bg-gray-800 rounded-b-2xl p-4">
-              <div className="flex items-center justify-center gap-3">
-                <button onClick={goToStart} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-xl">⏮️</button>
-                <button onClick={goBack} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-xl">◀️</button>
-                <button onClick={() => setAutoPlay(!autoPlay)} className={`px-6 py-3 rounded-xl text-white text-xl ${autoPlay ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-700 hover:bg-gray-600'}`}>{autoPlay ? '⏸️' : '▶️'}</button>
-                <button onClick={goForward} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-xl">▶️</button>
-                <button onClick={goToEnd} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-xl">⏭️</button>
-              </div>
-              <div className="mt-4"><div className="flex justify-between text-sm text-gray-400 mb-1"><span>Move {currentMoveIndex}</span><span>{analysis.moves.length} total</span></div><div className="h-2 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300" style={{width:`${(currentMoveIndex/analysis.moves.length)*100}%`}}/></div></div>
-              <div className="text-center text-gray-500 text-xs mt-3">⌨️ Use ← → arrows • Space for autoplay</div>
+                );
+              })}
             </div>
           </div>
-          <div className="lg:w-80">
-            <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700 h-full max-h-[700px] overflow-hidden flex flex-col">
-              <h3 className="text-white font-bold mb-3">📜 All Moves</h3>
-              <div className="flex-1 overflow-y-auto space-y-1 pr-2">
-                <div onClick={() => setCurrentMoveIndex(0)} className={`p-2 rounded-lg cursor-pointer transition-all ${currentMoveIndex===0?'bg-purple-500/30 ring-2 ring-purple-500':'hover:bg-gray-700/50'}`}><span className="text-gray-400">Start</span></div>
-                {analysis.moves.map((move, idx) => {
-                  const config = classifications[move.classification];
-                  const isSelected = idx === currentMoveIndex - 1;
-                  return <div key={idx} onClick={() => setCurrentMoveIndex(idx+1)} className={`p-2 rounded-lg cursor-pointer transition-all ${isSelected?'ring-2 ring-purple-500':''} ${config?.bg||'bg-gray-700/30'} hover:scale-[1.02]`}><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="text-lg">{config?.icon||'•'}</span><span className="text-white font-mono text-sm">{move.move_number}.{move.color==='black'?'..':''} {move.move_played}</span></div><span className={`text-xs font-bold ${config?.color||'text-gray-400'}`}>{parseFloat(move.eval_change)>0?'+':''}{move.eval_change}</span></div></div>;
-                })}
-              </div>
+
+          <div style={styles.accuracyCard}>
+            <div style={styles.accuracyHeader}>
+              <span style={styles.playerIcon}>⬛</span>
+              <span style={styles.playerName}>Black</span>
+            </div>
+            <div style={{...styles.accuracyValue, color: getAccuracyColor(analysis.blackAccuracy)}}>
+              {analysis.blackAccuracy}%
+            </div>
+            <div style={styles.accuracyLabel}>Accuracy</div>
+            <div style={styles.moveBreakdown}>
+              {Object.entries(analysis.summary?.black || {}).map(([type, count]) => {
+                if (count === 0 || !CLASSIFICATIONS[type]) return null;
+                return (
+                  <div key={type} style={styles.breakdownItem}>
+                    <span style={{...styles.classIcon, color: CLASSIFICATIONS[type].color}}>
+                      {CLASSIFICATIONS[type].icon}
+                    </span>
+                    <span style={styles.breakdownCount}>{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-        <div className="text-center mt-8"><button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors text-lg">← Back</button></div>
+
+        {/* Center: Board with Eval Bar */}
+        <div style={styles.centerPanel}>
+          {/* Move Info Bar */}
+          <div style={{
+            ...styles.moveInfoBar,
+            background: currentMove ? (CLASSIFICATIONS[currentMove.classification]?.bg || '#333') : '#333',
+            borderLeft: currentMove ? `4px solid ${CLASSIFICATIONS[currentMove.classification]?.color || '#666'}` : '4px solid #666'
+          }}>
+            {currentMove ? (
+              <div style={styles.moveInfoContent}>
+                <span style={{...styles.classificationIcon, color: CLASSIFICATIONS[currentMove.classification]?.color}}>
+                  {CLASSIFICATIONS[currentMove.classification]?.icon}
+                </span>
+                <span style={styles.moveText}>
+                  {currentMove.move_number || currentMove.moveNumber}.
+                  {currentMove.color === 'black' ? '..' : ''} 
+                  {currentMove.move_played || currentMove.move}
+                </span>
+                <span style={{...styles.classificationLabel, color: CLASSIFICATIONS[currentMove.classification]?.color}}>
+                  {CLASSIFICATIONS[currentMove.classification]?.label}
+                </span>
+                {currentMove.best_move && currentMove.best_move !== (currentMove.move_played || currentMove.move) && (
+                  <span style={styles.bestMoveHint}>
+                    Best: <span style={{color: '#96bc4b'}}>{currentMove.best_move}</span>
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span style={{color: '#888'}}>Starting position</span>
+            )}
+          </div>
+
+          <div style={styles.boardWrapper}>
+            {/* Eval Bar */}
+            <div style={styles.evalBar}>
+              <div style={{...styles.evalBarWhite, height: `${evalPercent}%`}}></div>
+              <div style={styles.evalText}>{formatEval(currentEval)}</div>
+            </div>
+            
+            {/* Board */}
+            <div style={styles.boardContainer}>
+              <Chessboard 
+                position={game.fen()} 
+                boardOrientation={flipped ? 'black' : 'white'}
+                arePiecesDraggable={false} 
+                animationDuration={150}
+                customLightSquareStyle={{ backgroundColor: boardTheme.light }}
+                customDarkSquareStyle={{ backgroundColor: boardTheme.dark }}
+                customPieces={customPieces}
+                customSquareStyles={currentMove ? {
+                  [currentMove.from]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+                  [currentMove.to]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' }
+                } : {}}
+              />
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div style={styles.controls}>
+            <button onClick={() => setCurrentMoveIndex(0)} style={styles.controlBtn}>⏮</button>
+            <button onClick={() => setCurrentMoveIndex(Math.max(0, currentMoveIndex - 1))} style={styles.controlBtn}>◀</button>
+            <button onClick={() => setAutoPlay(!autoPlay)} style={{...styles.controlBtn, ...styles.playBtn, background: autoPlay ? '#96bc4b' : '#444'}}>
+              {autoPlay ? '⏸' : '▶'}
+            </button>
+            <button onClick={() => setCurrentMoveIndex(Math.min(analysis.moves.length, currentMoveIndex + 1))} style={styles.controlBtn}>▶</button>
+            <button onClick={() => setCurrentMoveIndex(analysis.moves.length)} style={styles.controlBtn}>⏭</button>
+          </div>
+
+          <div style={styles.progressBar}>
+            <div style={{...styles.progressFill, width: `${(currentMoveIndex / analysis.moves.length) * 100}%`}}></div>
+          </div>
+          <div style={styles.moveCounter}>{currentMoveIndex} / {analysis.moves.length}</div>
+        </div>
+
+        {/* Right: Move List */}
+        <div style={styles.rightPanel}>
+          <h3 style={styles.movesTitle}>Moves</h3>
+          <div style={styles.movesList}>
+            <div 
+              onClick={() => setCurrentMoveIndex(0)}
+              style={{...styles.moveItem, background: currentMoveIndex === 0 ? '#444' : 'transparent'}}
+            >
+              <span style={{color: '#888'}}>Start</span>
+            </div>
+            {analysis.moves.map((move, idx) => {
+              const config = CLASSIFICATIONS[move.classification] || CLASSIFICATIONS.good;
+              const isSelected = idx === currentMoveIndex - 1;
+              const moveNum = move.move_number || move.moveNumber;
+              const moveSan = move.move_played || move.move;
+              
+              return (
+                <div 
+                  key={idx}
+                  onClick={() => setCurrentMoveIndex(idx + 1)}
+                  style={{
+                    ...styles.moveItem,
+                    background: isSelected ? '#444' : 'transparent',
+                    borderLeft: `3px solid ${config.color}`
+                  }}
+                >
+                  <span style={{...styles.moveClassIcon, color: config.color}}>{config.icon}</span>
+                  <span style={styles.moveNumber}>{moveNum}.{move.color === 'black' ? '..' : ''}</span>
+                  <span style={styles.moveSan}>{moveSan}</span>
+                  <span style={{...styles.moveEval, color: parseFloat(move.eval_after || move.evalAfter) > 0 ? '#fff' : '#888'}}>
+                    {formatEval(move.eval_after || move.evalAfter)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+const getAccuracyColor = (acc) => {
+  const a = parseFloat(acc);
+  if (a >= 90) return '#96bc4b';
+  if (a >= 80) return '#f7c631';
+  if (a >= 70) return '#e6912c';
+  return '#ca3431';
+};
+
+const styles = {
+  container: { minHeight: '100vh', background: '#262522', padding: '16px', fontFamily: 'system-ui, sans-serif' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', maxWidth: '1400px', margin: '0 auto 16px' },
+  backLink: { background: 'none', border: 'none', color: '#81b64c', cursor: 'pointer', fontSize: '14px' },
+  title: { color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 },
+  flipButton: { background: '#333', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' },
+  mainContent: { display: 'flex', gap: '16px', maxWidth: '1400px', margin: '0 auto', alignItems: 'flex-start' },
+  leftPanel: { width: '200px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  centerPanel: { flex: 1, maxWidth: '600px' },
+  rightPanel: { width: '280px', background: '#302e2b', borderRadius: '8px', overflow: 'hidden' },
+  accuracyCard: { background: '#302e2b', borderRadius: '8px', padding: '16px', textAlign: 'center' },
+  accuracyHeader: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' },
+  playerIcon: { fontSize: '20px' },
+  playerName: { color: '#fff', fontWeight: '600' },
+  accuracyValue: { fontSize: '32px', fontWeight: '700' },
+  accuracyLabel: { color: '#888', fontSize: '12px', marginTop: '4px' },
+  moveBreakdown: { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px' },
+  breakdownItem: { display: 'flex', alignItems: 'center', gap: '4px' },
+  classIcon: { fontSize: '14px', fontWeight: '700' },
+  breakdownCount: { color: '#fff', fontSize: '14px' },
+  moveInfoBar: { padding: '12px 16px', borderRadius: '8px 8px 0 0', marginBottom: '0' },
+  moveInfoContent: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+  classificationIcon: { fontSize: '18px', fontWeight: '700' },
+  moveText: { color: '#fff', fontWeight: '600', fontSize: '16px' },
+  classificationLabel: { fontSize: '14px', fontWeight: '600' },
+  bestMoveHint: { color: '#888', fontSize: '13px', marginLeft: 'auto' },
+  boardWrapper: { display: 'flex', gap: '0' },
+  evalBar: { width: '24px', background: '#000', borderRadius: '4px 0 0 4px', position: 'relative', overflow: 'hidden' },
+  evalBarWhite: { position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', transition: 'height 0.3s ease' },
+  evalText: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', color: '#888', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' },
+  boardContainer: { flex: 1 },
+  controls: { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '12px' },
+  controlBtn: { background: '#444', border: 'none', color: '#fff', width: '44px', height: '44px', borderRadius: '4px', fontSize: '16px', cursor: 'pointer' },
+  playBtn: { width: '60px' },
+  progressBar: { height: '4px', background: '#444', borderRadius: '2px', marginTop: '12px', overflow: 'hidden' },
+  progressFill: { height: '100%', background: '#81b64c', transition: 'width 0.2s' },
+  moveCounter: { textAlign: 'center', color: '#888', fontSize: '12px', marginTop: '8px' },
+  movesTitle: { color: '#fff', padding: '12px 16px', margin: 0, borderBottom: '1px solid #444', fontSize: '14px' },
+  movesList: { maxHeight: '500px', overflowY: 'auto' },
+  moveItem: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #3a3835' },
+  moveClassIcon: { width: '20px', textAlign: 'center', fontWeight: '700', fontSize: '12px' },
+  moveNumber: { color: '#888', fontSize: '12px', width: '32px' },
+  moveSan: { color: '#fff', fontSize: '14px', fontWeight: '500', flex: 1 },
+  moveEval: { fontSize: '12px', fontFamily: 'monospace' },
+  loadingContainer: { minHeight: '100vh', background: '#262522', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  loadingBox: { textAlign: 'center' },
+  spinner: { width: '50px', height: '50px', border: '3px solid #444', borderTop: '3px solid #81b64c', borderRadius: '50%', margin: '0 auto', animation: 'spin 1s linear infinite' },
+  backButton: { background: '#81b64c', border: 'none', color: '#fff', padding: '12px 24px', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }
+};
+
+// Add keyframe animation
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+document.head.appendChild(styleSheet);
 
 export default GameAnalysis;

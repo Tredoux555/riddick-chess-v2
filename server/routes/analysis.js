@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../utils/db');
 const { authenticateToken } = require('../middleware/auth');
-const { botEngine } = require('../services/botEngine');
+const stockfishAnalysis = require('../services/stockfishAnalysis');
 
 router.post('/request', authenticateToken, async (req, res) => {
   try {
@@ -68,7 +68,7 @@ async function processAnalysis(analysisId, pgn, pool) {
     console.log(`Starting analysis ${analysisId}...`);
     await pool.query(`UPDATE game_analyses SET status = 'analyzing' WHERE id = $1`, [analysisId]);
     
-    const analysis = await botEngine.analyzeGame(pgn);
+    const analysis = await stockfishAnalysis.analyzeGame(pgn);
     console.log(`Analysis ${analysisId} computed, ${analysis.moves.length} moves`);
     
     for (const move of analysis.moves) {
@@ -133,8 +133,8 @@ router.post('/position', authenticateToken, async (req, res) => {
   try {
     const { fen } = req.body;
     if (!fen) return res.status(400).json({ error: 'FEN required' });
-    const result = botEngine.analyzePosition(fen, 4);
-    res.json({ fen, evaluation: result.evaluation, bestMove: result.bestMove });
+    const result = await stockfishAnalysis.evaluatePosition(fen, 15);
+    res.json({ fen, evaluation: result.score, bestMove: result.bestMove, pv: result.pv });
   } catch (err) {
     console.error('Error analyzing position:', err);
     res.status(500).json({ error: 'Failed to analyze position' });
