@@ -42,6 +42,17 @@ const Tournament = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!window.confirm('Are you sure you want to withdraw from this tournament?')) return;
+    try {
+      await axios.post(`/api/tournaments/${id}/withdraw`);
+      toast.success('Withdrawn from tournament');
+      loadTournament();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to withdraw');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'white' }}>
@@ -84,7 +95,7 @@ const Tournament = () => {
         <div>Status: <strong>{tournament.status}</strong></div>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
         {canRegister && (
           <button 
             onClick={handleRegister}
@@ -93,7 +104,19 @@ const Tournament = () => {
             Register
           </button>
         )}
-        {isRegistered && <span style={{ color: '#769656' }}><FaCheck /> Registered</span>}
+        {isRegistered && (
+          <>
+            <span style={{ color: '#769656' }}><FaCheck /> Registered</span>
+            {tournament.status === 'upcoming' && (
+              <button 
+                onClick={handleWithdraw}
+                style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Withdraw
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       <h2 style={{ marginTop: '30px' }}>Participants ({tournament.participants?.length || 0})</h2>
