@@ -562,6 +562,65 @@ router.get('/health-check', authenticateToken, requireAdmin, async (req, res) =>
     addTest('Features', 'Tournaments', 'fail', null, e.message);
   }
 
+  // Test: Tournament participants table
+  try {
+    const participants = await pool.query('SELECT COUNT(*) as count FROM tournament_participants');
+    const activeParticipants = await pool.query(`
+      SELECT COUNT(*) as count FROM tournament_participants tp
+      JOIN tournaments t ON tp.tournament_id = t.id
+      WHERE t.status IN ('upcoming', 'active') AND tp.is_withdrawn = FALSE
+    `);
+    addTest('Database', '[Tournament] Participants', 'pass', {
+      total: parseInt(participants.rows[0].count),
+      activeRegistrations: parseInt(activeParticipants.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', '[Tournament] Participants', 'fail', null, e.message);
+  }
+
+  // Test: Tournament pairings table
+  try {
+    const pairings = await pool.query('SELECT COUNT(*) as count FROM tournament_pairings');
+    const completedPairings = await pool.query(`SELECT COUNT(*) as count FROM tournament_pairings WHERE result IS NOT NULL`);
+    const pendingPairings = await pool.query(`SELECT COUNT(*) as count FROM tournament_pairings WHERE result IS NULL AND is_bye = FALSE`);
+    addTest('Database', '[Tournament] Pairings', 'pass', {
+      total: parseInt(pairings.rows[0].count),
+      completed: parseInt(completedPairings.rows[0].count),
+      pending: parseInt(pendingPairings.rows[0].count)
+    });
+  } catch (e) {
+    addTest('Database', '[Tournament] Pairings', 'fail', null, e.message);
+  }
+
+  // Test: Tournament service
+  try {
+    const tournamentService = require('../services/tournamentService');
+    const activeTournaments = await tournamentService.getActiveTournaments(5);
+    addTest('Services', 'Tournament Service', 'pass', { 
+      activeTournamentsFound: activeTournaments.length
+    });
+  } catch (e) {
+    addTest('Services', 'Tournament Service', 'fail', null, e.message);
+  }
+
+  // Test: Tournament schema columns
+  try {
+    const cols = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'tournament_participants'
+    `);
+    const colNames = cols.rows.map(r => r.column_name);
+    const required = ['user_id', 'tournament_id', 'score', 'buchholz', 'opponents', 'colors', 'has_bye'];
+    const missing = required.filter(c => !colNames.includes(c));
+    if (missing.length > 0) {
+      addTest('Schema', '[Tournament] Participant Columns', 'fail', { missing, found: colNames });
+    } else {
+      addTest('Schema', '[Tournament] Participant Columns', 'pass', { columns: required });
+    }
+  } catch (e) {
+    addTest('Schema', '[Tournament] Participant Columns', 'fail', null, e.message);
+  }
+
   // Test 33: Puzzle system
   try {
     const totalPuzzles = await pool.query(`SELECT COUNT(*) as count FROM puzzles`);
