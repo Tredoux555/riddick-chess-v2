@@ -647,17 +647,53 @@ const ClubMembers = () => {
 
 const TournamentAdmin = () => {
   const [tournaments, setTournaments] = useState([]);
+  const [creating, setCreating] = useState(false);
   
   useEffect(() => {
-    axios.get('/api/tournaments').then(r => setTournaments(r.data));
+    loadTournaments();
   }, []);
+
+  const loadTournaments = () => {
+    axios.get('/api/tournaments').then(r => setTournaments(r.data));
+  };
+
+  const createOfficialTournament = async () => {
+    if (!window.confirm('Create the Official Back-to-School Tournament?\n\n🏆 Riddick from G5-1\'s Official Tournament\n⏱️ 10 min games, 8hr forfeit window\n📅 Jan 5-9 signup, Jan 9-11 games')) return;
+    
+    setCreating(true);
+    try {
+      const res = await axios.post('/api/tournaments/create-official-tournament');
+      toast.success('🏆 Tournament created!');
+      loadTournaments();
+      alert(`✅ Tournament created!\n\nID: ${res.data.tournament.id}\nView at: /tournament/${res.data.tournament.id}\n\nShare with students!`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to create tournament');
+    } finally {
+      setCreating(false);
+    }
+  };
   
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h1>Tournaments</h1>
-        <Link to="/admin/riddick/tournaments/create" className="btn btn-primary">Create Tournament</Link>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            onClick={createOfficialTournament} 
+            disabled={creating}
+            className="btn"
+            style={{ background: '#10b981', color: 'white', fontWeight: 'bold' }}
+          >
+            {creating ? '⏳ Creating...' : '🏆 Create Official Tournament'}
+          </button>
+          <Link to="/admin/riddick/tournaments/create" className="btn btn-primary">+ Custom Tournament</Link>
+        </div>
       </div>
+      {tournaments.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+          <p>No tournaments yet. Click the green button above to create one!</p>
+        </div>
+      )}
       {tournaments.map(t => (
         <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px' }}>
           <h3>{t.name}</h3>
