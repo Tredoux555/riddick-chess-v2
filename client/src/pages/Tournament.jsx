@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { FaCalendar, FaClock, FaUsers, FaTrophy, FaCheck } from 'react-icons/fa';
+import { FaCalendar, FaClock, FaUsers, FaTrophy, FaCheck, FaEye, FaPlay } from 'react-icons/fa';
 
 const Tournament = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [tournament, setTournament] = useState(null);
+  const [activeGames, setActiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadTournament();
+    loadActiveGames();
+    
+    // Refresh active games every 30 seconds
+    const interval = setInterval(loadActiveGames, 30000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const loadTournament = async () => {
@@ -30,6 +37,19 @@ const Tournament = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadActiveGames = async () => {
+    try {
+      const response = await axios.get(`/api/tournaments/${id}/active-games`);
+      setActiveGames(response.data || []);
+    } catch (err) {
+      console.error('Failed to load active games:', err);
+    }
+  };
+
+  const spectateGame = (gameId) => {
+    navigate(`/game/${gameId}`);
   };
 
   const handleRegister = async () => {
@@ -130,6 +150,57 @@ const Tournament = () => {
           </>
         )}
       </div>
+
+      {/* Live Games Section */}
+      {tournament.status === 'active' && (
+        <div style={{ marginTop: '30px' }}>
+          <h2><FaEye /> Live Games ({activeGames.length})</h2>
+          {activeGames.length > 0 ? (
+            <div style={{ display: 'grid', gap: '12px', marginTop: '15px' }}>
+              {activeGames.map(game => (
+                <div 
+                  key={game.id} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.05)', 
+                    padding: '15px 20px', 
+                    borderRadius: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>{game.white_username}</span>
+                    <span style={{ color: '#888', margin: '0 10px' }}>vs</span>
+                    <span style={{ fontWeight: 'bold' }}>{game.black_username}</span>
+                    <span style={{ color: '#666', marginLeft: '15px', fontSize: '14px' }}>
+                      Round {game.round}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => spectateGame(game.game_id)}
+                    style={{
+                      background: '#6366f1',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <FaEye /> Watch
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: '#888', marginTop: '10px' }}>No games in progress right now.</p>
+          )}
+        </div>
+      )}
 
       <h2 style={{ marginTop: '30px' }}>Participants ({tournament.participants?.length || 0})</h2>
       {tournament.participants && tournament.participants.length > 0 ? (

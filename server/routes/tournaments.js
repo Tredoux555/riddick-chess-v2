@@ -94,6 +94,35 @@ router.get('/:id/standings', authenticateToken, async (req, res) => {
   }
 });
 
+// Get active games in tournament (for spectating)
+router.get('/:id/active-games', authenticateToken, async (req, res) => {
+  try {
+    const pool = require('../utils/db');
+    const result = await pool.query(`
+      SELECT 
+        tp.game_id,
+        tp.round,
+        g.status,
+        w.username as white_username,
+        b.username as black_username,
+        g.created_at
+      FROM tournament_pairings tp
+      JOIN games g ON tp.game_id = g.id
+      LEFT JOIN users w ON tp.white_player_id = w.id
+      LEFT JOIN users b ON tp.black_player_id = b.id
+      WHERE tp.tournament_id = $1 
+        AND tp.is_bye = FALSE
+        AND g.status = 'active'
+      ORDER BY tp.round DESC, g.created_at DESC
+    `, [req.params.id]);
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get active games error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get all rounds with pairings
 router.get('/:id/rounds', authenticateToken, async (req, res) => {
   try {
