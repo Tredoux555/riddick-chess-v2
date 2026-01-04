@@ -246,12 +246,12 @@ class TournamentService {
     // Get participants
     const participants = await pool.query(`
       SELECT tp.*, u.username, u.avatar,
-             COALESCE(ur.blitz_rating, 1500) as rating
+             COALESCE(ur.blitz_rating, 500) as rating
       FROM tournament_participants tp
       JOIN users u ON tp.user_id = u.id
       LEFT JOIN user_ratings ur ON u.id = ur.user_id
       WHERE tp.tournament_id = $1 AND (tp.is_withdrawn = FALSE OR tp.is_withdrawn IS NULL)
-      ORDER BY tp.score DESC, tp.buchholz DESC, COALESCE(ur.blitz_rating, 1500) DESC
+      ORDER BY tp.score DESC, tp.buchholz DESC, COALESCE(ur.blitz_rating, 500) DESC
     `, [tournamentId]);
 
     // Check if user is registered
@@ -370,11 +370,11 @@ class TournamentService {
 
     // Get participants sorted by rating
     const participants = await pool.query(`
-      SELECT tp.user_id, COALESCE(ur.blitz_rating, 1500) as rating
+      SELECT tp.user_id, COALESCE(ur.blitz_rating, 500) as rating
       FROM tournament_participants tp
       LEFT JOIN user_ratings ur ON tp.user_id = ur.user_id
       WHERE tp.tournament_id = $1 AND (tp.is_withdrawn = FALSE OR tp.is_withdrawn IS NULL)
-      ORDER BY COALESCE(ur.blitz_rating, 1500) DESC
+      ORDER BY COALESCE(ur.blitz_rating, 500) DESC
     `, [tournamentId]);
 
     if (participants.rows.length < 2) {
@@ -425,7 +425,7 @@ class TournamentService {
     // Sort by score (primary) and rating (secondary)
     participants.sort((a, b) => {
       if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
-      return (b.rating || 1500) - (a.rating || 1500);
+      return (b.rating || 500) - (a.rating || 500);
     });
 
     const pairings = [];

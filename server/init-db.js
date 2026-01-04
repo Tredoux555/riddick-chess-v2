@@ -31,15 +31,15 @@ async function initDatabase() {
 
       CREATE TABLE IF NOT EXISTS user_ratings (
         user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-        bullet_rating INTEGER DEFAULT 1200,
-        blitz_rating INTEGER DEFAULT 1200,
-        rapid_rating INTEGER DEFAULT 1200,
-        classical_rating INTEGER DEFAULT 1200
+        bullet_rating INTEGER DEFAULT 500,
+        blitz_rating INTEGER DEFAULT 500,
+        rapid_rating INTEGER DEFAULT 500,
+        classical_rating INTEGER DEFAULT 500
       );
 
       CREATE TABLE IF NOT EXISTS user_puzzle_ratings (
         user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-        rating INTEGER DEFAULT 1200,
+        rating INTEGER DEFAULT 500,
         puzzles_solved INTEGER DEFAULT 0,
         best_streak INTEGER DEFAULT 0
       );

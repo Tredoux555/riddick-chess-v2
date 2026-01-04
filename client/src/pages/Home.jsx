@@ -169,19 +169,19 @@ const Home = () => {
               <div className="ratings-list">
                 <div className="rating-item">
                   <span className="rating-label">⚡ Bullet</span>
-                  <span className="rating-value">{Math.round(stats.bullet_rating || 1500)}</span>
+                  <span className="rating-value">{Math.round(stats.bullet_rating || 500)}</span>
                 </div>
                 <div className="rating-item">
                   <span className="rating-label">🔥 Blitz</span>
-                  <span className="rating-value">{Math.round(stats.blitz_rating || 1500)}</span>
+                  <span className="rating-value">{Math.round(stats.blitz_rating || 500)}</span>
                 </div>
                 <div className="rating-item">
                   <span className="rating-label">⏱️ Rapid</span>
-                  <span className="rating-value">{Math.round(stats.rapid_rating || 1500)}</span>
+                  <span className="rating-value">{Math.round(stats.rapid_rating || 500)}</span>
                 </div>
                 <div className="rating-item">
                   <span className="rating-label">🧩 Puzzles</span>
-                  <span className="rating-value">{Math.round(stats.puzzle_rating || 1500)}</span>
+                  <span className="rating-value">{Math.round(stats.puzzle_rating || 500)}</span>
                 </div>
               </div>
             ) : (

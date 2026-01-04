@@ -25,7 +25,7 @@ class RatingService {
   constructor() {
     this.glicko = new Glicko2({
       tau: 0.5,
-      rating: 1500,
+      rating: 500,
       rd: 350,
       vol: 0.06
     });
@@ -48,7 +48,7 @@ class RatingService {
     `, [userId]);
 
     if (result.rows.length === 0) {
-      return { rating: 1500, rd: 350, vol: 0.06, games: 0, provisional: true };
+      return { rating: 500, rd: 350, vol: 0.06, games: 0, provisional: true };
     }
 
     const data = result.rows[0];

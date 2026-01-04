@@ -180,8 +180,8 @@ router.get('/live/all', optionalAuth, async (req, res) => {
       SELECT g.*,
              w.username as white_username, w.avatar as white_avatar,
              b.username as black_username, b.avatar as black_avatar,
-             COALESCE(wr.blitz_rating, 1500) as white_rating,
-             COALESCE(br.blitz_rating, 1500) as black_rating,
+             COALESCE(wr.blitz_rating, 500) as white_rating,
+             COALESCE(br.blitz_rating, 500) as black_rating,
              (SELECT COUNT(*) FROM game_spectators WHERE game_id = g.id) as spectator_count
       FROM games g
       LEFT JOIN users w ON g.white_player_id = w.id
@@ -189,7 +189,7 @@ router.get('/live/all', optionalAuth, async (req, res) => {
       LEFT JOIN user_ratings wr ON w.id = wr.user_id
       LEFT JOIN user_ratings br ON b.id = br.user_id
       WHERE g.status = 'active'
-      ORDER BY (COALESCE(wr.blitz_rating, 1500) + COALESCE(br.blitz_rating, 1500)) / 2 DESC
+      ORDER BY (COALESCE(wr.blitz_rating, 500) + COALESCE(br.blitz_rating, 500)) / 2 DESC
       LIMIT $1
     `, [parseInt(limit)]);
 
@@ -207,8 +207,8 @@ router.get('/live/featured', optionalAuth, async (req, res) => {
       SELECT g.*,
              w.username as white_username, w.avatar as white_avatar,
              b.username as black_username, b.avatar as black_avatar,
-             COALESCE(wr.blitz_rating, 1500) as white_rating,
-             COALESCE(br.blitz_rating, 1500) as black_rating,
+             COALESCE(wr.blitz_rating, 500) as white_rating,
+             COALESCE(br.blitz_rating, 500) as black_rating,
              (SELECT COUNT(*) FROM game_spectators WHERE game_id = g.id) as spectator_count
       FROM games g
       LEFT JOIN users w ON g.white_player_id = w.id
@@ -216,7 +216,7 @@ router.get('/live/featured', optionalAuth, async (req, res) => {
       LEFT JOIN user_ratings wr ON w.id = wr.user_id
       LEFT JOIN user_ratings br ON b.id = br.user_id
       WHERE g.status = 'active' AND g.tournament_id IS NOT NULL
-      ORDER BY (COALESCE(wr.blitz_rating, 1500) + COALESCE(br.blitz_rating, 1500)) / 2 DESC
+      ORDER BY (COALESCE(wr.blitz_rating, 500) + COALESCE(br.blitz_rating, 500)) / 2 DESC
       LIMIT 1
     `);
 

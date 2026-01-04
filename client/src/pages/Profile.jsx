@@ -140,15 +140,15 @@ const Profile = () => {
         {profile.ratings && (
           <>
             <div className="stat-card">
-              <div className="stat-value">{profile.ratings.bullet?.rating || 1500}</div>
+              <div className="stat-value">{profile.ratings.bullet?.rating || 500}</div>
               <div className="stat-label">⚡ Bullet</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">{profile.ratings.blitz?.rating || 1500}</div>
+              <div className="stat-value">{profile.ratings.blitz?.rating || 500}</div>
               <div className="stat-label">🔥 Blitz</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">{profile.ratings.rapid?.rating || 1500}</div>
+              <div className="stat-value">{profile.ratings.rapid?.rating || 500}</div>
               <div className="stat-label">⏱️ Rapid</div>
             </div>
             <div className="stat-card">

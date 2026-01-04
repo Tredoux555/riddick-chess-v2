@@ -11,7 +11,7 @@ class PuzzleService {
   constructor() {
     this.glicko = new Glicko2({
       tau: 0.5,
-      rating: 1500,
+      rating: 500,
       rd: 350,
       vol: 0.06
     });
@@ -285,7 +285,7 @@ class PuzzleService {
     `, [userId]);
 
     if (result.rows.length === 0) {
-      return { rating: 1500, rd: 350, vol: 0.06, puzzles_solved: 0, current_streak: 0, best_streak: 0 };
+      return { rating: 500, rd: 350, vol: 0.06, puzzles_solved: 0, current_streak: 0, best_streak: 0 };
     }
 
     return result.rows[0];

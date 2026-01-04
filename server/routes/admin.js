@@ -443,11 +443,11 @@ router.post('/users/:id/reset-ratings', authenticateToken, requireAdmin, async (
     
     const result = await pool.query(`
       UPDATE user_ratings SET 
-        bullet_rating = 1500, bullet_rd = 350, bullet_games = 0,
-        blitz_rating = 1500, blitz_rd = 350, blitz_games = 0,
-        rapid_rating = 1500, rapid_rd = 350, rapid_games = 0,
-        classical_rating = 1500, classical_rd = 350, classical_games = 0,
-        puzzle_rating = 1500,
+        bullet_rating = 500, bullet_rd = 350, bullet_games = 0,
+        blitz_rating = 500, blitz_rd = 350, blitz_games = 0,
+        rapid_rating = 500, rapid_rd = 350, rapid_games = 0,
+        classical_rating = 500, classical_rd = 350, classical_games = 0,
+        puzzle_rating = 500,
         total_games = 0, total_wins = 0, total_losses = 0, total_draws = 0
       WHERE user_id = $1
       RETURNING user_id
@@ -457,7 +457,7 @@ router.post('/users/:id/reset-ratings', authenticateToken, requireAdmin, async (
       return res.status(404).json({ error: 'User ratings not found' });
     }
     
-    res.json({ message: 'Ratings reset to 1500' });
+    res.json({ message: 'Ratings reset to 500' });
   } catch (error) {
     console.error('Reset ratings error:', error);
     res.status(500).json({ error: 'Server error' });

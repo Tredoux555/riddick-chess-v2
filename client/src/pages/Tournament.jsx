@@ -257,7 +257,7 @@ const Tournament = () => {
               <tr key={player.user_id} style={{ borderBottom: '1px solid #333' }}>
                 <td style={{ padding: '10px' }}>{index + 1}</td>
                 <td style={{ padding: '10px' }}>{player.username}</td>
-                <td style={{ padding: '10px' }}>{Math.round(player.rating || 1500)}</td>
+                <td style={{ padding: '10px' }}>{Math.round(player.rating || 500)}</td>
                 <td style={{ padding: '10px' }}>{player.score || 0}</td>
               </tr>
             ))}

@@ -236,7 +236,7 @@ const Users = () => {
           toast.success('Admin removed');
           break;
         case 'resetRatings':
-          if (!window.confirm('Reset all ratings to 1500?')) return;
+          if (!window.confirm('Reset all ratings to 500?')) return;
           await axios.post(`/api/admin/users/${userId}/reset-ratings`);
           toast.success('Ratings reset');
           break;
@@ -295,7 +295,7 @@ const Users = () => {
                   </div>
                 </td>
                 <td>{u.email}</td>
-                <td>{u.blitz_rating || 1500}</td>
+                <td>{u.blitz_rating || 500}</td>
                 <td>
                   {u.is_banned ? <span className="status banned"><FaBan /> Banned</span> : 
                    u.is_muted ? <span className="status muted"><FaVolumeMute /> Muted</span> :
@@ -325,7 +325,7 @@ const Users = () => {
             <div className="modal-body">
               <div className="user-info">
                 <p><strong>Email:</strong> {selectedUser.email}</p>
-                <p><strong>Rating:</strong> {selectedUser.blitz_rating || 1500}</p>
+                <p><strong>Rating:</strong> {selectedUser.blitz_rating || 500}</p>
                 <p><strong>Games:</strong> {selectedUser.total_games || 0}</p>
                 <p><strong>Joined:</strong> {new Date(selectedUser.created_at).toLocaleDateString()}</p>
               </div>
