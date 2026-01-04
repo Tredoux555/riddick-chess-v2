@@ -264,25 +264,26 @@ router.post('/create-official-tournament', authenticateToken, requireAdmin, asyn
       RETURNING *
     `, [
       "Riddick from G5-1's Official Tournament",
-      `🏆 The schoolwide official back-to-school tournament! Anyone can join!
+      `🏆 The schoolwide official back-to-school tournament!
 返校官方锦标赛！欢迎所有人参加！
 
-📅 SCHEDULE / 时间安排:
+📅 SCHEDULE / 时间安排
 • Sign up / 报名: Mon Jan 5th - Fri Jan 9th 5PM
-• Tournament / 比赛: Fri Jan 9th 5PM - Sun Jan 11th 6PM  
+• Tournament / 比赛: Fri Jan 9th 5PM - Sun Jan 11th 6PM
 • Finals / 决赛: Mon Jan 12th at Recess (in person! 当面对决！)
 
-⏱️ GAME FORMAT / 比赛形式:
-• 10 minutes per player (no extra time)
-• 每人10分钟（无加时）
+⏱️ GAME FORMAT / 比赛形式
+• 10 minutes per player, no extra time
+• 每人10分钟，无加时
 
-⚠️ RULES / 规则:
+⚠️ RULES / 规则
 • You have 8 HOURS to play each game or forfeit
 • 每场比赛必须在8小时内完成，否则判负
-• 2 forfeits = kicked out / 两次弃权=退出比赛
+• 2 forfeits = kicked out / 两次弃权 = 退出比赛
 • Top 2 play finals IN PERSON! / 前两名现场决赛！
 
-🎯 Come have fun! 来玩吧！`,
+🎯 Anyone can join! Come have fun!
+欢迎所有人参加！来玩吧！`,
       'swiss',
       600,    // 10 minutes
       0,      // no increment

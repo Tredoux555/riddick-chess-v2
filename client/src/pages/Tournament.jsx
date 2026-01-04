@@ -86,7 +86,19 @@ const Tournament = () => {
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', color: 'white' }}>
       <h1>{tournament.name}</h1>
-      {tournament.description && <p style={{ color: '#aaa' }}>{tournament.description}</p>}
+      {tournament.description && (
+        <div style={{ 
+          color: '#ccc', 
+          whiteSpace: 'pre-line', 
+          lineHeight: '1.8',
+          background: 'rgba(255,255,255,0.05)',
+          padding: '20px',
+          borderRadius: '12px',
+          marginTop: '15px'
+        }}>
+          {tournament.description}
+        </div>
+      )}
       
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
         <div><FaClock /> {tournament.time_control ? `${tournament.time_control / 60} min` : 'Standard'}</div>
