@@ -416,6 +416,12 @@ const TestBoard = () => {
               onEnded={() => setIsPlaying(false)}
               autoPlay
               loop
+              playsInline
+              onClick={(e) => {
+                // Click to unmute/play if browser blocked it
+                e.target.muted = false;
+                e.target.play();
+              }}
             />
           </div>
         )}
