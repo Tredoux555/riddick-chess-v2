@@ -387,6 +387,49 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_tournament_participants_active ON tournament_participants(tournament_id, is_active);
     `);
 
+    // Tournament payments table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tournament_payments (
+        id SERIAL PRIMARY KEY,
+        tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        stripe_session_id VARCHAR(255),
+        stripe_payment_id VARCHAR(255),
+        amount INTEGER NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW(),
+        completed_at TIMESTAMP,
+        UNIQUE(tournament_id, user_id, stripe_session_id)
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_tournament_payments_tournament ON tournament_payments(tournament_id);
+      CREATE INDEX IF NOT EXISTS idx_tournament_payments_user ON tournament_payments(user_id);
+      CREATE INDEX IF NOT EXISTS idx_tournament_payments_status ON tournament_payments(status);
+    `);
+
+    // Chess lessons table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chess_lessons (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        video_url VARCHAR(500),
+        video_filename VARCHAR(255),
+        thumbnail_url VARCHAR(500),
+        category VARCHAR(100) DEFAULT 'basics',
+        difficulty VARCHAR(50) DEFAULT 'beginner',
+        order_index INTEGER DEFAULT 0,
+        is_published BOOLEAN DEFAULT true,
+        views INTEGER DEFAULT 0,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_lessons_category ON chess_lessons(category, order_index);
+      CREATE INDEX IF NOT EXISTS idx_lessons_published ON chess_lessons(is_published);
+    `);
+
     // Add achievements columns
     await client.query(`
       ALTER TABLE achievements ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 10;

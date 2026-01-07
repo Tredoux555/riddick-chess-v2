@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -8,23 +8,13 @@ import { FaCalendar, FaClock, FaUsers, FaTrophy, FaCheck, FaEye, FaPlay } from '
 const Tournament = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAdmin } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [activeGames, setActiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    loadTournament();
-    loadActiveGames();
-    
-    // Silent refresh every 3 seconds (no loading spinner)
-    const interval = setInterval(() => {
-      silentRefresh();
-      loadActiveGames();
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [id]);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Initial load - shows loading spinner
   const loadTournament = async () => {
@@ -60,18 +50,67 @@ const Tournament = () => {
     }
   };
 
-  const spectateGame = (gameId) => {
-    navigate(`/game/${gameId}`);
+  const verifyPayment = async () => {
+    try {
+      const response = await axios.post(`/api/payments/tournament/${id}/verify-payment`);
+      if (response.data.status === 'completed') {
+        toast.success('Payment successful! You are now registered.');
+        setProcessingPayment(false);
+        loadTournament();
+        // Remove query param
+        navigate(`/tournament/${id}`, { replace: true });
+      } else {
+        // Payment still pending, check again in a moment
+        setTimeout(verifyPayment, 2000);
+      }
+    } catch (err) {
+      console.error('Payment verification error:', err);
+      // If payment was completed but verification failed, still try to refresh
+      setTimeout(() => {
+        setProcessingPayment(false);
+        loadTournament();
+        navigate(`/tournament/${id}`, { replace: true });
+      }, 3000);
+    }
   };
 
   const handleRegister = async () => {
     try {
-      await axios.post(`/api/tournaments/${id}/register`);
-      toast.success('Registered for tournament!');
-      loadTournament();
+      setProcessingPayment(true);
+      const response = await axios.post(`/api/payments/tournament/${id}/checkout`);
+      // Redirect to Stripe checkout
+      window.location.href = response.data.url;
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to register');
+      setProcessingPayment(false);
+      toast.error(err.response?.data?.error || 'Failed to start payment');
     }
+  };
+
+  useEffect(() => {
+    loadTournament();
+    loadActiveGames();
+    
+    // Check for payment status in URL
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      setProcessingPayment(true);
+      verifyPayment();
+    } else if (paymentStatus === 'cancelled') {
+      toast.error('Payment cancelled');
+      // Remove query param
+      navigate(`/tournament/${id}`, { replace: true });
+    }
+    
+    // Silent refresh every 3 seconds (no loading spinner)
+    const interval = setInterval(() => {
+      silentRefresh();
+      loadActiveGames();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [id, searchParams]);
+
+  const spectateGame = (gameId) => {
+    navigate(`/game/${gameId}`);
   };
 
   const handleWithdraw = async () => {
@@ -133,6 +172,34 @@ const Tournament = () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', color: 'white' }}>
+      {/* Charity Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        padding: '15px 20px',
+        borderRadius: '12px',
+        marginBottom: '20px',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+      }}>
+        💚 Every dollar funds free schools in South Africa. Play chess, change lives.
+      </div>
+
+      {processingPayment && (
+        <div style={{
+          background: 'rgba(118, 150, 86, 0.2)',
+          padding: '20px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          textAlign: 'center',
+          border: '2px solid #769656'
+        }}>
+          <p style={{ fontSize: '18px', marginBottom: '10px' }}>🔄 Processing payment...</p>
+          <p style={{ color: '#aaa', fontSize: '14px' }}>Please wait while we verify your payment and register you.</p>
+        </div>
+      )}
+
       <h1>{tournament.name}</h1>
       {tournament.description && (
         <div style={{ 
@@ -159,9 +226,19 @@ const Tournament = () => {
         {canRegister && (
           <button 
             onClick={handleRegister}
-            style={{ padding: '10px 20px', background: '#769656', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+            disabled={processingPayment}
+            style={{ 
+              padding: '10px 20px', 
+              background: processingPayment ? '#555' : '#769656', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: processingPayment ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
           >
-            Register
+            {processingPayment ? 'Processing...' : 'Pay $1 & Register'}
           </button>
         )}
         {isRegistered && (

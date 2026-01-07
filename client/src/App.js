@@ -30,6 +30,8 @@ import SecretStoreAdmin from './pages/SecretStoreAdmin';
 import SecretStoreWants from './pages/SecretStoreWants';
 import StoreWants from './pages/StoreWants';
 import FakeAdmin from './pages/FakeAdmin';
+import Learn from './pages/Learn';
+import AdminLessons from './pages/AdminLessons';
 
 // Bot and Analysis components
 import BotSelection from './components/BotSelection';
@@ -123,6 +125,7 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute><Settings /></ProtectedRoute>
           } />
+          <Route path="/learn" element={<Learn />} />
 
           {/* Club members only */}
           <Route path="/club" element={
@@ -143,6 +146,9 @@ function App() {
           } />
           
           <Route path="/admin/hehe" element={<SecretStoreAdmin />} />
+          <Route path="/admin/lessons" element={
+            <ProtectedRoute requireAdmin><AdminLessons /></ProtectedRoute>
+          } />
 
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" />} />

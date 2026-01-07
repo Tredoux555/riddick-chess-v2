@@ -55,6 +55,10 @@ app.use(cors({
   origin: corsOrigin,
   credentials: true
 }));
+
+// Stripe webhook must use raw body - add BEFORE json middleware
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), require('./routes/payments').handleStripeWebhook);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -78,6 +82,8 @@ app.use('/api/secret-store', require('./routes/secret-store'));
 app.use('/api/store-features', require('./routes/store-features'));
 app.use('/api/bots', require('./routes/bots'));
 app.use('/api/analysis', require('./routes/analysis'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/lessons', require('./routes/lessons'));
 
 // TEMPORARY - Delete after use!
 app.get('/api/fix-missing-ratings', async (req, res) => {

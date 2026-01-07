@@ -5,7 +5,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { 
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt
+  FaShieldAlt, FaGraduationCap, FaVideo
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -22,6 +22,7 @@ const Navbar = () => {
     { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece /> },
     { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine /> },
     { path: '/achievements', label: 'Achievements', icon: <FaMedal /> },
+    { path: '/learn', label: 'Learn', icon: <FaGraduationCap /> },
   ];
 
   return (
@@ -104,6 +105,9 @@ const Navbar = () => {
                         </Link>
                         <Link to="/admin/hehe" className="dropdown-item admin-link">
                           🛒 Store Admin
+                        </Link>
+                        <Link to="/admin/lessons" className="dropdown-item admin-link">
+                          <FaVideo /> Manage Lessons
                         </Link>
                       </>
                     )}
