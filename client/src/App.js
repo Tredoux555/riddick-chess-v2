@@ -32,6 +32,7 @@ import StoreWants from './pages/StoreWants';
 import FakeAdmin from './pages/FakeAdmin';
 import Learn from './pages/Learn';
 import AdminLessons from './pages/AdminLessons';
+import TestBoard from './pages/TestBoard';
 
 // Bot and Analysis components
 import BotSelection from './components/BotSelection';
@@ -148,6 +149,9 @@ function App() {
           <Route path="/admin/hehe" element={<SecretStoreAdmin />} />
           <Route path="/admin/lessons" element={
             <ProtectedRoute requireAdmin><AdminLessons /></ProtectedRoute>
+          } />
+          <Route path="/admin/test-board" element={
+            <ProtectedRoute requireAdmin><TestBoard /></ProtectedRoute>
           } />
 
           {/* 404 */}
