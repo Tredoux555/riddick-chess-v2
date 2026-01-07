@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,17 @@ const EMPTY_POSITION = '8/8/8/8/8/8/8/8';
 const PIECES = {
   white: ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP'],
   black: ['bK', 'bQ', 'bR', 'bB', 'bN', 'bP']
+};
+
+// Keyboard shortcuts: piece spawns in center (e4/d4/e5/d5 area)
+const HOTKEY_POSITIONS = {
+  '1': null, // Reset
+  '2': { piece: 'P', squares: ['e4'] }, // Pawn
+  '3': { piece: 'R', squares: ['e4'] }, // Rook
+  '4': { piece: 'N', squares: ['e4'] }, // Knight
+  '5': { piece: 'B', squares: ['e4'] }, // Bishop
+  '6': { piece: 'Q', squares: ['e4'] }, // Queen
+  '7': { piece: 'K', squares: ['e4'] }, // King
 };
 
 const PIP_POSITIONS = {
@@ -71,11 +82,52 @@ const TestBoard = () => {
   const [pipPosition, setPipPosition] = useState('top-right');
   const [pipSize, setPipSize] = useState('medium');
   
-  // Recording mode - hides everything except board and video
+  // Recording mode
   const [recordingMode, setRecordingMode] = useState(false);
+  
+  // Arrows state
+  const [arrows, setArrows] = useState([]);
+  const [arrowStart, setArrowStart] = useState(null);
   
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Keyboard shortcuts for recording mode
+  const handleKeyPress = useCallback((e) => {
+    if (!recordingMode) return;
+    
+    const key = e.key;
+    
+    if (HOTKEY_POSITIONS[key]) {
+      if (key === '1') {
+        // Reset to starting position
+        setPosition(STARTING_POSITION);
+        setHistory([STARTING_POSITION]);
+        setArrows([]);
+      } else {
+        // Spawn single white piece in center
+        const { piece, squares } = HOTKEY_POSITIONS[key];
+        const newPosition = {};
+        squares.forEach(sq => {
+          newPosition[sq] = 'w' + piece;
+        });
+        const fen = mapToFen(newPosition);
+        setPosition(fen);
+        setHistory(prev => [...prev, fen]);
+        setArrows([]);
+      }
+    }
+    
+    // Clear arrows with Escape or 0
+    if (e.key === 'Escape' || e.key === '0') {
+      setArrows([]);
+    }
+  }, [recordingMode]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleKeyPress]);
 
   // Hide navbar in recording mode
   useEffect(() => {
@@ -210,13 +262,17 @@ const TestBoard = () => {
     }
   };
 
+  // Arrow drawing with right-click
   const onSquareRightClick = (square) => {
-    const map = fenToMap(position);
-    if (map[square]) {
-      delete map[square];
-      const newFen = mapToFen(map);
-      setPosition(newFen);
-      setHistory([...history, newFen]);
+    if (arrowStart) {
+      // Complete the arrow
+      if (arrowStart !== square) {
+        setArrows(prev => [...prev, [arrowStart, square]]);
+      }
+      setArrowStart(null);
+    } else {
+      // Start drawing arrow
+      setArrowStart(square);
     }
   };
 
@@ -231,11 +287,13 @@ const TestBoard = () => {
   const reset = () => {
     setPosition(STARTING_POSITION);
     setHistory([STARTING_POSITION]);
+    setArrows([]);
   };
 
   const clear = () => {
     setPosition(EMPTY_POSITION);
     setHistory([...history, EMPTY_POSITION]);
+    setArrows([]);
   };
 
   const flipBoard = () => {
@@ -300,6 +358,26 @@ const TestBoard = () => {
           <FaArrowLeft /> Exit
         </button>
 
+        {/* Hotkey hints - bottom left */}
+        <div style={{
+          position: 'fixed',
+          bottom: '10px',
+          left: '10px',
+          background: 'rgba(0,0,0,0.6)',
+          color: '#888',
+          padding: '10px 14px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          zIndex: 10001,
+          lineHeight: '1.6'
+        }}>
+          <div><b>1</b> Reset</div>
+          <div><b>2</b> Pawn &nbsp;<b>3</b> Rook &nbsp;<b>4</b> Knight</div>
+          <div><b>5</b> Bishop &nbsp;<b>6</b> Queen &nbsp;<b>7</b> King</div>
+          <div><b>0</b> Clear arrows</div>
+          <div style={{ marginTop: '4px', color: '#666' }}>Right-click drag = arrow</div>
+        </div>
+
         {/* Board - centered and big */}
         <div style={{ width: '85vh', maxWidth: '700px' }}>
           <Chessboard
@@ -312,6 +390,8 @@ const TestBoard = () => {
             customPieces={customPieces()}
             customDarkSquareStyle={{ backgroundColor: '#779556' }}
             customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+            customArrows={arrows}
+            customArrowColor="rgba(255, 170, 0, 0.8)"
           />
         </div>
 
@@ -453,6 +533,8 @@ const TestBoard = () => {
             customPieces={customPieces()}
             customDarkSquareStyle={{ backgroundColor: '#779556' }}
             customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+            customArrows={arrows}
+            customArrowColor="rgba(255, 170, 0, 0.8)"
           />
           
           {/* Board Controls */}
@@ -469,6 +551,9 @@ const TestBoard = () => {
             <button onClick={clear} style={{ ...btnStyle, background: '#ef4444' }}>
               <FaTrash /> Clear
             </button>
+            <button onClick={() => setArrows([])} style={btnStyle}>
+              Clear Arrows
+            </button>
           </div>
         </div>
 
@@ -477,7 +562,7 @@ const TestBoard = () => {
           <h3 style={{ marginBottom: '15px' }}>Pieces</h3>
           <p style={{ color: '#888', fontSize: '14px', marginBottom: '15px' }}>
             Click to select, then click square to place.<br/>
-            Right-click square to remove piece.
+            Right-click two squares to draw arrow.
           </p>
           
           {selectedPiece && (
@@ -536,6 +621,23 @@ const TestBoard = () => {
                 fontFamily: 'monospace'
               }}
             />
+          </div>
+
+          {/* Hotkeys reference */}
+          <div style={{ 
+            marginTop: '25px', 
+            padding: '15px', 
+            background: 'rgba(118,150,86,0.2)', 
+            borderRadius: '8px',
+            border: '1px solid rgba(118,150,86,0.4)'
+          }}>
+            <h4 style={{ color: '#769656', marginBottom: '8px' }}>⌨️ Recording Hotkeys</h4>
+            <p style={{ color: '#aaa', fontSize: '13px', lineHeight: '1.6' }}>
+              <b>1</b> = Reset board<br/>
+              <b>2</b> = Pawn &nbsp; <b>3</b> = Rook &nbsp; <b>4</b> = Knight<br/>
+              <b>5</b> = Bishop &nbsp; <b>6</b> = Queen &nbsp; <b>7</b> = King<br/>
+              <b>0</b> = Clear arrows
+            </p>
           </div>
         </div>
       </div>
