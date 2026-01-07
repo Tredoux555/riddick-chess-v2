@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUndo, FaTrash, FaSyncAlt, FaChessBoard, FaUpload, FaPlay, FaPause, FaTimes, FaExpand, FaCompress } from 'react-icons/fa';
+import { FaUndo, FaTrash, FaSyncAlt, FaChessBoard, FaUpload, FaPlay, FaPause, FaTimes, FaVideo, FaArrowLeft } from 'react-icons/fa';
 
 const STARTING_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
 const EMPTY_POSITION = '8/8/8/8/8/8/8/8';
@@ -20,9 +20,40 @@ const PIP_POSITIONS = {
 };
 
 const PIP_SIZES = {
-  small: { width: '200px' },
-  medium: { width: '280px' },
-  large: { width: '360px' }
+  small: { width: '180px' },
+  medium: { width: '240px' },
+  large: { width: '320px' }
+};
+
+// Chess.com style piece images
+const PIECE_IMAGES = {
+  wP: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wp.png',
+  wN: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wn.png',
+  wB: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wb.png',
+  wR: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wr.png',
+  wQ: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wq.png',
+  wK: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/wk.png',
+  bP: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bp.png',
+  bN: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bn.png',
+  bB: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bb.png',
+  bR: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/br.png',
+  bQ: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bq.png',
+  bK: 'https://images.chesscomfiles.com/chess-themes/pieces/neo/150/bk.png',
+};
+
+// Custom pieces component for chess.com style
+const customPieces = () => {
+  const pieces = {};
+  Object.keys(PIECE_IMAGES).forEach(piece => {
+    pieces[piece] = ({ squareWidth }) => (
+      <img
+        src={PIECE_IMAGES[piece]}
+        alt={piece}
+        style={{ width: squareWidth, height: squareWidth }}
+      />
+    );
+  });
+  return pieces;
 };
 
 const TestBoard = () => {
@@ -39,10 +70,34 @@ const TestBoard = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [pipPosition, setPipPosition] = useState('top-right');
   const [pipSize, setPipSize] = useState('medium');
-  const [showPipControls, setShowPipControls] = useState(true);
+  
+  // Recording mode - hides everything except board and video
+  const [recordingMode, setRecordingMode] = useState(false);
   
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Hide navbar in recording mode
+  useEffect(() => {
+    const navbar = document.querySelector('.navbar, nav, header');
+    const mainContent = document.querySelector('.main-content, main');
+    
+    if (recordingMode) {
+      if (navbar) navbar.style.display = 'none';
+      if (mainContent) mainContent.style.padding = '0';
+      document.body.style.overflow = 'hidden';
+    } else {
+      if (navbar) navbar.style.display = '';
+      if (mainContent) mainContent.style.padding = '';
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      if (navbar) navbar.style.display = '';
+      if (mainContent) mainContent.style.padding = '';
+      document.body.style.overflow = '';
+    };
+  }, [recordingMode]);
 
   if (!isAdmin) {
     navigate('/');
@@ -199,29 +254,100 @@ const TestBoard = () => {
           border: isSelected ? '2px solid #fff' : '2px solid transparent',
           borderRadius: '8px',
           cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '32px'
+          padding: '4px'
         }}
       >
-        {getPieceUnicode(piece)}
+        <img src={PIECE_IMAGES[piece]} alt={piece} style={{ width: '100%', height: '100%' }} />
       </button>
     );
   };
 
-  const getPieceUnicode = (piece) => {
-    const unicodePieces = {
-      'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
-      'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
-    };
-    return unicodePieces[piece] || '';
-  };
+  // RECORDING MODE - Clean view for recording
+  if (recordingMode) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: '#312e2b',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        {/* Exit button - small and in corner */}
+        <button
+          onClick={() => setRecordingMode(false)}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            left: '10px',
+            background: 'rgba(0,0,0,0.5)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            cursor: 'pointer',
+            zIndex: 10001,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '14px'
+          }}
+        >
+          <FaArrowLeft /> Exit
+        </button>
 
+        {/* Board - centered and big */}
+        <div style={{ width: '85vh', maxWidth: '700px' }}>
+          <Chessboard
+            position={position}
+            onPieceDrop={onPieceDrop}
+            onSquareClick={onSquareClick}
+            onSquareRightClick={onSquareRightClick}
+            boardOrientation={boardOrientation}
+            arePiecesDraggable={true}
+            customPieces={customPieces()}
+            customDarkSquareStyle={{ backgroundColor: '#779556' }}
+            customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+          />
+        </div>
+
+        {/* PIP Video */}
+        {videoUrl && (
+          <div
+            style={{
+              position: 'fixed',
+              ...PIP_POSITIONS[pipPosition],
+              ...PIP_SIZES[pipSize],
+              zIndex: 10000,
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+              border: '3px solid rgba(255,255,255,0.3)'
+            }}
+          >
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              style={{ width: '100%', display: 'block' }}
+              onEnded={() => setIsPlaying(false)}
+              autoPlay
+              loop
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // NORMAL MODE - Setup view
   return (
-    <div style={{ padding: '20px', maxWidth: '1100px', margin: '0 auto', color: 'white', position: 'relative', minHeight: '100vh' }}>
+    <div style={{ padding: '20px', maxWidth: '1100px', margin: '0 auto', color: 'white', position: 'relative' }}>
       <h1><FaChessBoard style={{ marginRight: '12px' }} />Test Board</h1>
-      <p style={{ color: '#888', marginBottom: '20px' }}>Freestyle board for video recording. Upload your facecam video to overlay.</p>
+      <p style={{ color: '#888', marginBottom: '20px' }}>Setup your position, upload your video, then enter Recording Mode.</p>
 
       {/* Hidden file input */}
       <input
@@ -232,7 +358,7 @@ const TestBoard = () => {
         style={{ display: 'none' }}
       />
 
-      {/* Video Upload Section */}
+      {/* Controls Bar */}
       <div style={{ 
         background: 'rgba(255,255,255,0.05)', 
         padding: '15px 20px', 
@@ -257,12 +383,12 @@ const TestBoard = () => {
             gap: '8px'
           }}
         >
-          <FaUpload /> {videoFile ? 'Change Video' : 'Upload Facecam Video'}
+          <FaUpload /> {videoFile ? 'Change Video' : 'Upload Your Video'}
         </button>
 
         {videoFile && (
           <>
-            <span style={{ color: '#aaa' }}>{videoFile.name}</span>
+            <span style={{ color: '#aaa', fontSize: '14px' }}>{videoFile.name}</span>
             
             <select
               value={pipPosition}
@@ -285,21 +411,38 @@ const TestBoard = () => {
               <option value="large">Large</option>
             </select>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={showPipControls}
-                onChange={(e) => setShowPipControls(e.target.checked)}
-              />
-              Show controls
-            </label>
+            <button
+              onClick={removeVideo}
+              style={{ ...selectStyle, background: '#ef4444', border: 'none', cursor: 'pointer' }}
+            >
+              <FaTimes />
+            </button>
           </>
         )}
+
+        <button
+          onClick={() => setRecordingMode(true)}
+          style={{
+            marginLeft: 'auto',
+            padding: '12px 24px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: 'bold'
+          }}
+        >
+          <FaVideo /> Start Recording Mode
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-        {/* Board */}
-        <div style={{ flex: '1', minWidth: '300px', maxWidth: '560px' }}>
+        {/* Board Preview */}
+        <div style={{ flex: '1', minWidth: '300px', maxWidth: '500px' }}>
           <Chessboard
             position={position}
             onPieceDrop={onPieceDrop}
@@ -307,10 +450,9 @@ const TestBoard = () => {
             onSquareRightClick={onSquareRightClick}
             boardOrientation={boardOrientation}
             arePiecesDraggable={true}
-            customBoardStyle={{
-              borderRadius: '8px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-            }}
+            customPieces={customPieces()}
+            customDarkSquareStyle={{ backgroundColor: '#779556' }}
+            customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
           />
           
           {/* Board Controls */}
@@ -348,7 +490,7 @@ const TestBoard = () => {
               alignItems: 'center',
               gap: '10px'
             }}>
-              <span style={{ fontSize: '28px' }}>{getPieceUnicode(selectedPiece)}</span>
+              <img src={PIECE_IMAGES[selectedPiece]} alt="" style={{ width: '32px', height: '32px' }} />
               <span>Selected</span>
               <button 
                 onClick={() => setSelectedPiece(null)}
@@ -395,65 +537,38 @@ const TestBoard = () => {
               }}
             />
           </div>
-
-          {/* Recording tip */}
-          <div style={{ 
-            marginTop: '25px', 
-            padding: '15px', 
-            background: 'rgba(118,150,86,0.2)', 
-            borderRadius: '8px',
-            border: '1px solid rgba(118,150,86,0.4)'
-          }}>
-            <h4 style={{ color: '#769656', marginBottom: '8px' }}>💡 Recording Tip</h4>
-            <p style={{ color: '#aaa', fontSize: '13px', lineHeight: '1.5' }}>
-              Use OBS or your Mac's screen recorder (Cmd+Shift+5) to capture this page while your video plays in the corner.
-            </p>
-          </div>
         </div>
       </div>
 
-      {/* Floating PIP Video */}
-      {videoUrl && (
-        <div
-          style={{
-            position: 'fixed',
-            ...PIP_POSITIONS[pipPosition],
-            ...PIP_SIZES[pipSize],
-            zIndex: 1000,
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-            border: '3px solid rgba(255,255,255,0.2)'
-          }}
-        >
+      {/* Video Preview (small) */}
+      {videoUrl && !recordingMode && (
+        <div style={{ 
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          width: '200px',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          border: '2px solid #444'
+        }}>
           <video
-            ref={videoRef}
             src={videoUrl}
             style={{ width: '100%', display: 'block' }}
-            onEnded={() => setIsPlaying(false)}
+            muted
           />
-          
-          {/* PIP Controls */}
-          {showPipControls && (
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-              padding: '20px 10px 10px',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '10px'
-            }}>
-              <button onClick={togglePlay} style={pipBtnStyle}>
-                {isPlaying ? <FaPause /> : <FaPlay />}
-              </button>
-              <button onClick={removeVideo} style={{ ...pipBtnStyle, background: '#ef4444' }}>
-                <FaTimes />
-              </button>
-            </div>
-          )}
+          <div style={{ 
+            position: 'absolute', 
+            bottom: '0', 
+            left: '0', 
+            right: '0', 
+            background: 'rgba(0,0,0,0.7)', 
+            padding: '8px',
+            textAlign: 'center',
+            fontSize: '12px'
+          }}>
+            Preview
+          </div>
         </div>
       )}
     </div>
@@ -479,19 +594,6 @@ const selectStyle = {
   border: '1px solid #444',
   borderRadius: '6px',
   cursor: 'pointer'
-};
-
-const pipBtnStyle = {
-  width: '36px',
-  height: '36px',
-  background: 'rgba(255,255,255,0.2)',
-  color: 'white',
-  border: 'none',
-  borderRadius: '50%',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
 };
 
 export default TestBoard;
