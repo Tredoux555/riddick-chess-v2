@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Only initialize Stripe if key exists
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
 const { authenticateToken } = require('../middleware/auth');
 const pool = require('../utils/db');
 const tournamentService = require('../services/tournamentService');
@@ -9,6 +13,9 @@ const ENTRY_FEE_CENTS = 100; // $1 USD
 
 // Create Stripe checkout session
 router.post('/tournament/:tournamentId/checkout', authenticateToken, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payments not configured yet' });
+  }
   try {
     const { tournamentId } = req.params;
     const userId = req.user.id;
@@ -120,6 +127,9 @@ router.get('/tournament/:tournamentId/payment-status', authenticateToken, async 
 
 // Verify payment (backup if webhook fails)
 router.post('/tournament/:tournamentId/verify-payment', authenticateToken, async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payments not configured yet' });
+  }
   try {
     const { tournamentId } = req.params;
     const userId = req.user.id;
@@ -182,6 +192,9 @@ router.post('/tournament/:tournamentId/verify-payment', authenticateToken, async
 // Webhook handler - must be added directly in server/index.js due to raw body requirement
 // This function is exported for use in server/index.js
 const handleStripeWebhook = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payments not configured yet' });
+  }
   const sig = req.headers['stripe-signature'];
   let event;
 
