@@ -170,7 +170,10 @@ const Learn = () => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            {CATEGORIES[category]?.icon && <CATEGORIES[category].icon />}
+            {(() => {
+              const Icon = CATEGORIES[category]?.icon;
+              return Icon ? <Icon /> : null;
+            })()}
             {CATEGORIES[category]?.name || category}
           </h2>
           
