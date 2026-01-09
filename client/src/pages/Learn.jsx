@@ -26,10 +26,19 @@ const Learn = () => {
     loadLessons();
   }, []);
 
+  // Reload when coming back from a lesson
+  useEffect(() => {
+    if (!selectedLesson) {
+      loadLessons();
+    }
+  }, [selectedLesson]);
+
   const loadLessons = async () => {
     try {
       // Add cache buster to prevent stale data
-      const response = await axios.get(`/api/lessons?_t=${Date.now()}`);
+      const response = await axios.get(`/api/lessons?_t=${Date.now()}`, {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       setLessons(response.data);
     } catch (error) {
       console.error('Failed to load lessons:', error);
@@ -76,15 +85,21 @@ const Learn = () => {
           marginTop: '20px',
           aspectRatio: '16/9'
         }}>
-          <video 
-            controls 
-            autoPlay
-            style={{ width: '100%', height: '100%' }}
-            src={`${selectedLesson.video_url}?t=${selectedLesson.updated_at || Date.now()}`}
-            key={selectedLesson.video_url}
-          >
-            Your browser does not support video playback.
-          </video>
+          {selectedLesson.video_url ? (
+            <video 
+              controls 
+              autoPlay
+              style={{ width: '100%', height: '100%' }}
+              src={`${selectedLesson.video_url}?nocache=${Math.random()}`}
+              key={`${selectedLesson.id}-${Math.random()}`}
+            >
+              Your browser does not support video playback.
+            </video>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+              No video available
+            </div>
+          )}
         </div>
         
         <div style={{ marginTop: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
