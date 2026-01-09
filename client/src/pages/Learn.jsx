@@ -28,7 +28,8 @@ const Learn = () => {
 
   const loadLessons = async () => {
     try {
-      const response = await axios.get('/api/lessons');
+      // Add cache buster to prevent stale data
+      const response = await axios.get(`/api/lessons?_t=${Date.now()}`);
       setLessons(response.data);
     } catch (error) {
       console.error('Failed to load lessons:', error);

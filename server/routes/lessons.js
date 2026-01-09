@@ -38,6 +38,10 @@ const upload = multer({
 // Get all published lessons (public)
 router.get('/', async (req, res) => {
   try {
+    // Prevent caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    
     const { category } = req.query;
     let query = `
       SELECT id, title, description, video_url, video_filename, thumbnail_url, 
