@@ -96,7 +96,7 @@ const AdminLessons = () => {
       category: lesson.category,
       difficulty: lesson.difficulty,
       order_index: lesson.order_index,
-      video_url: lesson.video_url || '',
+      video_url: lesson.video_url?.startsWith('http') ? lesson.video_url : '',
       video_file: null
     });
     setShowForm(true);
@@ -289,6 +289,11 @@ const AdminLessons = () => {
                   <FaUpload style={{ marginRight: '8px' }} />
                   Upload Video
                 </label>
+                {editingLesson?.video_url && (
+                  <div style={{ marginBottom: '10px', padding: '10px', background: 'rgba(118,150,86,0.2)', borderRadius: '8px', color: '#769656', fontSize: '14px' }}>
+                    ✓ This lesson already has a video. Upload a new one to replace it.
+                  </div>
+                )}
                 <input
                   type="file"
                   accept="video/*"
@@ -314,7 +319,7 @@ const AdminLessons = () => {
                   Or paste video URL (YouTube, etc.)
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={form.video_url}
                   onChange={e => setForm({ ...form, video_url: e.target.value, video_file: null })}
                   placeholder="https://..."
