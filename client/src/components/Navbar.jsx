@@ -5,7 +5,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { 
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt, FaGraduationCap, FaVideo
+  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -108,6 +108,9 @@ const Navbar = () => {
                         </Link>
                         <Link to="/admin/lessons" className="dropdown-item admin-link">
                           <FaVideo /> Manage Lessons
+                        </Link>
+                        <Link to="/admin/test-board" className="dropdown-item admin-link">
+                          <FaChessBoard /> Test Board
                         </Link>
                       </>
                     )}
