@@ -86,15 +86,33 @@ const Learn = () => {
           aspectRatio: '16/9'
         }}>
           {selectedLesson.video_url ? (
-            <video 
-              controls 
-              autoPlay
-              style={{ width: '100%', height: '100%' }}
-              src={`${selectedLesson.video_url}?nocache=${Math.random()}`}
-              key={`${selectedLesson.id}-${Math.random()}`}
-            >
-              Your browser does not support video playback.
-            </video>
+            // Check if YouTube URL
+            selectedLesson.video_url.includes('youtube.com') || selectedLesson.video_url.includes('youtu.be') ? (
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${
+                  selectedLesson.video_url.includes('youtu.be') 
+                    ? selectedLesson.video_url.split('youtu.be/')[1]?.split('?')[0]
+                    : selectedLesson.video_url.split('v=')[1]?.split('&')[0]
+                }?autoplay=1`}
+                title={selectedLesson.title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <video 
+                controls 
+                autoPlay
+                style={{ width: '100%', height: '100%' }}
+                src={`${selectedLesson.video_url}?nocache=${Math.random()}`}
+                key={`${selectedLesson.id}-${Math.random()}`}
+              >
+                Your browser does not support video playback.
+              </video>
+            )
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
               No video available
