@@ -13,16 +13,16 @@ const PIECES = {
 };
 
 const PIP_POSITIONS = {
-  'top-right': { top: '20px', right: '20px' },
-  'top-left': { top: '20px', left: '20px' },
-  'bottom-right': { bottom: '20px', right: '20px' },
-  'bottom-left': { bottom: '20px', left: '20px' }
+  'top-right': { top: 20, right: 20 },
+  'top-left': { top: 20, left: 20 },
+  'bottom-right': { bottom: 20, right: 20 },
+  'bottom-left': { bottom: 20, left: 20 }
 };
 
 const PIP_SIZES = {
-  small: { width: '180px' },
-  medium: { width: '240px' },
-  large: { width: '320px' }
+  small: 150,
+  medium: 200,
+  large: 280
 };
 
 const PIECE_IMAGES = {
@@ -71,108 +71,212 @@ const TestBoard = () => {
   const [arrows, setArrows] = useState([]);
   const [arrowStart, setArrowStart] = useState(null);
   
-  const videoRef = useRef(null);
+  const facecamVideoRef = useRef(null);
   const fileInputRef = useRef(null);
+  const canvasRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
-  const recordingAreaRef = useRef(null);
   const timerRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const boardContainerRef = useRef(null);
 
-  // Recording functions
-  const startRecording = async () => {
-    try {
-      recordedChunksRef.current = [];
-      setRecordedVideoUrl(null);
-      
-      // Capture the current tab
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { 
-          displaySurface: 'browser',
-          cursor: 'always'
-        },
-        audio: true, // Try to capture tab audio
-        preferCurrentTab: true
-      });
+  // Canvas recording - captures board + video overlay
+  const startRecording = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const boardContainer = boardContainerRef.current;
+    
+    if (!boardContainer) return;
 
-      // If we have a facecam video with audio, try to mix it
-      let finalStream = displayStream;
-      
-      if (videoRef.current && videoUrl) {
-        try {
-          // Get audio from the uploaded video
-          const videoElement = videoRef.current;
-          const audioContext = new AudioContext();
-          const source = audioContext.createMediaElementSource(videoElement);
-          const destination = audioContext.createMediaStreamDestination();
-          source.connect(destination);
-          source.connect(audioContext.destination); // Also play through speakers
-          
-          // Combine video track from display + audio from video
-          const audioTrack = destination.stream.getAudioTracks()[0];
-          if (audioTrack) {
-            finalStream = new MediaStream([
-              ...displayStream.getVideoTracks(),
-              audioTrack
-            ]);
-          }
-        } catch (audioErr) {
-          console.log('Could not capture video audio, using display audio only');
-        }
-      }
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 800;
+    
+    recordedChunksRef.current = [];
+    setRecordedVideoUrl(null);
 
-      const mediaRecorder = new MediaRecorder(finalStream, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        setRecordedVideoUrl(url);
-        displayStream.getTracks().forEach(track => track.stop());
-      };
-
-      // Handle if user stops sharing
-      displayStream.getVideoTracks()[0].onended = () => {
-        stopRecording();
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-      // Start playing facecam video
-      if (videoRef.current) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.play();
-      }
-    } catch (err) {
-      console.error('Recording error:', err);
-      alert('Could not start recording. Make sure to select "This Tab" when prompted!');
+    // Start facecam video
+    if (facecamVideoRef.current && videoUrl) {
+      facecamVideoRef.current.currentTime = 0;
+      facecamVideoRef.current.play();
     }
+
+    // Draw function - captures everything each frame
+    const drawFrame = () => {
+      // Draw background
+      ctx.fillStyle = '#312e2b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Capture the board using html2canvas approach - draw board element
+      const boardElement = boardContainer.querySelector('[data-boardid]') || boardContainer.firstChild;
+      if (boardElement) {
+        // We'll use drawImage if we can get it, otherwise fill with board representation
+        // For now, let's draw a representation
+        drawChessboard(ctx, position, boardOrientation, arrows);
+      }
+
+      // Draw PIP video
+      if (facecamVideoRef.current && videoUrl && !facecamVideoRef.current.paused) {
+        const pipW = PIP_SIZES[pipSize];
+        const pipH = pipW * (facecamVideoRef.current.videoHeight / facecamVideoRef.current.videoWidth) || pipW * 0.75;
+        const pos = PIP_POSITIONS[pipPosition];
+        
+        let x = pos.right !== undefined ? canvas.width - pipW - pos.right : pos.left;
+        let y = pos.bottom !== undefined ? canvas.height - pipH - pos.bottom : pos.top;
+        
+        // Draw border
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(x - 3, y - 3, pipW + 6, pipH + 6);
+        
+        // Draw video
+        ctx.drawImage(facecamVideoRef.current, x, y, pipW, pipH);
+      }
+
+      if (isRecording) {
+        animationFrameRef.current = requestAnimationFrame(drawFrame);
+      }
+    };
+
+    // Get stream from canvas
+    const stream = canvas.captureStream(30);
+    
+    // Add audio from facecam video if available
+    if (facecamVideoRef.current && videoUrl) {
+      try {
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(facecamVideoRef.current);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        source.connect(audioCtx.destination);
+        
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          stream.addTrack(audioTrack);
+        }
+      } catch (e) {
+        console.log('Audio capture not available');
+      }
+    }
+
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+    
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+    };
+    
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      setRecordedVideoUrl(URL.createObjectURL(blob));
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start(100);
+    setIsRecording(true);
+    setRecordingTime(0);
+    
+    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    animationFrameRef.current = requestAnimationFrame(drawFrame);
+  };
+
+  // Draw chessboard on canvas
+  const drawChessboard = (ctx, fen, orientation, arrowsList) => {
+    const size = 700;
+    const squareSize = size / 8;
+    const offsetX = 50;
+    const offsetY = 50;
+    const files = ['a','b','c','d','e','f','g','h'];
+    const ranks = ['8','7','6','5','4','3','2','1'];
+    
+    if (orientation === 'black') {
+      files.reverse();
+      ranks.reverse();
+    }
+
+    // Draw squares
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const isLight = (row + col) % 2 === 0;
+        ctx.fillStyle = isLight ? '#ebecd0' : '#779556';
+        ctx.fillRect(offsetX + col * squareSize, offsetY + row * squareSize, squareSize, squareSize);
+      }
+    }
+
+    // Parse FEN and draw pieces
+    const fenParts = fen.split('/');
+    const pieceImages = {};
+    
+    // Preload piece images (they should be cached)
+    Object.keys(PIECE_IMAGES).forEach(key => {
+      const img = new Image();
+      img.src = PIECE_IMAGES[key];
+      pieceImages[key] = img;
+    });
+
+    for (let row = 0; row < 8; row++) {
+      let col = 0;
+      const fenRow = orientation === 'white' ? fenParts[row] : fenParts[7 - row];
+      if (!fenRow) continue;
+      
+      for (const char of fenRow) {
+        if (isNaN(char)) {
+          const color = char === char.toUpperCase() ? 'w' : 'b';
+          const piece = char.toUpperCase();
+          const key = color + piece;
+          const img = pieceImages[key];
+          
+          const drawCol = orientation === 'white' ? col : 7 - col;
+          
+          if (img && img.complete) {
+            ctx.drawImage(img, offsetX + drawCol * squareSize, offsetY + row * squareSize, squareSize, squareSize);
+          }
+          col++;
+        } else {
+          col += parseInt(char);
+        }
+      }
+    }
+
+    // Draw arrows
+    arrowsList.forEach(([from, to]) => {
+      const fromCol = files.indexOf(from[0]);
+      const fromRow = ranks.indexOf(from[1]);
+      const toCol = files.indexOf(to[0]);
+      const toRow = ranks.indexOf(to[1]);
+      
+      if (fromCol >= 0 && fromRow >= 0 && toCol >= 0 && toRow >= 0) {
+        const x1 = offsetX + fromCol * squareSize + squareSize / 2;
+        const y1 = offsetY + fromRow * squareSize + squareSize / 2;
+        const x2 = offsetX + toCol * squareSize + squareSize / 2;
+        const y2 = offsetY + toRow * squareSize + squareSize / 2;
+        
+        ctx.strokeStyle = 'rgba(255, 170, 0, 0.8)';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        
+        // Arrowhead
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 20 * Math.cos(angle - Math.PI / 6), y2 - 20 * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - 20 * Math.cos(angle + Math.PI / 6), y2 - 20 * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 170, 0, 0.8)';
+        ctx.fill();
+      }
+    });
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      cancelAnimationFrame(animationFrameRef.current);
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
+      clearInterval(timerRef.current);
+      if (facecamVideoRef.current) facecamVideoRef.current.pause();
     }
   };
 
@@ -185,43 +289,20 @@ const TestBoard = () => {
     }
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
 
   // Keyboard shortcuts
   const handleKeyPress = useCallback((e) => {
     if (!recordingMode) return;
-    
     const key = e.key;
-    
-    if (key === '1') {
-      setPosition(STARTING_POSITION);
-      setHistory([STARTING_POSITION]);
-      setArrows([]);
-    } else if (key === '2') {
-      setPosition('8/8/8/8/4P3/8/8/8');
-      setArrows([]);
-    } else if (key === '3') {
-      setPosition('8/8/8/8/4R3/8/8/8');
-      setArrows([]);
-    } else if (key === '4') {
-      setPosition('8/8/8/8/4N3/8/8/8');
-      setArrows([]);
-    } else if (key === '5') {
-      setPosition('8/8/8/8/4B3/8/8/8');
-      setArrows([]);
-    } else if (key === '6') {
-      setPosition('8/8/8/8/4Q3/8/8/8');
-      setArrows([]);
-    } else if (key === '7') {
-      setPosition('8/8/8/8/4K3/8/8/8');
-      setArrows([]);
-    } else if (key === '0' || key === 'Escape') {
-      setArrows([]);
-    }
+    if (key === '1') { setPosition(STARTING_POSITION); setArrows([]); }
+    else if (key === '2') { setPosition('8/8/8/8/4P3/8/8/8'); setArrows([]); }
+    else if (key === '3') { setPosition('8/8/8/8/4R3/8/8/8'); setArrows([]); }
+    else if (key === '4') { setPosition('8/8/8/8/4N3/8/8/8'); setArrows([]); }
+    else if (key === '5') { setPosition('8/8/8/8/4B3/8/8/8'); setArrows([]); }
+    else if (key === '6') { setPosition('8/8/8/8/4Q3/8/8/8'); setArrows([]); }
+    else if (key === '7') { setPosition('8/8/8/8/4K3/8/8/8'); setArrows([]); }
+    else if (key === '0' || key === 'Escape') { setArrows([]); }
   }, [recordingMode]);
 
   useEffect(() => {
@@ -231,37 +312,32 @@ const TestBoard = () => {
 
   useEffect(() => {
     const navbar = document.querySelector('.navbar, nav, header');
-    const mainContent = document.querySelector('.main-content, main');
-    
+    const main = document.querySelector('.main-content, main');
     if (recordingMode) {
       if (navbar) navbar.style.display = 'none';
-      if (mainContent) mainContent.style.padding = '0';
+      if (main) main.style.padding = '0';
       document.body.style.overflow = 'hidden';
     } else {
       if (navbar) navbar.style.display = '';
-      if (mainContent) mainContent.style.padding = '';
+      if (main) main.style.padding = '';
       document.body.style.overflow = '';
     }
-    
     return () => {
       if (navbar) navbar.style.display = '';
-      if (mainContent) mainContent.style.padding = '';
+      if (main) main.style.padding = '';
       document.body.style.overflow = '';
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearInterval(timerRef.current);
+      cancelAnimationFrame(animationFrameRef.current);
     };
   }, [recordingMode]);
 
-  if (!isAdmin) {
-    navigate('/');
-    return null;
-  }
+  if (!isAdmin) { navigate('/'); return null; }
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('video/')) {
+    if (file?.type.startsWith('video/')) {
       setVideoFile(file);
-      const url = URL.createObjectURL(file);
-      setVideoUrl(url);
+      setVideoUrl(URL.createObjectURL(file));
     }
   };
 
@@ -274,342 +350,258 @@ const TestBoard = () => {
   const fenToMap = (fen) => {
     const map = {};
     const rows = fen.split('/');
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    rows.forEach((row, rowIndex) => {
-      let fileIndex = 0;
-      for (const char of row) {
-        if (isNaN(char)) {
-          const color = char === char.toUpperCase() ? 'w' : 'b';
-          const piece = char.toUpperCase();
-          const square = files[fileIndex] + (8 - rowIndex);
-          map[square] = color + piece;
-          fileIndex++;
-        } else {
-          fileIndex += parseInt(char);
-        }
+    const files = ['a','b','c','d','e','f','g','h'];
+    rows.forEach((row, ri) => {
+      let fi = 0;
+      for (const c of row) {
+        if (isNaN(c)) {
+          map[files[fi] + (8 - ri)] = (c === c.toUpperCase() ? 'w' : 'b') + c.toUpperCase();
+          fi++;
+        } else fi += parseInt(c);
       }
     });
     return map;
   };
 
   const mapToFen = (map) => {
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const files = ['a','b','c','d','e','f','g','h'];
     let fen = '';
-    for (let rank = 8; rank >= 1; rank--) {
-      let emptyCount = 0;
-      for (const file of files) {
-        const square = file + rank;
-        if (map[square]) {
-          if (emptyCount > 0) { fen += emptyCount; emptyCount = 0; }
-          const piece = map[square][1];
-          fen += map[square][0] === 'w' ? piece.toUpperCase() : piece.toLowerCase();
-        } else {
-          emptyCount++;
-        }
+    for (let r = 8; r >= 1; r--) {
+      let empty = 0;
+      for (const f of files) {
+        const p = map[f + r];
+        if (p) {
+          if (empty) { fen += empty; empty = 0; }
+          fen += p[0] === 'w' ? p[1].toUpperCase() : p[1].toLowerCase();
+        } else empty++;
       }
-      if (emptyCount > 0) fen += emptyCount;
-      if (rank > 1) fen += '/';
+      if (empty) fen += empty;
+      if (r > 1) fen += '/';
     }
     return fen;
   };
 
-  const onPieceDrop = (sourceSquare, targetSquare, piece) => {
+  const onPieceDrop = (src, tgt, piece) => {
     const map = fenToMap(position);
-    if (sourceSquare && map[sourceSquare]) delete map[sourceSquare];
-    map[targetSquare] = piece;
+    if (src && map[src]) delete map[src];
+    map[tgt] = piece;
     const newFen = mapToFen(map);
     setPosition(newFen);
     setHistory([...history, newFen]);
     return true;
   };
 
-  const onSquareClick = (square) => {
+  const onSquareClick = (sq) => {
     const map = fenToMap(position);
     if (selectedPiece) {
-      map[square] = selectedPiece;
-      const newFen = mapToFen(map);
-      setPosition(newFen);
-      setHistory([...history, newFen]);
-    } else if (map[square]) {
-      delete map[square];
-      const newFen = mapToFen(map);
-      setPosition(newFen);
-      setHistory([...history, newFen]);
-    }
+      map[sq] = selectedPiece;
+    } else if (map[sq]) {
+      delete map[sq];
+    } else return;
+    const newFen = mapToFen(map);
+    setPosition(newFen);
+    setHistory([...history, newFen]);
   };
 
-  const onSquareRightClick = (square) => {
+  const onSquareRightClick = (sq) => {
     if (arrowStart) {
-      if (arrowStart !== square) {
-        setArrows(prev => [...prev, [arrowStart, square]]);
-      }
+      if (arrowStart !== sq) setArrows(a => [...a, [arrowStart, sq]]);
       setArrowStart(null);
-    } else {
-      setArrowStart(square);
-    }
+    } else setArrowStart(sq);
   };
 
-  const undo = () => {
-    if (history.length > 1) {
-      const newHistory = history.slice(0, -1);
-      setHistory(newHistory);
-      setPosition(newHistory[newHistory.length - 1]);
-    }
-  };
-
+  const undo = () => { if (history.length > 1) { const h = history.slice(0,-1); setHistory(h); setPosition(h[h.length-1]); }};
   const reset = () => { setPosition(STARTING_POSITION); setHistory([STARTING_POSITION]); setArrows([]); };
   const clear = () => { setPosition(EMPTY_POSITION); setHistory([...history, EMPTY_POSITION]); setArrows([]); };
-  const flipBoard = () => { setBoardOrientation(boardOrientation === 'white' ? 'black' : 'white'); };
+  const flip = () => setBoardOrientation(o => o === 'white' ? 'black' : 'white');
 
-  const PieceButton = ({ piece }) => {
-    const isSelected = selectedPiece === piece;
-    return (
-      <button
-        onClick={() => setSelectedPiece(isSelected ? null : piece)}
-        style={{
-          width: '50px', height: '50px',
-          background: isSelected ? '#769656' : 'rgba(255,255,255,0.1)',
-          border: isSelected ? '2px solid #fff' : '2px solid transparent',
-          borderRadius: '8px', cursor: 'pointer', padding: '4px'
-        }}
-      >
-        <img src={PIECE_IMAGES[piece]} alt={piece} style={{ width: '100%', height: '100%' }} />
-      </button>
-    );
-  };
+  const PieceBtn = ({ piece }) => (
+    <button onClick={() => setSelectedPiece(selectedPiece === piece ? null : piece)}
+      style={{ width: 50, height: 50, background: selectedPiece === piece ? '#769656' : 'rgba(255,255,255,0.1)', border: selectedPiece === piece ? '2px solid #fff' : '2px solid transparent', borderRadius: 8, cursor: 'pointer', padding: 4 }}>
+      <img src={PIECE_IMAGES[piece]} alt={piece} style={{ width: '100%', height: '100%' }} />
+    </button>
+  );
 
   // RECORDING MODE
   if (recordingMode) {
     return (
-      <div ref={recordingAreaRef} style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        background: '#312e2b',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 9999
-      }}>
-        {/* Top bar with controls */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0,
-          background: 'rgba(0,0,0,0.8)',
-          padding: '12px 20px',
-          display: 'flex', alignItems: 'center', gap: '15px',
-          zIndex: 10001
-        }}>
-          <button
-            onClick={() => { if (isRecording) stopRecording(); setRecordingMode(false); }}
-            style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#312e2b', display: 'flex', flexDirection: 'column', zIndex: 9999 }}>
+        {/* Hidden canvas for recording */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        
+        {/* Hidden facecam video */}
+        {videoUrl && <video ref={facecamVideoRef} src={videoUrl} style={{ display: 'none' }} loop playsInline />}
+
+        {/* Top bar */}
+        <div style={{ background: 'rgba(0,0,0,0.8)', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 15 }}>
+          <button onClick={() => { if (isRecording) stopRecording(); setRecordingMode(false); }}
+            style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <FaArrowLeft /> Exit
           </button>
 
           {!isRecording && !recordedVideoUrl && (
-            <button
-              onClick={startRecording}
-              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
-            >
-              <FaCircle /> Start Recording
+            <button onClick={startRecording}
+              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
+              <FaCircle /> Record
             </button>
           )}
 
           {isRecording && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444' }}>
                 <FaCircle style={{ animation: 'pulse 1s infinite' }} />
-                <span style={{ fontFamily: 'monospace', fontSize: '18px' }}>{formatTime(recordingTime)}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 18 }}>{formatTime(recordingTime)}</span>
               </div>
-              <button
-                onClick={stopRecording}
-                style={{ background: '#fff', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
-              >
-                <FaStop /> Stop Recording
+              <button onClick={stopRecording}
+                style={{ background: '#fff', color: '#000', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
+                <FaStop /> Stop
               </button>
             </>
           )}
 
           {recordedVideoUrl && (
             <>
-              <span style={{ color: '#22c55e' }}>✓ Recording complete!</span>
-              <button
-                onClick={downloadRecording}
-                style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
-              >
-                <FaDownload /> Download Video
+              <span style={{ color: '#22c55e' }}>✓ Done!</span>
+              <button onClick={downloadRecording}
+                style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
+                <FaDownload /> Download
               </button>
-              <button
-                onClick={() => setRecordedVideoUrl(null)}
-                style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer' }}
-              >
-                Record Again
+              <button onClick={() => setRecordedVideoUrl(null)}
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer' }}>
+                Again
               </button>
             </>
           )}
 
-          {/* Hotkey hints */}
-          <div style={{ marginLeft: 'auto', color: '#666', fontSize: '12px' }}>
-            <b>1</b>=Reset <b>2</b>=♙ <b>3</b>=♖ <b>4</b>=♘ <b>5</b>=♗ <b>6</b>=♕ <b>7</b>=♔ <b>0</b>=Clear arrows
+          <div style={{ marginLeft: 'auto', color: '#666', fontSize: 12 }}>
+            <b>1</b>=Reset <b>2-7</b>=Pieces <b>0</b>=Clear arrows
           </div>
         </div>
 
-        {/* Board */}
-        <div style={{ width: '80vh', maxWidth: '650px', marginTop: '40px' }}>
-          <Chessboard
-            position={position}
-            onPieceDrop={onPieceDrop}
-            onSquareClick={onSquareClick}
-            onSquareRightClick={onSquareRightClick}
-            boardOrientation={boardOrientation}
-            arePiecesDraggable={true}
-            customPieces={customPieces()}
-            customDarkSquareStyle={{ backgroundColor: '#779556' }}
-            customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
-            customArrows={arrows}
-            customArrowColor="rgba(255, 170, 0, 0.8)"
-          />
-        </div>
-
-        {/* PIP Video */}
-        {videoUrl && (
-          <div style={{
-            position: 'fixed',
-            ...PIP_POSITIONS[pipPosition],
-            ...PIP_SIZES[pipSize],
-            zIndex: 10000,
-            borderRadius: '12px', overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-            border: '3px solid rgba(255,255,255,0.3)'
-          }}>
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              style={{ width: '100%', display: 'block' }}
-              loop
-              playsInline
+        {/* Board area */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div ref={boardContainerRef} style={{ width: '80vh', maxWidth: 650 }}>
+            <Chessboard
+              position={position}
+              onPieceDrop={onPieceDrop}
+              onSquareClick={onSquareClick}
+              onSquareRightClick={onSquareRightClick}
+              boardOrientation={boardOrientation}
+              arePiecesDraggable={true}
+              customPieces={customPieces()}
+              customDarkSquareStyle={{ backgroundColor: '#779556' }}
+              customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
+              customArrows={arrows}
+              customArrowColor="rgba(255, 170, 0, 0.8)"
             />
           </div>
-        )}
 
-        {/* Pulse animation */}
-        <style>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-          }
-        `}</style>
+          {/* Visible PIP (for user to see while recording) */}
+          {videoUrl && (
+            <div style={{
+              position: 'absolute',
+              ...Object.fromEntries(Object.entries(PIP_POSITIONS[pipPosition]).map(([k,v]) => [k, v + 'px'])),
+              width: PIP_SIZES[pipSize],
+              borderRadius: 12, overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+              border: '3px solid rgba(255,255,255,0.3)'
+            }}>
+              <video src={videoUrl} style={{ width: '100%', display: 'block' }} ref={el => { if (el && isRecording && el.paused) el.play(); }} loop muted playsInline />
+            </div>
+          )}
+        </div>
+
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
       </div>
     );
   }
 
-  // NORMAL MODE
+  // SETUP MODE
   return (
-    <div style={{ padding: '20px', maxWidth: '1100px', margin: '0 auto', color: 'white' }}>
-      <h1><FaChessBoard style={{ marginRight: '12px' }} />Test Board</h1>
-      <p style={{ color: '#888', marginBottom: '20px' }}>Setup your position, upload your facecam, then record!</p>
+    <div style={{ padding: 20, maxWidth: 1100, margin: '0 auto', color: 'white' }}>
+      <h1><FaChessBoard style={{ marginRight: 12 }} />Test Board</h1>
+      <p style={{ color: '#888', marginBottom: 20 }}>Setup position, upload facecam, hit Record!</p>
 
       <input type="file" ref={fileInputRef} accept="video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
 
-      {/* Controls */}
-      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px 20px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-        <button onClick={() => fileInputRef.current?.click()} style={{ padding: '10px 20px', background: '#769656', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px 20px', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 15, flexWrap: 'wrap' }}>
+        <button onClick={() => fileInputRef.current?.click()} style={{ padding: '10px 20px', background: '#769656', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
           <FaUpload /> {videoFile ? 'Change Video' : 'Upload Facecam'}
         </button>
-
         {videoFile && (
           <>
-            <span style={{ color: '#aaa', fontSize: '14px' }}>{videoFile.name}</span>
-            <select value={pipPosition} onChange={(e) => setPipPosition(e.target.value)} style={selectStyle}>
+            <span style={{ color: '#aaa', fontSize: 14 }}>{videoFile.name}</span>
+            <select value={pipPosition} onChange={e => setPipPosition(e.target.value)} style={sel}>
               <option value="top-right">Top Right</option>
               <option value="top-left">Top Left</option>
               <option value="bottom-right">Bottom Right</option>
               <option value="bottom-left">Bottom Left</option>
             </select>
-            <select value={pipSize} onChange={(e) => setPipSize(e.target.value)} style={selectStyle}>
+            <select value={pipSize} onChange={e => setPipSize(e.target.value)} style={sel}>
               <option value="small">Small</option>
               <option value="medium">Medium</option>
               <option value="large">Large</option>
             </select>
-            <button onClick={removeVideo} style={{ ...selectStyle, background: '#ef4444', border: 'none', cursor: 'pointer' }}><FaTimes /></button>
+            <button onClick={removeVideo} style={{ ...sel, background: '#ef4444', border: 'none', cursor: 'pointer' }}><FaTimes /></button>
           </>
         )}
-
-        <button onClick={() => setRecordingMode(true)} style={{ marginLeft: 'auto', padding: '12px 24px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-          <FaVideo /> Enter Recording Studio
+        <button onClick={() => setRecordingMode(true)} style={{ marginLeft: 'auto', padding: '12px 24px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
+          <FaVideo /> Enter Studio
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1', minWidth: '300px', maxWidth: '500px' }}>
-          <Chessboard
-            position={position}
-            onPieceDrop={onPieceDrop}
-            onSquareClick={onSquareClick}
-            onSquareRightClick={onSquareRightClick}
-            boardOrientation={boardOrientation}
-            arePiecesDraggable={true}
-            customPieces={customPieces()}
-            customDarkSquareStyle={{ backgroundColor: '#779556' }}
-            customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
-            customArrows={arrows}
-            customArrowColor="rgba(255, 170, 0, 0.8)"
-          />
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-            <button onClick={undo} style={btnStyle} disabled={history.length <= 1}><FaUndo /> Undo</button>
-            <button onClick={flipBoard} style={btnStyle}><FaSyncAlt /> Flip</button>
-            <button onClick={reset} style={{ ...btnStyle, background: '#3b82f6' }}>Reset</button>
-            <button onClick={clear} style={{ ...btnStyle, background: '#ef4444' }}><FaTrash /> Clear</button>
-            <button onClick={() => setArrows([])} style={btnStyle}>Clear Arrows</button>
+      <div style={{ display: 'flex', gap: 30, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 300, maxWidth: 500 }}>
+          <Chessboard position={position} onPieceDrop={onPieceDrop} onSquareClick={onSquareClick} onSquareRightClick={onSquareRightClick} boardOrientation={boardOrientation} arePiecesDraggable customPieces={customPieces()} customDarkSquareStyle={{ backgroundColor: '#779556' }} customLightSquareStyle={{ backgroundColor: '#ebecd0' }} customArrows={arrows} customArrowColor="rgba(255,170,0,0.8)" />
+          <div style={{ display: 'flex', gap: 10, marginTop: 15, flexWrap: 'wrap' }}>
+            <button onClick={undo} style={btn} disabled={history.length<=1}><FaUndo /> Undo</button>
+            <button onClick={flip} style={btn}><FaSyncAlt /> Flip</button>
+            <button onClick={reset} style={{ ...btn, background: '#3b82f6' }}>Reset</button>
+            <button onClick={clear} style={{ ...btn, background: '#ef4444' }}><FaTrash /> Clear</button>
+            <button onClick={() => setArrows([])} style={btn}>Clear Arrows</button>
           </div>
         </div>
 
-        <div style={{ flex: '0 0 auto' }}>
-          <h3 style={{ marginBottom: '15px' }}>Pieces</h3>
-          <p style={{ color: '#888', fontSize: '14px', marginBottom: '15px' }}>Click to select, then click square.<br/>Right-click two squares for arrow.</p>
-          
+        <div>
+          <h3 style={{ marginBottom: 15 }}>Pieces</h3>
+          <p style={{ color: '#888', fontSize: 14, marginBottom: 15 }}>Click to select, click square to place.<br/>Right-click two squares = arrow.</p>
           {selectedPiece && (
-            <div style={{ marginBottom: '15px', padding: '10px', background: '#769656', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src={PIECE_IMAGES[selectedPiece]} alt="" style={{ width: '32px', height: '32px' }} />
+            <div style={{ marginBottom: 15, padding: 10, background: '#769656', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <img src={PIECE_IMAGES[selectedPiece]} alt="" style={{ width: 32, height: 32 }} />
               <span>Selected</span>
-              <button onClick={() => setSelectedPiece(null)} style={{ marginLeft: 'auto', background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setSelectedPiece(null)} style={{ marginLeft: 'auto', background: 'rgba(0,0,0,0.3)', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 4, cursor: 'pointer' }}>✕</button>
             </div>
           )}
-
-          <div style={{ marginBottom: '20px' }}>
-            <h4 style={{ color: '#aaa', marginBottom: '10px' }}>White</h4>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>{PIECES.white.map(p => <PieceButton key={p} piece={p} />)}</div>
+          <div style={{ marginBottom: 20 }}>
+            <h4 style={{ color: '#aaa', marginBottom: 10 }}>White</h4>
+            <div style={{ display: 'flex', gap: 8 }}>{PIECES.white.map(p => <PieceBtn key={p} piece={p} />)}</div>
           </div>
           <div>
-            <h4 style={{ color: '#aaa', marginBottom: '10px' }}>Black</h4>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>{PIECES.black.map(p => <PieceButton key={p} piece={p} />)}</div>
+            <h4 style={{ color: '#aaa', marginBottom: 10 }}>Black</h4>
+            <div style={{ display: 'flex', gap: 8 }}>{PIECES.black.map(p => <PieceBtn key={p} piece={p} />)}</div>
           </div>
-
-          <div style={{ marginTop: '25px' }}>
-            <h4 style={{ color: '#aaa', marginBottom: '10px' }}>FEN</h4>
-            <input type="text" value={position} onChange={(e) => { setPosition(e.target.value); setHistory([...history, e.target.value]); }}
-              style={{ width: '100%', padding: '10px', background: '#2a2a2a', border: '1px solid #444', borderRadius: '6px', color: 'white', fontSize: '12px', fontFamily: 'monospace' }} />
+          <div style={{ marginTop: 25 }}>
+            <h4 style={{ color: '#aaa', marginBottom: 10 }}>FEN</h4>
+            <input type="text" value={position} onChange={e => { setPosition(e.target.value); setHistory([...history, e.target.value]); }} style={{ width: '100%', padding: 10, background: '#2a2a2a', border: '1px solid #444', borderRadius: 6, color: 'white', fontSize: 12, fontFamily: 'monospace' }} />
           </div>
-
-          <div style={{ marginTop: '25px', padding: '15px', background: 'rgba(118,150,86,0.2)', borderRadius: '8px', border: '1px solid rgba(118,150,86,0.4)' }}>
-            <h4 style={{ color: '#769656', marginBottom: '8px' }}>⌨️ Recording Hotkeys</h4>
-            <p style={{ color: '#aaa', fontSize: '13px', lineHeight: '1.6' }}>
-              <b>1</b> = Reset board<br/>
-              <b>2</b> = Pawn <b>3</b> = Rook <b>4</b> = Knight<br/>
-              <b>5</b> = Bishop <b>6</b> = Queen <b>7</b> = King<br/>
-              <b>0</b> = Clear arrows
-            </p>
+          <div style={{ marginTop: 25, padding: 15, background: 'rgba(118,150,86,0.2)', borderRadius: 8, border: '1px solid rgba(118,150,86,0.4)' }}>
+            <h4 style={{ color: '#769656', marginBottom: 8 }}>⌨️ Hotkeys (in Studio)</h4>
+            <p style={{ color: '#aaa', fontSize: 13, lineHeight: 1.6 }}><b>1</b>=Reset <b>2</b>=♙ <b>3</b>=♖ <b>4</b>=♘<br/><b>5</b>=♗ <b>6</b>=♕ <b>7</b>=♔ <b>0</b>=Clear arrows</p>
           </div>
         </div>
       </div>
 
       {videoUrl && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '200px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', border: '2px solid #444' }}>
+        <div style={{ position: 'fixed', bottom: 20, right: 20, width: 200, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', border: '2px solid #444' }}>
           <video src={videoUrl} style={{ width: '100%', display: 'block' }} muted />
-          <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: 'rgba(0,0,0,0.7)', padding: '8px', textAlign: 'center', fontSize: '12px' }}>Preview</div>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', padding: 8, textAlign: 'center', fontSize: 12 }}>Preview</div>
         </div>
       )}
     </div>
   );
 };
 
-const btnStyle = { padding: '10px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' };
-const selectStyle = { padding: '8px 12px', background: '#2a2a2a', color: 'white', border: '1px solid #444', borderRadius: '6px', cursor: 'pointer' };
+const btn = { padding: '10px 16px', background: '#333', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 };
+const sel = { padding: '8px 12px', background: '#2a2a2a', color: 'white', border: '1px solid #444', borderRadius: 6, cursor: 'pointer' };
 
 export default TestBoard;
