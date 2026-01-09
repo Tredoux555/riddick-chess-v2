@@ -79,7 +79,8 @@ const Learn = () => {
             controls 
             autoPlay
             style={{ width: '100%', height: '100%' }}
-            src={selectedLesson.video_url}
+            src={`${selectedLesson.video_url}?t=${selectedLesson.updated_at || Date.now()}`}
+            key={selectedLesson.video_url}
           >
             Your browser does not support video playback.
           </video>

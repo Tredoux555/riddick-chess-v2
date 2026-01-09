@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
     const { category } = req.query;
     let query = `
       SELECT id, title, description, video_url, video_filename, thumbnail_url, 
-             category, difficulty, order_index, views, created_at
+             category, difficulty, order_index, views, created_at, updated_at
       FROM chess_lessons 
       WHERE is_published = true
     `;
@@ -185,6 +185,10 @@ router.get('/video/:filename', (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Video not found' });
   }
+  // Prevent caching so new uploads show immediately
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.sendFile(filePath);
 });
 
