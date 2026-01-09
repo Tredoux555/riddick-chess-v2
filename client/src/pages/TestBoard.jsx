@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUndo, FaTrash, FaSyncAlt, FaChessBoard, FaUpload, FaTimes, FaVideo, FaArrowLeft, FaStop, FaDownload, FaCircle } from 'react-icons/fa';
+import { FaUndo, FaTrash, FaSyncAlt, FaChessBoard, FaTimes, FaVideo, FaArrowLeft, FaStop, FaDownload, FaCircle, FaCamera } from 'react-icons/fa';
 
 const STARTING_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
 const EMPTY_POSITION = '8/8/8/8/8/8/8/8';
@@ -20,9 +20,9 @@ const PIP_POSITIONS = {
 };
 
 const PIP_SIZES = {
-  small: { width: '180px' },
-  medium: { width: '240px' },
-  large: { width: '320px' }
+  small: { width: '150px' },
+  medium: { width: '220px' },
+  large: { width: '300px' }
 };
 
 const PIECE_IMAGES = {
@@ -58,39 +58,80 @@ const TestBoard = () => {
   const [history, setHistory] = useState([STARTING_POSITION]);
   const [selectedPiece, setSelectedPiece] = useState(null);
   
-  const [videoFile, setVideoFile] = useState(null);
-  const [videoUrl, setVideoUrl] = useState(null);
   const [pipPosition, setPipPosition] = useState('top-right');
   const [pipSize, setPipSize] = useState('large');
-  const [showControls, setShowControls] = useState(true);
   
   const [recordingMode, setRecordingMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [webcamReady, setWebcamReady] = useState(false);
   
   const [arrows, setArrows] = useState([]);
   const [arrowStart, setArrowStart] = useState(null);
   
-  const videoRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const webcamRef = useRef(null);
+  const webcamStreamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const timerRef = useRef(null);
 
-  // Start recording using screen capture
+  // Start webcam when entering recording mode
+  const startWebcam = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 }, 
+        audio: true 
+      });
+      webcamStreamRef.current = stream;
+      if (webcamRef.current) {
+        webcamRef.current.srcObject = stream;
+      }
+      setWebcamReady(true);
+    } catch (err) {
+      console.error('Webcam error:', err);
+      alert('Could not access webcam. Please allow camera access!');
+    }
+  };
+
+  const stopWebcam = () => {
+    if (webcamStreamRef.current) {
+      webcamStreamRef.current.getTracks().forEach(track => track.stop());
+      webcamStreamRef.current = null;
+    }
+    setWebcamReady(false);
+  };
+
+  // Start recording using screen capture + webcam audio
   const startRecording = async () => {
     try {
       recordedChunksRef.current = [];
       setRecordedVideoUrl(null);
 
+      // Get screen capture
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: { displaySurface: 'browser', cursor: 'always' },
-        audio: true,
+        audio: false,
         preferCurrentTab: true
       });
 
-      const mediaRecorder = new MediaRecorder(displayStream, { mimeType: 'video/webm;codecs=vp9' });
+      // Combine screen video with webcam audio
+      let finalStream;
+      if (webcamStreamRef.current) {
+        const audioTrack = webcamStreamRef.current.getAudioTracks()[0];
+        if (audioTrack) {
+          finalStream = new MediaStream([
+            ...displayStream.getVideoTracks(),
+            audioTrack
+          ]);
+        } else {
+          finalStream = displayStream;
+        }
+      } else {
+        finalStream = displayStream;
+      }
+
+      const mediaRecorder = new MediaRecorder(finalStream, { mimeType: 'video/webm;codecs=vp9' });
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunksRef.current.push(e.data);
@@ -109,11 +150,6 @@ const TestBoard = () => {
       setIsRecording(true);
       setRecordingTime(0);
       timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-
-      if (videoRef.current && videoUrl) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.play();
-      }
     } catch (err) {
       console.error('Recording error:', err);
       alert('Select "This Tab" when prompted to record!');
@@ -125,7 +161,6 @@ const TestBoard = () => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       clearInterval(timerRef.current);
-      if (videoRef.current) videoRef.current.pause();
     }
   };
 
@@ -159,41 +194,33 @@ const TestBoard = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
 
+  // Handle recording mode changes
   useEffect(() => {
     const navbar = document.querySelector('.navbar, nav, header');
     const main = document.querySelector('.main-content, main');
+    
     if (recordingMode) {
       if (navbar) navbar.style.display = 'none';
       if (main) main.style.padding = '0';
       document.body.style.overflow = 'hidden';
+      startWebcam();
     } else {
       if (navbar) navbar.style.display = '';
       if (main) main.style.padding = '';
       document.body.style.overflow = '';
+      stopWebcam();
     }
+    
     return () => {
       if (navbar) navbar.style.display = '';
       if (main) main.style.padding = '';
       document.body.style.overflow = '';
       clearInterval(timerRef.current);
+      stopWebcam();
     };
   }, [recordingMode]);
 
   if (!isAdmin) { navigate('/'); return null; }
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file?.type.startsWith('video/')) {
-      setVideoFile(file);
-      setVideoUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const removeVideo = () => {
-    if (videoUrl) URL.revokeObjectURL(videoUrl);
-    setVideoFile(null);
-    setVideoUrl(null);
-  };
 
   const fenToMap = (fen) => {
     const map = {};
@@ -278,9 +305,9 @@ const TestBoard = () => {
           </button>
 
           {!isRecording && !recordedVideoUrl && (
-            <button onClick={startRecording}
-              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
-              <FaCircle /> Start Recording
+            <button onClick={startRecording} disabled={!webcamReady}
+              style={{ background: webcamReady ? '#ef4444' : '#666', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: webcamReady ? 'pointer' : 'wait', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
+              <FaCircle /> {webcamReady ? 'Start Recording' : 'Starting camera...'}
             </button>
           )}
 
@@ -311,6 +338,19 @@ const TestBoard = () => {
             </>
           )}
 
+          {/* Position/Size controls */}
+          <select value={pipPosition} onChange={e => setPipPosition(e.target.value)} style={sel}>
+            <option value="top-right">Top Right</option>
+            <option value="top-left">Top Left</option>
+            <option value="bottom-right">Bottom Right</option>
+            <option value="bottom-left">Bottom Left</option>
+          </select>
+          <select value={pipSize} onChange={e => setPipSize(e.target.value)} style={sel}>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+
           <div style={{ marginLeft: 'auto', color: '#666', fontSize: 12 }}>
             <b>1</b>=Reset <b>2</b>=♙ <b>3</b>=♖ <b>4</b>=♘ <b>5</b>=♗ <b>6</b>=♕ <b>7</b>=♔ <b>0</b>=Clear arrows
           </div>
@@ -333,64 +373,56 @@ const TestBoard = () => {
           />
         </div>
 
-        {/* PIP Video */}
-        {videoUrl && (
-          <div style={{
-            position: 'fixed', ...PIP_POSITIONS[pipPosition], ...PIP_SIZES[pipSize],
-            zIndex: 10000, borderRadius: 12, overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)', border: '3px solid rgba(255,255,255,0.3)'
-          }}>
-            <video ref={videoRef} src={videoUrl} style={{ width: '100%', display: 'block' }} loop playsInline autoPlay muted={false} />
-          </div>
-        )}
+        {/* LIVE WEBCAM */}
+        <div style={{
+          position: 'fixed', ...PIP_POSITIONS[pipPosition], ...PIP_SIZES[pipSize],
+          zIndex: 10000, borderRadius: 12, overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)', border: '3px solid rgba(255,255,255,0.3)',
+          background: '#000'
+        }}>
+          <video 
+            ref={webcamRef} 
+            autoPlay 
+            muted 
+            playsInline
+            style={{ width: '100%', display: 'block', transform: 'scaleX(-1)' }} 
+          />
+          {!webcamReady && (
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white' }}>
+              <FaCamera style={{ fontSize: 32, opacity: 0.5 }} />
+            </div>
+          )}
+        </div>
 
         <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
       </div>
     );
   }
 
-  // SETUP MODE (original UI)
+  // SETUP MODE
   return (
     <div style={{ padding: 20, maxWidth: 1100, margin: '0 auto', color: 'white', position: 'relative' }}>
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 12 }}><FaChessBoard /> Test Board</h1>
-      <p style={{ color: '#888', marginBottom: 20 }}>Freestyle board for video recording. Upload your facecam video to overlay.</p>
-
-      <input type="file" ref={fileInputRef} accept="video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
+      <p style={{ color: '#888', marginBottom: 20 }}>Record chess lessons with your webcam! Your face appears live in the corner.</p>
 
       {/* Controls Bar */}
       <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px 20px', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 15, flexWrap: 'wrap' }}>
-        <button onClick={() => fileInputRef.current?.click()}
-          style={{ padding: '10px 20px', background: '#769656', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FaUpload /> {videoFile ? 'Change Video' : 'Upload Video'}
-        </button>
-
-        {videoFile && (
-          <>
-            <span style={{ color: '#aaa', fontSize: 14 }}>{videoFile.name}</span>
-            <select value={pipPosition} onChange={e => setPipPosition(e.target.value)} style={sel}>
-              <option value="top-right">Top Right</option>
-              <option value="top-left">Top Left</option>
-              <option value="bottom-right">Bottom Right</option>
-              <option value="bottom-left">Bottom Left</option>
-            </select>
-            <select value={pipSize} onChange={e => setPipSize(e.target.value)} style={sel}>
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#aaa' }}>
-              <input type="checkbox" checked={showControls} onChange={e => setShowControls(e.target.checked)} />
-              Show controls
-            </label>
-            <button onClick={removeVideo} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}>
-              <FaTimes />
-            </button>
-          </>
-        )}
+        <span style={{ color: '#aaa' }}>Camera position:</span>
+        <select value={pipPosition} onChange={e => setPipPosition(e.target.value)} style={sel}>
+          <option value="top-right">Top Right</option>
+          <option value="top-left">Top Left</option>
+          <option value="bottom-right">Bottom Right</option>
+          <option value="bottom-left">Bottom Left</option>
+        </select>
+        <select value={pipSize} onChange={e => setPipSize(e.target.value)} style={sel}>
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
 
         <button onClick={() => setRecordingMode(true)}
           style={{ marginLeft: 'auto', padding: '12px 24px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
-          <FaVideo /> Start Recording Mode
+          <FaCamera /> Start Recording Mode
         </button>
       </div>
 
@@ -460,21 +492,17 @@ const TestBoard = () => {
 
           {/* Recording tip */}
           <div style={{ marginTop: 20, padding: 15, background: 'rgba(239,68,68,0.1)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)' }}>
-            <h4 style={{ color: '#ef4444', marginBottom: 8 }}>💡 Recording Tip</h4>
+            <h4 style={{ color: '#ef4444', marginBottom: 8 }}>📹 How to Record</h4>
             <p style={{ color: '#aaa', fontSize: 13, lineHeight: 1.6 }}>
-              Click "Start Recording Mode", then click the red "Start Recording" button. Select "This Tab" when prompted. Your video will play in the corner while you move pieces!
+              1. Click "Start Recording Mode"<br/>
+              2. Allow camera access<br/>
+              3. Click "Start Recording" → select "This Tab"<br/>
+              4. Talk & move pieces!<br/>
+              5. Click "Stop" → "Download"
             </p>
           </div>
         </div>
       </div>
-
-      {/* Video Preview */}
-      {videoUrl && (
-        <div style={{ position: 'fixed', bottom: 20, right: 20, width: 200, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', border: '2px solid #444' }}>
-          <video src={videoUrl} style={{ width: '100%', display: 'block' }} muted />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', padding: 8, textAlign: 'center', fontSize: 12 }}>Preview</div>
-        </div>
-      )}
     </div>
   );
 };
