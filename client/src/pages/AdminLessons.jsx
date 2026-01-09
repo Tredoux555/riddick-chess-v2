@@ -354,7 +354,7 @@ const AdminLessons = () => {
               <div style={{ display: 'flex', gap: '15px' }}>
                 <button
                   type="submit"
-                  disabled={uploading || (!form.video_file && !form.video_url)}
+                  disabled={uploading}
                   style={{
                     flex: 1,
                     padding: '14px',
