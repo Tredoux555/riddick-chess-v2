@@ -107,7 +107,7 @@ class BotEngine {
     chess.loadPgn(pgn);
     const history = chess.history({ verbose: true });
     chess.reset();
-    const analysis = { moves: [], whiteAccuracy: 0, blackAccuracy: 0, summary: { white: { brilliant: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 }, black: { brilliant: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 } } };
+    const analysis = { moves: [], whiteAccuracy: 0, blackAccuracy: 0, summary: { white: { brilliant: 0, best: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 }, black: { brilliant: 0, best: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 } } };
     for (let i = 0; i < history.length; i++) {
       const move = history[i];
       const isWhite = i % 2 === 0;
@@ -117,7 +117,7 @@ class BotEngine {
       const afterAnalysis = this.analyzePosition(chess.fen(), 4);
       const evalAfter = isWhite ? -afterAnalysis.evaluation : afterAnalysis.evaluation;
       const evalChange = evalAfter - evalBefore;
-      const classification = this.classifyMove(evalChange, beforeAnalysis.bestMove, move.lan);
+      const classification = this.classifyMove(evalChange, beforeAnalysis.bestMove, move.lan, move);
       analysis.moves.push({ moveNumber: Math.floor(i / 2) + 1, color: isWhite ? 'white' : 'black', move: move.san, moveLan: move.lan, bestMove: beforeAnalysis.bestMove, evalBefore: evalBefore.toFixed(2), evalAfter: evalAfter.toFixed(2), evalChange: evalChange.toFixed(2), classification });
       analysis.summary[isWhite ? 'white' : 'black'][classification]++;
     }
@@ -126,9 +126,14 @@ class BotEngine {
     return analysis;
   }
 
-  classifyMove(evalChange, bestMove, playedMove) {
+  classifyMove(evalChange, bestMove, playedMove, move) {
+    // Check for checkmate - it's best, not brilliant
+    if (move && move.san && move.san.includes('#')) return 'best';
+    
     if (bestMove === playedMove || evalChange >= 0.1) {
-      if (evalChange >= 0.5) return 'brilliant';
+      // Brilliant should be very rare - only for huge unexpected improvements
+      if (evalChange >= 2.0) return 'brilliant';
+      if (evalChange >= 0.5) return 'best';
       if (evalChange >= 0.2) return 'great';
       return 'good';
     }

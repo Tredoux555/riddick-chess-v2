@@ -97,15 +97,21 @@ class StockfishAnalysis {
   /**
    * Chess.com-style move classification
    */
-  classifyMove(cpLoss, isBestMove, evalBefore, evalAfter, move, isCapture, isCheck) {
-    // Brilliant: Sacrifice that maintains/improves position, or only winning move
+  classifyMove(cpLoss, isBestMove, evalBefore, evalAfter, move, isCapture, isCheck, isCheckmate) {
+    // Checkmate is always "best" - it's the winning move, but not necessarily brilliant
+    if (isCheckmate) return 'best';
+    
+    // Brilliant: Sacrifice that maintains/improves position (not just any good move)
+    // Must be: 1) Giving up material 2) Position improves significantly 3) Non-obvious
     if (isBestMove && isCapture === false && evalAfter >= evalBefore - 0.5 && evalBefore < 2) {
-      if (evalAfter > evalBefore + 1) return 'brilliant';
+      // Only brilliant if it's a significant improvement AND was hard to find (not just check)
+      if (evalAfter > evalBefore + 1.5 && !isCheck) return 'brilliant';
     }
     
     // Best move classification
     if (isBestMove || cpLoss <= 0) {
-      if (evalAfter > evalBefore + 2) return 'brilliant';
+      // Very strong improvement without being a capture could still be brilliant
+      if (evalAfter > evalBefore + 3 && !isCapture && !isCheck) return 'brilliant';
       return 'best';
     }
     
@@ -210,7 +216,8 @@ class StockfishAnalysis {
           evalAfter, 
           move,
           !!move.captured,
-          move.san.includes('+')
+          move.san.includes('+'),
+          move.san.includes('#')
         );
       }
       
@@ -287,7 +294,7 @@ class StockfishAnalysis {
       let classification = 'good';
       if (move.captured) classification = move.captured === 'q' ? 'best' : 'good';
       if (move.san.includes('+')) classification = 'good';
-      if (move.san.includes('#')) classification = 'brilliant';
+      if (move.san.includes('#')) classification = 'best'; // Checkmate is best, not brilliant
       
       analysis.moves.push({
         moveNumber,
