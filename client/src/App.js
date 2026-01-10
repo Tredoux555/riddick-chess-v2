@@ -102,7 +102,7 @@ function App() {
           <Route path="/tournament/:id" element={
             <ProtectedRoute><Tournament /></ProtectedRoute>
           } />
-          <Route path="/bots" element={<ProtectedRoute><BotSelection /></ProtectedRoute>} />
+          <Route path="/bots" element={<BotSelection />} />
           <Route path="/bot-game/:gameId" element={<ProtectedRoute><BotGame /></ProtectedRoute>} />
           <Route path="/analysis/:analysisId" element={<ProtectedRoute><GameAnalysis /></ProtectedRoute>} />
           <Route path="/puzzles" element={
