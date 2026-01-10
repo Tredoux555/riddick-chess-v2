@@ -192,15 +192,7 @@ const BotGame = () => {
     const isYourTurn = (gameData.userColor === 'white' && isWhiteTurn) || (gameData.userColor === 'black' && !isWhiteTurn);
     if (!isYourTurn) return false;
     
-    // Check for promotion
-    const isPawn = piece && piece[1] === 'P';
-    const isPromotion = isPawn && (targetSquare[1] === '8' || targetSquare[1] === '1');
-    
-    if (isPromotion) {
-      setPendingPromotion({ from: sourceSquare, to: targetSquare });
-      return true;
-    }
-    
+    // For promotions, onPromotionPieceSelect will be called instead
     return executeMove(sourceSquare, targetSquare, null);
   };
 
@@ -243,12 +235,32 @@ const BotGame = () => {
     return true;
   };
 
-  const onPromotionPieceSelect = (piece) => {
-    if (!pendingPromotion) return false;
-    const promotionPiece = piece ? piece[1]?.toLowerCase() : 'q';
-    executeMove(pendingPromotion.from, pendingPromotion.to, promotionPiece);
+  const onPromotionPieceSelect = (piece, promoteFromSquare, promoteToSquare) => {
+    // piece comes as "wQ", "wR", etc. - extract the piece type
+    let promotionPiece = 'q'; // default to queen
+    if (piece) {
+      const pieceType = piece.length === 2 ? piece[1].toLowerCase() : piece.toLowerCase();
+      if (['q', 'r', 'b', 'n'].includes(pieceType)) {
+        promotionPiece = pieceType;
+      }
+    }
+    
+    // If squares not provided, use pending promotion
+    const from = promoteFromSquare || pendingPromotion?.from;
+    const to = promoteToSquare || pendingPromotion?.to;
+    
+    if (!from || !to) return false;
+    
+    executeMove(from, to, promotionPiece);
     setPendingPromotion(null);
     return true;
+  };
+
+  const onPromotionCheck = (sourceSquare, targetSquare, piece) => {
+    // Check if this move is a pawn promotion
+    const isPawn = piece && (piece === 'wP' || piece === 'bP');
+    const isPromoRank = targetSquare[1] === '8' || targetSquare[1] === '1';
+    return isPawn && isPromoRank;
   };
 
   const handleResign = async () => {
@@ -353,8 +365,7 @@ const BotGame = () => {
               customSquareStyles={customSquareStyles}
               customPieces={customPieces}
               arePiecesDraggable={!gameOver && !thinking}
-              showPromotionDialog={!!pendingPromotion}
-              promotionToSquare={pendingPromotion?.to}
+              onPromotionCheck={onPromotionCheck}
               onPromotionPieceSelect={onPromotionPieceSelect}
             />
           </div>
