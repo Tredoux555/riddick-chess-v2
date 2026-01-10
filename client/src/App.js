@@ -105,18 +105,12 @@ function App() {
           <Route path="/bots" element={<BotSelection />} />
           <Route path="/bot-game/:gameId" element={<ProtectedRoute><BotGame /></ProtectedRoute>} />
           <Route path="/analysis/:analysisId" element={<ProtectedRoute><GameAnalysis /></ProtectedRoute>} />
-          <Route path="/puzzles" element={
-            <ProtectedRoute><Puzzles /></ProtectedRoute>
-          } />
+          <Route path="/puzzles" element={<Puzzles />} />
           <Route path="/puzzle-rush" element={
             <ProtectedRoute><PuzzleRush /></ProtectedRoute>
           } />
-          <Route path="/leaderboards" element={
-            <ProtectedRoute><Leaderboards /></ProtectedRoute>
-          } />
-          <Route path="/achievements" element={
-            <ProtectedRoute><Achievements /></ProtectedRoute>
-          } />
+          <Route path="/leaderboards" element={<Leaderboards />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="/profile/:id?" element={
             <ProtectedRoute><Profile /></ProtectedRoute>
           } />

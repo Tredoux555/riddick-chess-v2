@@ -82,6 +82,9 @@ const Register = () => {
               placeholder="your@email.com"
               required
             />
+            <small style={{ color: '#888', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+              📧 Email doesn't need to be real - we don't send anything!
+            </small>
           </div>
 
           <div className="form-group">

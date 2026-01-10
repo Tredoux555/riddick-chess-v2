@@ -19,8 +19,9 @@ const Navbar = () => {
   const navLinks = [
     { path: '/play', label: 'Play', icon: <FaPlay />, requiresAuth: true },
     { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
-    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: true },
+    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: false },
     { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
+    { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine />, requiresAuth: false },
     { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
   ];
 
@@ -89,9 +90,6 @@ const Navbar = () => {
                   <div className="user-dropdown">
                     <Link to="/profile" className="dropdown-item">
                       <FaUser /> Profile
-                    </Link>
-                    <Link to="/leaderboards" className="dropdown-item">
-                      <FaChartLine /> Leaderboards
                     </Link>
                     <Link to="/achievements" className="dropdown-item">
                       <FaMedal /> Achievements
