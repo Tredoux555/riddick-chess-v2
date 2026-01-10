@@ -56,6 +56,75 @@ const createPieces = (pieceSet) => {
   return pieces;
 };
 
+// Bot dialogue based on personality
+const BOT_DIALOGUE = {
+  'Baby Bot': {
+    start: ["Goo goo! Let's play!", "I'm just a baby... go easy on me!", "Ooh, chess! I love the horsies!"],
+    move: ["Wheee!", "Did I do good?", "I like this piece!", "Oopsie!", "La la la~"],
+    capture: ["Yay! I got one!", "Nom nom nom!", "Mine now!", "Hehe!"],
+    check: ["Oh no, scary!", "Eep!", "Help!"],
+    beingChecked: ["Gotcha!", "Boop!", "Surprise!"],
+    win: ["Wait... I won?!", "Yaaay!", "I did it! I did it!"],
+    lose: ["Good game! That was fun!", "You're so good!", "Again again!"],
+    thinking: ["Hmm...", "Uhh...", "Which one..."]
+  },
+  'Beginner Bot': {
+    start: ["Hey! Ready to play?", "Let's have a good game!", "I'm still learning too!"],
+    move: ["How about this?", "I think this is good...", "Here I go!", "Is this right?"],
+    capture: ["Got one!", "Nice!", "I'll take that!", "Score!"],
+    check: ["Uh oh...", "That's not good", "Hmm, tricky"],
+    beingChecked: ["Check!", "Watch out!", "Careful!"],
+    win: ["I won! GG!", "Yes! Good game!", "That was close!"],
+    lose: ["Good game! You got me!", "Nice moves!", "Well played!"],
+    thinking: ["Let me think...", "Hmm...", "One sec..."]
+  },
+  'Intermediate Bot': {
+    start: ["Ready for a challenge?", "Let's see what you've got!", "Good luck, you'll need it!"],
+    move: ["Solid move.", "How about this?", "Interesting...", "Your turn."],
+    capture: ["I'll take that piece.", "Thanks for that!", "Mine now.", "Nice capture."],
+    check: ["Impressive.", "Good move.", "I see..."],
+    beingChecked: ["Check!", "Your king is in danger!", "Watch your king!"],
+    win: ["Good game! Keep practicing!", "Victory! Well played though.", "GG! You're improving!"],
+    lose: ["Well played! You got me!", "Nice game! You're good!", "GG! Rematch?"],
+    thinking: ["Calculating...", "Analyzing...", "Thinking..."]
+  },
+  'Advanced Bot': {
+    start: ["Let's see if you can keep up.", "Prepare yourself.", "This won't be easy."],
+    move: ["Calculated.", "As expected.", "Predictable.", "Proceed."],
+    capture: ["Material advantage.", "Piece acquired.", "Thank you for that.", "Excellent."],
+    check: ["Clever.", "Not bad.", "Noted."],
+    beingChecked: ["Check.", "Your king is exposed.", "Threat detected."],
+    win: ["As anticipated. GG.", "Victory was inevitable.", "Well fought, but not enough."],
+    lose: ["Impressive... I underestimated you.", "Well played. Truly.", "You've earned this victory."],
+    thinking: ["Processing...", "Evaluating positions...", "Analyzing..."]
+  },
+  'Master Bot': {
+    start: ["A worthy opponent, I hope.", "Show me what you've learned.", "Let the battle begin."],
+    move: ["Optimal play.", "Theory suggests this.", "A logical continuation.", "Textbook."],
+    capture: ["Piece eliminated.", "Strategic acquisition.", "Your material weakens.", "Captured."],
+    check: ["Resourceful.", "A valiant effort.", "Interesting defense."],
+    beingChecked: ["Check.", "Your position crumbles.", "The end approaches."],
+    win: ["A good effort, but expected.", "Victory. Study more.", "GG. You have potential."],
+    lose: ["Remarkable. You've bested me.", "I concede. Well played.", "A masterful performance."],
+    thinking: ["Deep calculation...", "Evaluating 10 moves ahead...", "Processing variations..."]
+  },
+  'Stockfish': {
+    start: ["I am inevitable.", "Resistance is futile.", "Your defeat is calculated.", "💀"],
+    move: ["Optimal.", "Perfect.", "Flawless.", "Precise.", "..."],
+    capture: ["Eliminated.", "Deleted.", "Gone.", "Absorbed."],
+    check: ["Delay tactics.", "Futile.", "Irrelevant."],
+    beingChecked: ["Checkmate incoming.", "Your king will fall.", "No escape."],
+    win: ["As calculated. 💀", "Inevitable.", "GG EZ.", "Destroyed."],
+    lose: ["IMPOSSIBLE!", "ERROR: UNEXPECTED OUTCOME", "You... won?! 🤯", "Recalculating reality..."],
+    thinking: ["...", "Calculating your doom...", "Processing destruction..."]
+  }
+};
+
+const getRandomDialogue = (botName, situation) => {
+  const dialogues = BOT_DIALOGUE[botName]?.[situation] || BOT_DIALOGUE['Beginner Bot'][situation];
+  return dialogues[Math.floor(Math.random() * dialogues.length)];
+};
+
 const BotGame = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
@@ -70,6 +139,7 @@ const BotGame = () => {
   const [lastMove, setLastMove] = useState(null);
   const [pendingPromotion, setPendingPromotion] = useState(null);
   const [preferences, setPreferences] = useState({ board_theme: 'green', piece_set: 'neo' });
+  const [botDialogue, setBotDialogue] = useState('');
 
   // Fetch user preferences
   useEffect(() => {
@@ -101,6 +171,10 @@ const BotGame = () => {
       const chess = new Chess(data.fen);
       setGame(chess);
       setMoveHistory(data.moves || []);
+      // Set start dialogue if game just started
+      if (!data.moves || data.moves.length <= 1) {
+        setBotDialogue(getRandomDialogue(data.bot?.name, 'start'));
+      }
       if (data.status === 'completed') { setGameOver(true); setResult(data.result); }
       if (data.moves && data.moves.length > 0) {
         const lastMoveUci = data.moves[data.moves.length - 1];
@@ -137,6 +211,7 @@ const BotGame = () => {
     setGame(gameCopy);
     setLastMove({ from: sourceSquare, to: targetSquare });
     setThinking(true);
+    setBotDialogue(getRandomDialogue(gameData?.bot?.name, 'thinking'));
     try {
       const res = await fetch('/api/bots/move', {
         method: 'POST',
@@ -148,7 +223,20 @@ const BotGame = () => {
       const newGame = new Chess(data.fen);
       setGame(newGame);
       setMoveHistory(data.moves);
-      if (data.botMove) setLastMove({ from: data.botMove.substring(0, 2), to: data.botMove.substring(2, 4) });
+      if (data.botMove) {
+        setLastMove({ from: data.botMove.substring(0, 2), to: data.botMove.substring(2, 4) });
+        // Determine dialogue based on game state
+        if (data.isGameOver) {
+          const botWon = (data.result === 'bot_wins');
+          setBotDialogue(getRandomDialogue(gameData?.bot?.name, botWon ? 'win' : 'lose'));
+        } else if (newGame.isCheck()) {
+          setBotDialogue(getRandomDialogue(gameData?.bot?.name, 'beingChecked'));
+        } else if (data.wasCapture) {
+          setBotDialogue(getRandomDialogue(gameData?.bot?.name, 'capture'));
+        } else {
+          setBotDialogue(getRandomDialogue(gameData?.bot?.name, 'move'));
+        }
+      }
       if (data.isGameOver) { setGameOver(true); setResult(data.result); }
     } catch (err) { console.error('Move failed:', err); setGame(new Chess(game.fen())); }
     finally { setThinking(false); }
@@ -242,6 +330,13 @@ const BotGame = () => {
             <span style={styles.elo}>({gameData.bot?.elo || '?'})</span>
             {thinking && <span style={styles.thinkingIndicator}>Thinking...</span>}
           </div>
+          
+          {/* Bot dialogue bubble */}
+          {botDialogue && (
+            <div style={styles.dialogueBubble}>
+              <span style={styles.dialogueText}>{botDialogue}</span>
+            </div>
+          )}
 
           {/* Chess board */}
           <div style={styles.boardWrapper}>
@@ -387,6 +482,19 @@ const styles = {
     marginLeft: 'auto',
     color: '#ffc107',
     animation: 'pulse 1s infinite'
+  },
+  dialogueBubble: {
+    backgroundColor: '#2d3748',
+    padding: '10px 15px',
+    borderRadius: '12px',
+    borderTopLeftRadius: '4px',
+    maxWidth: '300px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+  },
+  dialogueText: {
+    color: '#fff',
+    fontSize: '0.95rem',
+    fontStyle: 'italic'
   },
   sidebar: {
     width: '280px',

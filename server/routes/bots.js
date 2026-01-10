@@ -60,7 +60,7 @@ router.post('/move', authenticateToken, async (req, res) => {
     const chess = new Chess(game.fen);
     const userMove = chess.move(move, { sloppy: true });
     if (!userMove) return res.status(400).json({ error: 'Invalid move' });
-    let result = null, botMove = null, status = 'ongoing';
+    let result = null, botMove = null, status = 'ongoing', wasCapture = false;
     if (chess.isGameOver()) {
       if (chess.isCheckmate()) result = game.user_color === 'white' ? '1-0' : '0-1';
       else result = '1/2-1/2';
@@ -68,7 +68,8 @@ router.post('/move', authenticateToken, async (req, res) => {
     } else {
       botMove = botEngine.getBestMove(chess.fen(), game.skill_level, game.depth);
       if (botMove) {
-        chess.move(botMove, { sloppy: true });
+        const botMoveResult = chess.move(botMove, { sloppy: true });
+        wasCapture = botMoveResult && botMoveResult.captured;
         if (chess.isGameOver()) {
           if (chess.isCheckmate()) result = game.user_color === 'white' ? '0-1' : '1-0';
           else result = '1/2-1/2';
@@ -82,7 +83,7 @@ router.post('/move', authenticateToken, async (req, res) => {
     for (const m of moves) pgnChess.move(m, { sloppy: true });
     const pgn = pgnChess.pgn();
     await pool.query(`UPDATE bot_games SET fen = $1, moves = $2, status = $3, result = $4, pgn = $5, updated_at = NOW() WHERE id = $6`, [chess.fen(), moves, status, result, pgn, gameId]);
-    res.json({ success: true, fen: chess.fen(), userMove: move, botMove, moves, isGameOver: status === 'completed', result, isCheck: chess.isCheck(), pgn: status === 'completed' ? pgn : null });
+    res.json({ success: true, fen: chess.fen(), userMove: move, botMove, moves, isGameOver: status === 'completed', result, isCheck: chess.isCheck(), wasCapture, pgn: status === 'completed' ? pgn : null });
   } catch (err) {
     console.error('Error making move:', err);
     res.status(500).json({ error: 'Failed to make move' });
