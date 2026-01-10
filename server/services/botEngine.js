@@ -107,7 +107,7 @@ class BotEngine {
     chess.loadPgn(pgn);
     const history = chess.history({ verbose: true });
     chess.reset();
-    const analysis = { moves: [], whiteAccuracy: 0, blackAccuracy: 0, summary: { white: { brilliant: 0, best: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 }, black: { brilliant: 0, best: 0, great: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 } } };
+    const analysis = { moves: [], whiteAccuracy: 0, blackAccuracy: 0, summary: { white: { brilliant: 0, best: 0, excellent: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 }, black: { brilliant: 0, best: 0, excellent: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 } } };
     for (let i = 0; i < history.length; i++) {
       const move = history[i];
       const isWhite = i % 2 === 0;
@@ -130,25 +130,36 @@ class BotEngine {
     // Check for checkmate - it's best, not brilliant
     if (move && move.san && move.san.includes('#')) return 'best';
     
-    if (bestMove === playedMove || evalChange >= 0.1) {
-      // Brilliant should be very rare - only for huge unexpected improvements
-      if (evalChange >= 2.0) return 'brilliant';
-      if (evalChange >= 0.5) return 'best';
-      if (evalChange >= 0.2) return 'great';
-      return 'good';
+    // Was this the engine's recommended move?
+    const isBestMove = bestMove === playedMove;
+    
+    // Convert to centipawns for better granularity
+    const cpChange = evalChange * 100;
+    
+    if (isBestMove) {
+      // Played the best move
+      if (cpChange >= 200) return 'brilliant'; // Huge improvement
+      if (cpChange >= 50) return 'best';
+      return 'best';
     }
-    if (evalChange > -0.3) return 'good';
-    if (evalChange > -0.7) return 'inaccuracy';
-    if (evalChange > -1.5) return 'mistake';
-    return 'blunder';
+    
+    // Didn't play the best move - classify based on how much worse it was
+    if (cpChange >= 10) return 'excellent'; // Still improved position
+    if (cpChange >= -10) return 'good'; // Neutral
+    if (cpChange >= -30) return 'inaccuracy'; // Small mistake
+    if (cpChange >= -100) return 'mistake'; // Moderate mistake  
+    return 'blunder'; // Lost significant material/position
   }
 
   calculateAccuracy(moves) {
     if (moves.length === 0) return 100;
+    const classificationScores = {
+      'brilliant': 100, 'best': 95, 'excellent': 90, 'good': 80, 
+      'inaccuracy': 60, 'mistake': 40, 'blunder': 10
+    };
     let totalScore = 0;
     for (const move of moves) {
-      const evalChange = parseFloat(move.evalChange);
-      totalScore += Math.max(0, Math.min(100, 100 + (evalChange * 20)));
+      totalScore += classificationScores[move.classification] || 70;
     }
     return (totalScore / moves.length).toFixed(1);
   }
