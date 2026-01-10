@@ -24,7 +24,6 @@ const Navbar = () => {
     { path: '/achievements', label: 'Achievements', icon: <FaMedal />, requiresAuth: true },
     { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
     { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
-    { path: '/hehe', label: 'Store', icon: <FaStore />, requiresAuth: false },
   ];
 
   const visibleLinks = navLinks.filter(link => !link.requiresAuth || user);
