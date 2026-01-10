@@ -5,7 +5,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { 
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard
+  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaStore
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -17,13 +17,17 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const navLinks = [
-    { path: '/play', label: 'Play', icon: <FaPlay /> },
-    { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy /> },
-    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece /> },
-    { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine /> },
-    { path: '/achievements', label: 'Achievements', icon: <FaMedal /> },
-    { path: '/learn', label: 'Learn', icon: <FaGraduationCap /> },
+    { path: '/play', label: 'Play', icon: <FaPlay />, requiresAuth: true },
+    { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
+    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: true },
+    { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine />, requiresAuth: true },
+    { path: '/achievements', label: 'Achievements', icon: <FaMedal />, requiresAuth: true },
+    { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
+    { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
+    { path: '/hehe', label: 'Store', icon: <FaStore />, requiresAuth: false },
   ];
+
+  const visibleLinks = navLinks.filter(link => !link.requiresAuth || user);
 
   return (
     <nav className="navbar">
@@ -33,32 +37,30 @@ const Navbar = () => {
           <span>Riddick Chess</span>
         </Link>
 
-        {user && (
-          <ul className="navbar-nav">
-            {navLinks.map(link => (
-              <li key={link.path}>
-                <Link 
-                  to={link.path} 
-                  className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
-                >
-                  <span className="icon">{link.icon}</span>
-                  <span>{link.label}</span>
-                </Link>
-              </li>
-            ))}
-            {isClubMember && (
-              <li>
-                <Link 
-                  to="/club" 
-                  className={`nav-link ${isActive('/club') ? 'active' : ''}`}
-                >
-                  <span className="icon"><FaCrown /></span>
-                  <span>Club</span>
-                </Link>
-              </li>
-            )}
-          </ul>
-        )}
+        <ul className="navbar-nav">
+          {visibleLinks.map(link => (
+            <li key={link.path}>
+              <Link 
+                to={link.path} 
+                className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
+              >
+                <span className="icon">{link.icon}</span>
+                <span>{link.label}</span>
+              </Link>
+            </li>
+          ))}
+          {isClubMember && (
+            <li>
+              <Link 
+                to="/club" 
+                className={`nav-link ${isActive('/club') ? 'active' : ''}`}
+              >
+                <span className="icon"><FaCrown /></span>
+                <span>Club</span>
+              </Link>
+            </li>
+          )}
+        </ul>
 
         <div className="navbar-user">
           {user ? (
