@@ -5,7 +5,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { 
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaStore
+  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -18,12 +18,10 @@ const Navbar = () => {
 
   const navLinks = [
     { path: '/play', label: 'Play', icon: <FaPlay />, requiresAuth: true },
-    { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
-    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: true },
-    { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine />, requiresAuth: true },
-    { path: '/achievements', label: 'Achievements', icon: <FaMedal />, requiresAuth: true },
-    { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
     { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
+    { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: true },
+    { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
+    { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
   ];
 
   const visibleLinks = navLinks.filter(link => !link.requiresAuth || user);
@@ -91,6 +89,12 @@ const Navbar = () => {
                   <div className="user-dropdown">
                     <Link to="/profile" className="dropdown-item">
                       <FaUser /> Profile
+                    </Link>
+                    <Link to="/leaderboards" className="dropdown-item">
+                      <FaChartLine /> Leaderboards
+                    </Link>
+                    <Link to="/achievements" className="dropdown-item">
+                      <FaMedal /> Achievements
                     </Link>
                     <Link to="/friends" className="dropdown-item">
                       <FaUsers /> Friends
