@@ -46,9 +46,62 @@ const BotSelection = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>🤖 Play Against Bots</h1>
-        <p>Choose your opponent and test your skills!</p>
+        <p>Choose your color and opponent!</p>
       </div>
       
+      {/* Color Selection - Always visible at top */}
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '30px', 
+        padding: '20px', 
+        background: 'var(--surface)', 
+        borderRadius: '12px',
+        border: '2px solid var(--primary)'
+      }}>
+        <h3 style={{ marginBottom: '15px' }}>Step 1: Choose Your Color</h3>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+          <button 
+            onClick={() => setSelectedColor('white')} 
+            className={`btn ${selectedColor === 'white' ? 'btn-primary' : 'btn-secondary'}`} 
+            style={{ 
+              padding: '20px 30px', 
+              fontSize: '18px',
+              background: selectedColor === 'white' ? '#fff' : 'var(--surface)',
+              color: selectedColor === 'white' ? '#000' : 'var(--text)',
+              border: selectedColor === 'white' ? '3px solid var(--primary)' : '2px solid var(--border)'
+            }}
+          >
+            ♔ White
+          </button>
+          <button 
+            onClick={() => setSelectedColor('random')} 
+            className={`btn ${selectedColor === 'random' ? 'btn-primary' : 'btn-secondary'}`} 
+            style={{ 
+              padding: '20px 30px', 
+              fontSize: '18px',
+              border: selectedColor === 'random' ? '3px solid var(--primary)' : '2px solid var(--border)'
+            }}
+          >
+            🎲 Random
+          </button>
+          <button 
+            onClick={() => setSelectedColor('black')} 
+            className={`btn ${selectedColor === 'black' ? 'btn-primary' : 'btn-secondary'}`} 
+            style={{ 
+              padding: '20px 30px', 
+              fontSize: '18px',
+              background: selectedColor === 'black' ? '#333' : 'var(--surface)',
+              color: selectedColor === 'black' ? '#fff' : 'var(--text)',
+              border: selectedColor === 'black' ? '3px solid var(--primary)' : '2px solid var(--border)'
+            }}
+          >
+            ♚ Black
+          </button>
+        </div>
+      </div>
+
+      {/* Bot Selection */}
+      <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>Step 2: Choose Your Opponent</h3>
       <div className="bots-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', marginBottom: '30px' }}>
         {bots.map((bot) => (
           <div 
@@ -60,44 +113,29 @@ const BotSelection = () => {
               borderRadius: '12px',
               cursor: 'pointer',
               background: selectedBot?.id === bot.id ? 'var(--primary)' : 'var(--surface)',
-              border: selectedBot?.id === bot.id ? '2px solid var(--primary-light)' : '2px solid transparent',
-              transition: 'all 0.2s'
+              border: selectedBot?.id === bot.id ? '3px solid var(--primary-light)' : '2px solid transparent',
+              transition: 'all 0.2s',
+              transform: selectedBot?.id === bot.id ? 'scale(1.02)' : 'scale(1)'
             }}
           >
             <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '10px' }}>{bot.emoji}</div>
             <h3 style={{ textAlign: 'center', marginBottom: '5px' }}>{bot.name}</h3>
             <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '10px' }}>⭐ {bot.elo} ELO</div>
-            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>{bot.description}</p>
+            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)' }}>{bot.personality || bot.description}</p>
           </div>
         ))}
       </div>
 
-      {selectedBot && (
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h3 style={{ marginBottom: '15px' }}>♟️ Choose Your Color</h3>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
-            <button onClick={() => setSelectedColor('white')} className={`btn ${selectedColor === 'white' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '15px 25px' }}>
-              ♔ White
-            </button>
-            <button onClick={() => setSelectedColor('random')} className={`btn ${selectedColor === 'random' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '15px 25px' }}>
-              🎲 Random
-            </button>
-            <button onClick={() => setSelectedColor('black')} className={`btn ${selectedColor === 'black' ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '15px 25px' }}>
-              ♚ Black
-            </button>
-          </div>
-        </div>
-      )}
-
-      {selectedBot && (
-        <div style={{ textAlign: 'center' }}>
-          <button onClick={startGame} disabled={starting} className="btn btn-primary btn-lg" style={{ padding: '15px 40px', fontSize: '18px' }}>
-            {starting ? '⏳ Starting...' : `⚔️ Challenge ${selectedBot.name}!`}
+      {/* Start Button */}
+      <div style={{ textAlign: 'center' }}>
+        {selectedBot ? (
+          <button onClick={startGame} disabled={starting} className="btn btn-primary btn-lg" style={{ padding: '20px 50px', fontSize: '20px' }}>
+            {starting ? '⏳ Starting...' : `⚔️ Play as ${selectedColor === 'random' ? '🎲' : selectedColor === 'white' ? '♔ White' : '♚ Black'} vs ${selectedBot.name}!`}
           </button>
-        </div>
-      )}
-
-      {!selectedBot && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>👆 Click on a bot to select your opponent!</p>}
+        ) : (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '18px' }}>👆 Click on a bot above to select your opponent!</p>
+        )}
+      </div>
     </div>
   );
 };

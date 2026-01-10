@@ -384,9 +384,17 @@ const BotGame = () => {
             <div style={styles.gameOverBanner}>
               <h3 style={styles.gameOverTitle}>Game Over</h3>
               <p style={styles.resultText}>
-                {result === 'white' ? 'White wins!' : 
-                 result === 'black' ? 'Black wins!' : 
-                 'Draw!'}
+                {(() => {
+                  // Result comes as '1-0', '0-1', '1/2-1/2' from backend
+                  const userIsWhite = gameData.userColor === 'white';
+                  if (result === '1-0') return userIsWhite ? '🎉 You Win!' : '😔 You Lost';
+                  if (result === '0-1') return userIsWhite ? '😔 You Lost' : '🎉 You Win!';
+                  if (result === '1/2-1/2') return '🤝 Draw!';
+                  // Fallback for old format
+                  if (result === 'white') return userIsWhite ? '🎉 You Win!' : '😔 You Lost';
+                  if (result === 'black') return userIsWhite ? '😔 You Lost' : '🎉 You Win!';
+                  return 'Game Over';
+                })()}
               </p>
             </div>
           )}

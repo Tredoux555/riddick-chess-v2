@@ -61,19 +61,34 @@ router.post('/move', authenticateToken, async (req, res) => {
     const userMove = chess.move(move, { sloppy: true });
     if (!userMove) return res.status(400).json({ error: 'Invalid move' });
     let result = null, botMove = null, status = 'ongoing', wasCapture = false;
+    
+    // Check if user's move ended the game
     if (chess.isGameOver()) {
-      if (chess.isCheckmate()) result = game.user_color === 'white' ? '1-0' : '0-1';
-      else result = '1/2-1/2';
       status = 'completed';
+      if (chess.isCheckmate()) {
+        // User just moved and it's checkmate = user wins
+        result = game.user_color === 'white' ? '1-0' : '0-1';
+      } else {
+        // Draw (stalemate, insufficient material, etc.)
+        result = '1/2-1/2';
+      }
     } else {
+      // Bot's turn to move
       botMove = botEngine.getBestMove(chess.fen(), game.skill_level, game.depth);
       if (botMove) {
         const botMoveResult = chess.move(botMove, { sloppy: true });
         wasCapture = botMoveResult && botMoveResult.captured;
+        
+        // Check if bot's move ended the game
         if (chess.isGameOver()) {
-          if (chess.isCheckmate()) result = game.user_color === 'white' ? '0-1' : '1-0';
-          else result = '1/2-1/2';
           status = 'completed';
+          if (chess.isCheckmate()) {
+            // Bot just moved and it's checkmate = bot wins
+            result = game.user_color === 'white' ? '0-1' : '1-0';
+          } else {
+            // Draw
+            result = '1/2-1/2';
+          }
         }
       }
     }
