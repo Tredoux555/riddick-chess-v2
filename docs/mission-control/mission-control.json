@@ -1,0 +1,54 @@
+{
+  "project": "Riddick Chess V2",
+  "url": "https://riddickchess.site",
+  "repo": "Tredoux555/riddick-chess-v2",
+  "database": "Railway PostgreSQL",
+  "lastUpdated": "2026-01-11",
+  "owner": "Riddick (age 10)",
+  
+  "currentStatus": {
+    "production": "LIVE",
+    "lastDeploy": "2026-01-11",
+    "health": "Good"
+  },
+  
+  "recentChanges": [
+    "2026-01-11: Fixed pawn promotion in bot games",
+    "2026-01-11: Fixed move classification (checkmate = 'best' not 'brilliant')",
+    "2026-01-11: Improved bot selection UI (color picker always visible)",
+    "2026-01-11: Fixed checkmate result display",
+    "2026-01-11: Added Guitar Learning Center to admin"
+  ],
+  
+  "features": {
+    "working": [
+      "Online multiplayer chess",
+      "Bot games (6 bots, all working)",
+      "Puzzles",
+      "Leaderboards",
+      "Achievements",
+      "Game analysis",
+      "Tournament system",
+      "Chat system",
+      "Friends system",
+      "Secret store (/hehe)",
+      "Learn section",
+      "Guitar Learning Center (admin only)"
+    ],
+    "needsWork": [
+      "Bot dialogue could be more varied",
+      "Analysis accuracy improvements"
+    ]
+  },
+  
+  "adminRoutes": {
+    "/admin/riddick": "Real admin dashboard",
+    "/admin/lessons": "Lesson management",
+    "/admin/test-board": "Chess testing board",
+    "/admin/guitar": "Guitar Learning Center",
+    "/admin/hehe": "Secret store admin",
+    "/admin": "Fake admin (troll page for hackers)"
+  },
+  
+  "dailyLog": []
+}

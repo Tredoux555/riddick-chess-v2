@@ -6,7 +6,7 @@ import {
   FaUsers, FaTrophy, FaShieldAlt, FaChartBar, FaCrown, FaBan, FaCheck, 
   FaHeartbeat, FaDownload, FaSync, FaCheckCircle, FaTimesCircle, 
   FaExclamationTriangle, FaEdit, FaTrash, FaKey, FaLink, FaVolumeMute,
-  FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments
+  FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments, FaGuitar
 } from 'react-icons/fa';
 
 const Admin = () => {
@@ -37,6 +37,9 @@ const Admin = () => {
           </Link>
           <Link to="/admin/riddick/health" className={location.pathname === '/admin/riddick/health' ? 'active' : ''}>
             <FaHeartbeat /> Health Check
+          </Link>
+          <Link to="/admin/guitar" className={location.pathname === '/admin/guitar' ? 'active' : ''} style={{ background: 'linear-gradient(90deg, #ff6b6b22, #ffaa0022)', borderLeft: '3px solid #ff6b6b' }}>
+            🎸 Guitar Learning
           </Link>
         </nav>
       </div>
