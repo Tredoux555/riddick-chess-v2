@@ -37,86 +37,58 @@ const SONGS = [
 ];
 
 
-// Improved YIN algorithm for better pitch detection
-function detectPitchYIN(buffer, sampleRate) {
-  const bufferSize = buffer.length;
-  const halfBuffer = Math.floor(bufferSize / 2);
-  
-  // Check signal level
+// Simple autocorrelation pitch detection
+function autoCorrelate(buffer, sampleRate) {
+  // Check if there's enough signal
   let rms = 0;
-  for (let i = 0; i < bufferSize; i++) {
+  for (let i = 0; i < buffer.length; i++) {
     rms += buffer[i] * buffer[i];
   }
-  rms = Math.sqrt(rms / bufferSize);
-  if (rms < 0.008) return -1; // Silence threshold
+  rms = Math.sqrt(rms / buffer.length);
   
-  // YIN difference function
-  const yinBuffer = new Float32Array(halfBuffer);
-  
-  for (let tau = 0; tau < halfBuffer; tau++) {
-    yinBuffer[tau] = 0;
-    for (let i = 0; i < halfBuffer; i++) {
-      const delta = buffer[i] - buffer[i + tau];
-      yinBuffer[tau] += delta * delta;
+  // Return -1 if too quiet (lowered threshold!)
+  if (rms < 0.001) return { freq: -1, rms };
+
+  // Autocorrelation
+  const SIZE = buffer.length;
+  const MAX_SAMPLES = Math.floor(SIZE / 2);
+  let bestOffset = -1;
+  let bestCorrelation = 0;
+  let foundGoodCorrelation = false;
+
+  for (let offset = 0; offset < MAX_SAMPLES; offset++) {
+    let correlation = 0;
+    for (let i = 0; i < MAX_SAMPLES; i++) {
+      correlation += Math.abs(buffer[i] - buffer[i + offset]);
     }
-  }
-  
-  // Cumulative mean normalized difference
-  yinBuffer[0] = 1;
-  let runningSum = 0;
-  for (let tau = 1; tau < halfBuffer; tau++) {
-    runningSum += yinBuffer[tau];
-    yinBuffer[tau] *= tau / runningSum;
-  }
-  
-  // Absolute threshold - find first dip below threshold
-  const threshold = 0.15;
-  let tauEstimate = -1;
-  
-  for (let tau = 2; tau < halfBuffer; tau++) {
-    if (yinBuffer[tau] < threshold) {
-      while (tau + 1 < halfBuffer && yinBuffer[tau + 1] < yinBuffer[tau]) {
-        tau++;
-      }
-      tauEstimate = tau;
+    correlation = 1 - correlation / MAX_SAMPLES;
+    
+    if (correlation > 0.9 && correlation > bestCorrelation) {
+      bestCorrelation = correlation;
+      bestOffset = offset;
+      foundGoodCorrelation = true;
+    } else if (foundGoodCorrelation) {
       break;
     }
   }
-  
-  // No pitch found
-  if (tauEstimate === -1) return -1;
-  
-  // Parabolic interpolation
-  let betterTau;
-  const x0 = tauEstimate < 1 ? tauEstimate : tauEstimate - 1;
-  const x2 = tauEstimate + 1 < halfBuffer ? tauEstimate + 1 : tauEstimate;
-  
-  if (x0 === tauEstimate) {
-    betterTau = yinBuffer[tauEstimate] <= yinBuffer[x2] ? tauEstimate : x2;
-  } else if (x2 === tauEstimate) {
-    betterTau = yinBuffer[tauEstimate] <= yinBuffer[x0] ? tauEstimate : x0;
-  } else {
-    const s0 = yinBuffer[x0];
-    const s1 = yinBuffer[tauEstimate];
-    const s2 = yinBuffer[x2];
-    betterTau = tauEstimate + (s2 - s0) / (2 * (2 * s1 - s2 - s0));
+
+  if (bestCorrelation > 0.01 && bestOffset > 0) {
+    const frequency = sampleRate / bestOffset;
+    if (frequency >= 60 && frequency <= 500) {
+      return { freq: frequency, rms };
+    }
   }
   
-  const frequency = sampleRate / betterTau;
-  
-  // Filter unreasonable frequencies
-  if (frequency < 60 || frequency > 400) return -1;
-  
-  return frequency;
+  return { freq: -1, rms };
 }
 
 function getNoteName(frequency) {
-  if (frequency <= 0) return { note: '--', octave: 0, noteNum: 0 };
+  if (frequency <= 0) return { note: '--', octave: 0 };
   const noteNum = 12 * Math.log2(frequency / 440) + 69;
   const roundedNote = Math.round(noteNum);
   const octave = Math.floor((roundedNote - 12) / 12);
   const noteName = NOTE_NAMES[((roundedNote % 12) + 12) % 12];
-  return { note: noteName, octave, noteNum: roundedNote };
+  return { note: noteName, octave };
 }
 
 function getCents(frequency, targetFreq) {
@@ -125,21 +97,34 @@ function getCents(frequency, targetFreq) {
 
 function findClosestString(frequency) {
   let closest = null;
-  let minDiff = Infinity;
+  let minCents = Infinity;
   
   for (const string of TUNING) {
-    // Also check octave above (harmonic)
-    const targets = [string.freq, string.freq * 2];
-    for (const target of targets) {
-      const diff = Math.abs(frequency - target);
-      if (diff < minDiff && diff < target * 0.12) {
-        minDiff = diff;
-        closest = string;
-      }
+    const cents = Math.abs(1200 * Math.log2(frequency / string.freq));
+    if (cents < minCents && cents < 100) {
+      minCents = cents;
+      closest = string;
     }
   }
   return closest;
 }
+
+// Reference tone player
+const playReferenceTone = (frequency) => {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.start();
+  oscillator.stop(audioContext.currentTime + 2);
+};
 
 
 // Chord Diagram Component
@@ -176,25 +161,6 @@ const ChordDiagram = ({ chordKey }) => {
   );
 };
 
-// Reference Tone Generator
-const playReferenceTone = (frequency, duration = 2) => {
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-  
-  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + duration);
-};
-
 
 // Main Guitar Tuner Component
 const GuitarTuner = () => {
@@ -206,40 +172,36 @@ const GuitarTuner = () => {
   const [matchedString, setMatchedString] = useState(null);
   const [status, setStatus] = useState('waiting');
   const [error, setError] = useState(null);
-  const [selectedString, setSelectedString] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [volume, setVolume] = useState(0);
+  const [micActive, setMicActive] = useState(false);
   
   const audioCtx = useRef(null);
   const analyser = useRef(null);
   const stream = useRef(null);
   const animFrame = useRef(null);
-  const smoothedFreq = useRef(0);
 
   const start = async () => {
     setError(null);
     try {
+      console.log("Requesting microphone...");
       stream.current = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-          sampleRate: 44100
-        } 
+        audio: true
       });
+      console.log("Microphone granted!");
       
       audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
       analyser.current = audioCtx.current.createAnalyser();
-      analyser.current.fftSize = 8192; // Higher resolution
-      analyser.current.smoothingTimeConstant = 0.3;
+      analyser.current.fftSize = 2048;
       
       const source = audioCtx.current.createMediaStreamSource(stream.current);
       source.connect(analyser.current);
       
       setListening(true);
+      setMicActive(true);
       analyze();
     } catch (err) {
       console.error('Mic error:', err);
-      setError('Could not access microphone. Please allow permission and try again.');
+      setError('Could not access microphone: ' + err.message);
     }
   };
 
@@ -248,13 +210,13 @@ const GuitarTuner = () => {
     if (stream.current) stream.current.getTracks().forEach(t => t.stop());
     if (audioCtx.current && audioCtx.current.state !== 'closed') audioCtx.current.close();
     setListening(false);
+    setMicActive(false);
     setNote('--');
     setFreq(0);
     setCents(0);
+    setVolume(0);
     setMatchedString(null);
     setStatus('waiting');
-    setHistory([]);
-    smoothedFreq.current = 0;
   };
 
   const analyze = () => {
@@ -263,39 +225,27 @@ const GuitarTuner = () => {
     const buffer = new Float32Array(analyser.current.fftSize);
     analyser.current.getFloatTimeDomainData(buffer);
     
-    const detectedFreq = detectPitchYIN(buffer, audioCtx.current.sampleRate);
+    const result = autoCorrelate(buffer, audioCtx.current.sampleRate);
     
-    if (detectedFreq > 0) {
-      // Smooth the frequency reading
-      if (smoothedFreq.current === 0) {
-        smoothedFreq.current = detectedFreq;
-      } else {
-        smoothedFreq.current = smoothedFreq.current * 0.7 + detectedFreq * 0.3;
-      }
+    // Always update volume so user can see mic is working
+    const volumeLevel = Math.min(100, Math.round(result.rms * 500));
+    setVolume(volumeLevel);
+    
+    if (result.freq > 0) {
+      setFreq(Math.round(result.freq * 10) / 10);
       
-      const displayFreq = Math.round(smoothedFreq.current * 10) / 10;
-      setFreq(displayFreq);
-      
-      // Update history for stability detection
-      setHistory(prev => {
-        const newHistory = [...prev.slice(-10), displayFreq];
-        return newHistory;
-      });
-      
-      const noteInfo = getNoteName(smoothedFreq.current);
+      const noteInfo = getNoteName(result.freq);
       setNote(noteInfo.note);
       setOctave(noteInfo.octave);
       
-      // Find closest string (or use selected string)
-      const targetString = selectedString || findClosestString(smoothedFreq.current);
-      
-      if (targetString) {
-        setMatchedString(targetString);
-        const c = getCents(smoothedFreq.current, targetString.freq);
+      const closest = findClosestString(result.freq);
+      if (closest) {
+        setMatchedString(closest);
+        const c = getCents(result.freq, closest.freq);
         setCents(c);
         
-        if (Math.abs(c) <= 3) setStatus('perfect');
-        else if (Math.abs(c) <= 10) setStatus('close');
+        if (Math.abs(c) <= 5) setStatus('perfect');
+        else if (Math.abs(c) <= 15) setStatus('close');
         else if (c > 0) setStatus('sharp');
         else setStatus('flat');
       } else {
@@ -311,10 +261,6 @@ const GuitarTuner = () => {
     return () => stop();
   }, []);
 
-  // Check if reading is stable
-  const isStable = history.length >= 5 && 
-    Math.max(...history) - Math.min(...history) < 2;
-
   const getColor = () => {
     if (status === 'perfect') return '#00ff88';
     if (status === 'close') return '#ffaa00';
@@ -323,7 +269,7 @@ const GuitarTuner = () => {
   };
 
   const getMessage = () => {
-    if (status === 'perfect') return '✓ PERFECT! 🎸';
+    if (status === 'perfect') return '✓ IN TUNE!';
     if (status === 'close') return '≈ Almost there...';
     if (status === 'sharp') return '↓ Too HIGH - loosen';
     if (status === 'flat') return '↑ Too LOW - tighten';
@@ -337,58 +283,47 @@ const GuitarTuner = () => {
       
       {error && <div style={styles.error}>{error}</div>}
       
-      {/* String selector - click to lock to a specific string */}
+      {/* String buttons with reference tones */}
       <div style={styles.stringRow}>
         {TUNING.map((s) => (
-          <div 
-            key={s.note} 
-            onClick={() => {
-              if (selectedString?.note === s.note) {
-                setSelectedString(null);
-              } else {
-                setSelectedString(s);
-              }
-            }}
-            style={{
-              ...styles.stringBtn,
-              background: matchedString?.note === s.note ? getColor() : 
-                         selectedString?.note === s.note ? '#0af' : '#2a2a3a',
-              color: (matchedString?.note === s.note || selectedString?.note === s.note) ? '#000' : '#fff',
-              cursor: 'pointer',
-              border: selectedString?.note === s.note ? '2px solid #fff' : '2px solid transparent'
-            }}
-          >
+          <div key={s.note} style={{
+            ...styles.stringBtn,
+            background: matchedString?.note === s.note ? getColor() : '#2a2a3a',
+            color: matchedString?.note === s.note ? '#000' : '#fff'
+          }}>
             <div style={styles.stringNote}>{s.name}{s.note.slice(-1)}</div>
             <div style={styles.stringHz}>{s.freq}Hz</div>
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                playReferenceTone(s.freq);
-              }}
+              onClick={() => playReferenceTone(s.freq)}
               style={styles.playBtn}
               title="Play reference tone"
-            >
-              🔊
-            </button>
+            >🔊</button>
           </div>
         ))}
       </div>
-      
-      {selectedString && (
-        <div style={styles.lockNotice}>
-          🔒 Locked to {selectedString.name} string ({selectedString.freq}Hz) - click again to unlock
-        </div>
-      )}
 
       {/* Main display */}
       <div style={styles.display}>
         {listening ? (
           <>
-            <div style={{...styles.bigNote, color: getColor()}}>
-              {note}{octave > 0 ? octave : ''}
-              {isStable && status === 'perfect' && <span style={styles.checkmark}>✓</span>}
+            {/* VOLUME METER - shows if mic is working */}
+            <div style={styles.volumeSection}>
+              <div style={styles.volumeLabel}>
+                {micActive ? '🎤 MIC ACTIVE' : '🎤 MIC OFF'} 
+                {volume > 0 && ' - Sound detected!'}
+              </div>
+              <div style={styles.volumeBarBg}>
+                <div style={{
+                  ...styles.volumeBar,
+                  width: `${volume}%`,
+                  background: volume > 50 ? '#00ff88' : volume > 20 ? '#ffaa00' : '#666'
+                }}/>
+              </div>
+              <div style={styles.volumeText}>Volume: {volume}%</div>
             </div>
-            <div style={styles.freqText}>{freq} Hz</div>
+            
+            <div style={{...styles.bigNote, color: getColor()}}>{note}{octave > 0 ? octave : ''}</div>
+            <div style={styles.freqText}>{freq > 0 ? `${freq} Hz` : 'Waiting for sound...'}</div>
             
             {matchedString && (
               <div style={styles.targetText}>
@@ -397,39 +332,31 @@ const GuitarTuner = () => {
             )}
             
             {/* Cents meter */}
-            <div style={styles.meterWrap}>
-              <div style={styles.meterLabels}>
-                <span>♭ -50</span><span>0</span><span>+50 ♯</span>
+            {freq > 0 && (
+              <div style={styles.meterWrap}>
+                <div style={styles.meterLabels}>
+                  <span>♭ -50</span><span>0</span><span>+50 ♯</span>
+                </div>
+                <div style={styles.meter}>
+                  <div style={styles.meterCenter}/>
+                  <div style={{
+                    ...styles.needle,
+                    left: `${50 + Math.max(-50, Math.min(50, cents))}%`,
+                    background: getColor()
+                  }}/>
+                </div>
+                <div style={styles.centsText}>{cents > 0 ? '+' : ''}{cents} cents</div>
               </div>
-              <div style={styles.meter}>
-                <div style={styles.meterCenter}/>
-                <div style={styles.meterZone}/>
-                <div style={{
-                  ...styles.needle,
-                  left: `${50 + Math.max(-50, Math.min(50, cents))}%`,
-                  background: getColor(),
-                  boxShadow: `0 0 10px ${getColor()}`
-                }}/>
-              </div>
-              <div style={styles.centsText}>{cents > 0 ? '+' : ''}{cents} cents</div>
-            </div>
+            )}
             
-            <div style={{
-              ...styles.statusMsg, 
-              color: getColor(),
-              animation: status === 'perfect' ? 'pulse 0.5s infinite alternate' : 'none'
-            }}>
-              {getMessage()}
-            </div>
-            
-            {isStable && <div style={styles.stableIndicator}>📍 Stable reading</div>}
+            <div style={{...styles.statusMsg, color: getColor()}}>{getMessage()}</div>
           </>
         ) : (
           <div style={styles.instructions}>
             <p style={{fontSize: '18px'}}>🎸 Click START to tune your guitar</p>
-            <p style={{color: '#888', marginTop: '10px'}}>Hold your guitar near the microphone</p>
+            <p style={{color: '#888', marginTop: '10px'}}>Make sure to allow microphone access!</p>
             <p style={{color: '#666', marginTop: '10px', fontSize: '14px'}}>
-              💡 Tip: Click a string button to hear what it should sound like!
+              💡 Click 🔊 on any string to hear the reference tone
             </p>
           </div>
         )}
@@ -441,13 +368,6 @@ const GuitarTuner = () => {
       }}>
         {listening ? '⏹ STOP' : '🎤 START TUNER'}
       </button>
-      
-      <style>{`
-        @keyframes pulse {
-          from { transform: scale(1); }
-          to { transform: scale(1.05); }
-        }
-      `}</style>
     </div>
   );
 };
@@ -464,7 +384,6 @@ const GuitarLearning = () => {
         <p style={styles.subtitle}>Dust off those cobwebs and let's rock!</p>
       </div>
 
-      {/* Tabs */}
       <div style={styles.tabs}>
         {[
           { id: 'tuner', icon: '🎤', label: 'Tuner' },
@@ -483,7 +402,6 @@ const GuitarLearning = () => {
         ))}
       </div>
 
-      {/* Content */}
       <div style={styles.content}>
         {tab === 'tuner' && <GuitarTuner />}
 
@@ -506,7 +424,6 @@ const GuitarLearning = () => {
         {tab === 'songs' && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Easy Songs to Learn</h3>
-            
             {[1, 2, 3].map(level => (
               <div key={level} style={styles.levelSection}>
                 <h4 style={styles.levelTitle}>
@@ -538,11 +455,9 @@ const GuitarLearning = () => {
           </div>
         )}
 
-
         {tab === 'lessons' && (
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>4-Week Learning Path</h3>
-            
             <div style={styles.lessonGrid}>
               {[
                 { week: 1, title: 'Getting Started', tasks: ['Hold guitar correctly', 'Tune with tuner', 'Learn G and Em', 'Switch between them'], song: 'Horse With No Name' },
@@ -560,7 +475,6 @@ const GuitarLearning = () => {
                 </div>
               ))}
             </div>
-
             <div style={styles.tips}>
               <h4>🎯 Pro Tips</h4>
               <div style={styles.tipGrid}>
@@ -597,28 +511,31 @@ const styles = {
   tunerTitle: { marginBottom: '20px', fontSize: '1.3em' },
   error: { background: '#ff6b6b33', color: '#ff6b6b', padding: '10px', borderRadius: '8px', marginBottom: '15px' },
   stringRow: { display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' },
-  stringBtn: { padding: '10px 8px', borderRadius: '8px', minWidth: '60px', transition: 'all 0.2s', position: 'relative' },
+  stringBtn: { padding: '10px 8px', borderRadius: '8px', minWidth: '60px', transition: 'all 0.2s' },
   stringNote: { fontWeight: 'bold', fontSize: '14px' },
   stringHz: { fontSize: '10px', opacity: 0.7, marginBottom: '5px' },
   playBtn: { background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', padding: '2px 6px', cursor: 'pointer', fontSize: '12px' },
-  lockNotice: { background: '#0af3', padding: '8px', borderRadius: '8px', marginBottom: '15px', fontSize: '13px' },
-  display: { background: '#1a1a2a', borderRadius: '12px', padding: '25px', marginBottom: '20px', minHeight: '220px' },
-  bigNote: { fontSize: '3.5em', fontWeight: 'bold', position: 'relative', display: 'inline-block' },
-  checkmark: { position: 'absolute', top: '-10px', right: '-30px', fontSize: '0.5em' },
+  display: { background: '#1a1a2a', borderRadius: '12px', padding: '25px', marginBottom: '20px', minHeight: '280px' },
+  
+  // Volume meter styles
+  volumeSection: { marginBottom: '20px', padding: '10px', background: '#0003', borderRadius: '8px' },
+  volumeLabel: { fontSize: '12px', color: '#0f0', marginBottom: '5px', fontWeight: 'bold' },
+  volumeBarBg: { height: '10px', background: '#333', borderRadius: '5px', overflow: 'hidden' },
+  volumeBar: { height: '100%', transition: 'width 0.1s, background 0.3s', borderRadius: '5px' },
+  volumeText: { fontSize: '11px', color: '#888', marginTop: '3px' },
+  
+  bigNote: { fontSize: '3.5em', fontWeight: 'bold' },
   freqText: { color: '#888', marginBottom: '5px' },
   targetText: { color: '#0af', fontSize: '14px', marginBottom: '15px' },
   meterWrap: { maxWidth: '300px', margin: '0 auto 15px' },
   meterLabels: { display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666', marginBottom: '3px' },
   meter: { height: '20px', background: '#333', borderRadius: '10px', position: 'relative', overflow: 'hidden' },
   meterCenter: { position: 'absolute', left: '50%', top: 0, width: '2px', height: '100%', background: '#00ff88', transform: 'translateX(-50%)', zIndex: 2 },
-  meterZone: { position: 'absolute', left: '45%', width: '10%', height: '100%', background: 'rgba(0,255,136,0.2)' },
   needle: { position: 'absolute', width: '6px', height: '100%', borderRadius: '3px', transition: 'left 0.1s', transform: 'translateX(-50%)', zIndex: 3 },
   centsText: { fontSize: '12px', color: '#888', marginTop: '5px' },
   statusMsg: { fontSize: '1.2em', fontWeight: 'bold', marginTop: '10px' },
-  stableIndicator: { color: '#0af', fontSize: '12px', marginTop: '8px' },
   instructions: { padding: '30px' },
   tunerBtn: { padding: '15px 35px', fontSize: '1.1em', fontWeight: 'bold', border: 'none', borderRadius: '25px', cursor: 'pointer', color: '#000' },
-
 
   // Chord styles
   chordGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px' },
