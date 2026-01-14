@@ -10,17 +10,50 @@ const TUNING = [
 ];
 
 const CHORDS = {
-  'G': { name: 'G Major', fingers: [[6,3,2], [5,2,1], [1,3,3]], open: [4,3,2], muted: [] },
-  'C': { name: 'C Major', fingers: [[5,3,3], [4,2,2], [2,1,1]], open: [3,1], muted: [6] },
-  'D': { name: 'D Major', fingers: [[3,2,1], [1,2,2], [2,3,3]], open: [4], muted: [6,5] },
-  'Em': { name: 'E Minor', fingers: [[5,2,2], [4,2,3]], open: [6,3,2,1], muted: [] },
-  'Am': { name: 'A Minor', fingers: [[4,2,2], [3,2,3], [2,1,1]], open: [5,1], muted: [6] }
+  'G': { name: 'G Major', fingers: [[6,3,2], [5,2,1], [1,3,3]], open: [4,3,2], muted: [], 
+         notes: [196, 246.94, 293.66, 392, 493.88, 587.33] }, // G B D G B D
+  'C': { name: 'C Major', fingers: [[5,3,3], [4,2,2], [2,1,1]], open: [3,1], muted: [6],
+         notes: [130.81, 164.81, 196, 261.63, 329.63] }, // C E G C E
+  'D': { name: 'D Major', fingers: [[3,2,1], [1,2,2], [2,3,3]], open: [4], muted: [6,5],
+         notes: [146.83, 220, 293.66, 369.99] }, // D A D F#
+  'Em': { name: 'E Minor', fingers: [[5,2,2], [4,2,3]], open: [6,3,2,1], muted: [],
+          notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] }, // E B E G B E
+  'Am': { name: 'A Minor', fingers: [[4,2,2], [3,2,3], [2,1,1]], open: [5,1], muted: [6],
+          notes: [110, 164.81, 220, 261.63, 329.63] } // A E A C E
 };
 
-const SONGS = [
-  { level: 1, title: "Horse With No Name", artist: "America", chords: ["Em", "D"], youtube: "zSAJ0l4OBHM" },
-  { level: 2, title: "Love Me Do", artist: "Beatles", chords: ["G", "C", "D"], youtube: "0pGOFX1D_jg" },
-  { level: 3, title: "Stand By Me", artist: "Ben E. King", chords: ["G", "Em", "C", "D"], youtube: "hwZNL7QVJjE" }
+// LESSON DATA - Video timestamps where chords change
+const LESSONS = [
+  {
+    id: 1,
+    title: "Your First Song",
+    artist: "Simple 2-Chord Song",
+    youtube: "zSAJ0l4OBHM", // Horse With No Name
+    difficulty: "Beginner",
+    chords: ["Em", "D"],
+    timeline: [
+      { time: 0, chord: null, text: "Welcome! Let's learn your first song!" },
+      { time: 15, chord: "Em", text: "First chord: Em" },
+      { time: 35, chord: "D", text: "Switch to D" },
+      { time: 55, chord: "Em", text: "Back to Em" },
+      { time: 75, chord: "D", text: "D again" }
+    ]
+  },
+  {
+    id: 2,
+    title: "Love Me Do",
+    artist: "The Beatles",
+    youtube: "0pGOFX1D_jg",
+    difficulty: "Easy",
+    chords: ["G", "C", "D"],
+    timeline: [
+      { time: 0, chord: null, text: "Beatles classic - 3 chords!" },
+      { time: 10, chord: "G", text: "Start with G" },
+      { time: 25, chord: "C", text: "Now C chord" },
+      { time: 40, chord: "D", text: "Switch to D" },
+      { time: 55, chord: "G", text: "Back to G" }
+    ]
+  }
 ];
 
 const playTone = (freq) => {
@@ -37,6 +70,289 @@ const playTone = (freq) => {
 };
 
 
+// CHORD DETECTOR COMPONENT
+const ChordDetector = ({ targetChord, onDetected, isListening }) => {
+  const [detectedFreqs, setDetectedFreqs] = useState([]);
+  const [confidence, setConfidence] = useState(0);
+  const [volume, setVolume] = useState(0);
+  
+  const audioCtx = useRef(null);
+  const analyser = useRef(null);
+  const stream = useRef(null);
+  const animFrame = useRef(null);
+
+  const start = async () => {
+    try {
+      stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyser.current = audioCtx.current.createAnalyser();
+      analyser.current.fftSize = 8192;
+      audioCtx.current.createMediaStreamSource(stream.current).connect(analyser.current);
+      analyze();
+    } catch (e) {
+      console.error('Mic error:', e);
+    }
+  };
+
+  const stop = () => {
+    animFrame.current && cancelAnimationFrame(animFrame.current);
+    stream.current?.getTracks().forEach(t => t.stop());
+    audioCtx.current?.close();
+    setDetectedFreqs([]);
+    setVolume(0);
+    setConfidence(0);
+  };
+
+  const analyze = () => {
+    if (!analyser.current) return;
+    
+    const freqData = new Uint8Array(analyser.current.frequencyBinCount);
+    analyser.current.getByteFrequencyData(freqData);
+    
+    // Calculate volume
+    let sum = 0;
+    for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+    const vol = Math.min(100, (sum / freqData.length) * 2);
+    setVolume(vol);
+    
+    if (vol > 15) {
+      // Find peaks in frequency spectrum
+      const peaks = [];
+      const sampleRate = audioCtx.current.sampleRate;
+      const binSize = sampleRate / analyser.current.fftSize;
+      
+      for (let i = 5; i < freqData.length / 2; i++) {
+        if (freqData[i] > 100 && freqData[i] > freqData[i-1] && freqData[i] > freqData[i+1]) {
+          peaks.push(i * binSize);
+        }
+      }
+      
+      setDetectedFreqs(peaks.slice(0, 6)); // Keep top 6 peaks
+      
+      // Compare with target chord
+      if (targetChord && CHORDS[targetChord]) {
+        const targetNotes = CHORDS[targetChord].notes;
+        let matches = 0;
+        
+        for (let peak of peaks) {
+          for (let note of targetNotes) {
+            // Check if peak is within 5% of note frequency
+            if (Math.abs(peak - note) < note * 0.05) {
+              matches++;
+              break;
+            }
+          }
+        }
+        
+        const conf = Math.min(100, (matches / Math.min(targetNotes.length, 4)) * 100);
+        setConfidence(conf);
+        
+        // If confidence > 70% for 0.5 seconds, chord is detected!
+        if (conf > 70 && onDetected) {
+          setTimeout(() => {
+            if (confidence > 70) onDetected();
+          }, 500);
+        }
+      }
+    }
+    
+    animFrame.current = requestAnimationFrame(analyze);
+  };
+
+  useEffect(() => {
+    if (isListening) start();
+    else stop();
+    return () => stop();
+  }, [isListening]);
+
+  return (
+    <div style={styles.detector}>
+      <div style={styles.volBar}>
+        <div style={{...styles.volFill, width: `${volume}%`, background: volume > 15 ? '#0f8' : '#666'}}/>
+      </div>
+      <small style={{color: volume > 15 ? '#0f8' : '#666'}}>
+        {volume > 15 ? '🎤 Listening...' : '🎤 Strum your guitar'}
+      </small>
+      
+      {targetChord && (
+        <div style={{marginTop: '10px'}}>
+          <div style={styles.confidenceBar}>
+            <div style={{
+              ...styles.confidenceFill, 
+              width: `${confidence}%`,
+              background: confidence > 70 ? '#0f8' : confidence > 40 ? '#fa0' : '#f66'
+            }}/>
+          </div>
+          <div style={{fontSize: '24px', fontWeight: 'bold', color: confidence > 70 ? '#0f8' : '#fa0'}}>
+            {confidence > 70 ? '✅ Perfect!' : confidence > 40 ? '👍 Almost there!' : '🎸 Keep trying!'}
+          </div>
+          <small style={{color: '#888'}}>{Math.round(confidence)}% match</small>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+// INTERACTIVE LESSON COMPONENT
+const InteractiveLesson = ({ lesson, onExit }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [waitingForChord, setWaitingForChord] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [videoTime, setVideoTime] = useState(0);
+  const playerRef = useRef(null);
+  const intervalRef = useRef(null);
+  
+  const currentEvent = lesson.timeline[currentStep];
+  const nextEvent = lesson.timeline[currentStep + 1];
+
+  useEffect(() => {
+    // Load YouTube API
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.body.appendChild(tag);
+      
+      window.onYouTubeIframeAPIReady = () => {
+        createPlayer();
+      };
+    } else {
+      createPlayer();
+    }
+    
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (playerRef.current) playerRef.current.destroy();
+    };
+  }, []);
+
+  const createPlayer = () => {
+    playerRef.current = new window.YT.Player('youtube-player', {
+      videoId: lesson.youtube,
+      playerVars: { controls: 1, modestbranding: 1 },
+      events: {
+        onReady: () => {
+          // Track video time
+          intervalRef.current = setInterval(() => {
+            if (playerRef.current && playerRef.current.getCurrentTime) {
+              const time = playerRef.current.getCurrentTime();
+              setVideoTime(time);
+              
+              // Check if we hit a chord change point
+              if (nextEvent && time >= nextEvent.time && !waitingForChord) {
+                playerRef.current.pauseVideo();
+                setIsPlaying(false);
+                setWaitingForChord(true);
+                setIsListening(true);
+              }
+            }
+          }, 100);
+        }
+      }
+    });
+  };
+
+  const handleChordDetected = () => {
+    setWaitingForChord(false);
+    setIsListening(false);
+    setCurrentStep(currentStep + 1);
+    
+    // Continue video after small delay
+    setTimeout(() => {
+      if (playerRef.current) {
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    }, 1000);
+  };
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+    if (isPlaying) {
+      playerRef.current.pauseVideo();
+    } else {
+      playerRef.current.playVideo();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const skip = () => {
+    setWaitingForChord(false);
+    setIsListening(false);
+    setCurrentStep(currentStep + 1);
+    if (playerRef.current) {
+      playerRef.current.playVideo();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <div style={styles.lesson}>
+      <div style={styles.lessonHeader}>
+        <button onClick={onExit} style={styles.backBtn}>← Back</button>
+        <div>
+          <h2>{lesson.title}</h2>
+          <small style={{color: '#888'}}>{lesson.artist} • {lesson.difficulty}</small>
+        </div>
+      </div>
+
+      <div style={styles.videoContainer}>
+        <div id="youtube-player"></div>
+        {waitingForChord && (
+          <div style={styles.overlay}>
+            <div style={styles.overlayContent}>
+              <h1 style={{fontSize: '48px', marginBottom: '10px'}}>⏸️</h1>
+              <h2>Play: {currentEvent.chord}</h2>
+              <p style={{color: '#888'}}>{currentEvent.text}</p>
+              
+              <div style={{margin: '20px 0'}}>
+                <ChordDiagram chord={CHORDS[currentEvent.chord]} name={currentEvent.chord}/>
+              </div>
+              
+              <ChordDetector 
+                targetChord={currentEvent.chord} 
+                onDetected={handleChordDetected}
+                isListening={isListening}
+              />
+              
+              <button onClick={skip} style={{...styles.btn, background: '#555', marginTop: '20px'}}>
+                Skip for now
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={styles.controls}>
+        <button onClick={togglePlay} style={{...styles.btn, background: isPlaying ? '#f66' : '#0f8'}}>
+          {isPlaying ? '⏸ Pause' : '▶ Play'}
+        </button>
+      </div>
+
+      <div style={styles.timeline}>
+        <h3>Lesson Progress</h3>
+        <div style={styles.progressBar}>
+          <div style={{...styles.progressFill, width: `${(currentStep / lesson.timeline.length) * 100}%`}}/>
+        </div>
+        <div style={styles.timelineSteps}>
+          {lesson.timeline.map((event, i) => (
+            <div key={i} style={{
+              ...styles.timelineStep,
+              background: i < currentStep ? '#0f8' : i === currentStep ? '#0af' : '#333'
+            }}>
+              <div style={{fontWeight: 'bold'}}>{event.chord || '🎵'}</div>
+              <small>{event.time}s</small>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// MAIN TUNER COMPONENT (unchanged)
 const GuitarTuner = () => {
   const [selected, setSelected] = useState(null);
   const [listening, setListening] = useState(false);
@@ -81,14 +397,12 @@ const GuitarTuner = () => {
     const buf = new Uint8Array(analyser.current.fftSize);
     analyser.current.getByteTimeDomainData(buf);
     
-    // Volume
     let sum = 0;
     for (let i = 0; i < buf.length; i++) sum += Math.abs(buf[i] - 128);
     const vol = Math.min(100, (sum / buf.length) * 4);
     setVolume(vol);
     
     if (vol > 10 && selected) {
-      // Autocorrelation pitch detection
       const size = buf.length;
       const half = size / 2;
       let bestOff = -1, bestCorr = 0;
@@ -106,21 +420,17 @@ const GuitarTuner = () => {
         const freq = audioCtx.current.sampleRate / bestOff;
         const target = selected.freq;
         
-        // Only accept if in reasonable range
         if (freq > target * 0.5 && freq < target * 2) {
           let c = 1200 * Math.log2(freq / target);
           if (c > 600) c -= 1200;
           if (c < -600) c += 1200;
           
-          // Buffer readings
           readings.current.push(c);
           if (readings.current.length > 15) readings.current.shift();
           
-          // Median filter (removes outliers)
           const sorted = [...readings.current].sort((a, b) => a - b);
           const median = sorted[Math.floor(sorted.length / 2)];
           
-          // VERY heavy smoothing: 92% old, 8% new
           smoothedCents.current = smoothedCents.current * 0.92 + median * 0.08;
           setCents(Math.round(smoothedCents.current));
         }
@@ -138,7 +448,6 @@ const GuitarTuner = () => {
     if (c <= 30) return '#ffaa00';
     return '#ff6b6b';
   };
-
 
   return (
     <div style={styles.tuner}>
@@ -227,17 +536,52 @@ const ChordDiagram = ({ chord, name }) => (
 );
 
 const GuitarLearning = () => {
-  const [tab, setTab] = useState('tuner');
+  const [tab, setTab] = useState('lessons');
+  const [activeLesson, setActiveLesson] = useState(null);
+  
+  if (activeLesson) {
+    return <InteractiveLesson lesson={activeLesson} onExit={() => setActiveLesson(null)}/>;
+  }
+  
   return (
     <div style={styles.page}>
       <h1 style={{textAlign: 'center', marginBottom: '20px'}}>🎸 Guitar Learning</h1>
       <div style={styles.tabs}>
-        {['tuner', 'chords', 'songs'].map(t => (
+        {['lessons', 'tuner', 'chords'].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{...styles.tab, background: tab === t ? '#0af' : '#333'}}>
-            {t === 'tuner' ? '🎤 Tuner' : t === 'chords' ? '🎵 Chords' : '🎶 Songs'}
+            {t === 'lessons' ? '🎥 Lessons' : t === 'tuner' ? '🎤 Tuner' : '🎵 Chords'}
           </button>
         ))}
       </div>
+      
+      {tab === 'lessons' && (
+        <div style={styles.section}>
+          <h3>Interactive Video Lessons</h3>
+          <p style={{color: '#888', marginBottom: '20px'}}>
+            🎸 Learn by doing! Videos pause when it's time to play a chord. We'll listen and only continue when you nail it!
+          </p>
+          <div style={styles.lessonGrid}>
+            {LESSONS.map(lesson => (
+              <div key={lesson.id} style={styles.lessonCard} onClick={() => setActiveLesson(lesson)}>
+                <div style={styles.thumbnail}>
+                  <img src={`https://img.youtube.com/vi/${lesson.youtube}/mqdefault.jpg`} alt={lesson.title} style={{width: '100%', borderRadius: '8px'}}/>
+                  <div style={styles.playOverlay}>▶</div>
+                </div>
+                <div style={{padding: '10px'}}>
+                  <strong>{lesson.title}</strong>
+                  <div style={{color: '#888', fontSize: '12px'}}>{lesson.artist}</div>
+                  <div style={{marginTop: '5px'}}>
+                    {lesson.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}
+                  </div>
+                  <div style={{...styles.difficultyBadge, background: lesson.difficulty === 'Beginner' ? '#0f8' : '#fa0'}}>
+                    {lesson.difficulty}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {tab === 'tuner' && <GuitarTuner />}
       
@@ -246,22 +590,12 @@ const GuitarLearning = () => {
           <h3>Essential Chords</h3>
           <div style={styles.chordGrid}>
             {Object.entries(CHORDS).map(([k, v]) => (
-              <div key={k} style={styles.chordCard}><ChordDiagram chord={v} name={k}/></div>
+              <div key={k} style={styles.chordCard}>
+                <ChordDiagram chord={v} name={k}/>
+                <small style={{color: '#888', display: 'block', marginTop: '5px'}}>{v.name}</small>
+              </div>
             ))}
           </div>
-        </div>
-      )}
-      
-      {tab === 'songs' && (
-        <div style={styles.section}>
-          <h3>Easy Songs</h3>
-          {SONGS.map((s, i) => (
-            <div key={i} style={styles.songCard}>
-              <strong>{s.title}</strong> - {s.artist}
-              <div>{s.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}</div>
-              <a href={`https://youtube.com/watch?v=${s.youtube}`} target="_blank" rel="noreferrer" style={{color: '#f66'}}>▶ Tutorial</a>
-            </div>
-          ))}
         </div>
       )}
     </div>
@@ -270,43 +604,58 @@ const GuitarLearning = () => {
 
 
 const styles = {
-  page: { minHeight: '100vh', padding: '20px', background: 'var(--background)', maxWidth: '900px', margin: '0 auto' },
-  tabs: { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px' },
+  page: { minHeight: '100vh', padding: '20px', background: 'var(--background)', maxWidth: '1200px', margin: '0 auto' },
+  tabs: { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' },
   tab: { padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#fff' },
   section: { background: 'var(--surface)', borderRadius: '12px', padding: '20px' },
   
+  // LESSONS
+  lessonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
+  lessonCard: { background: '#1a1a2a', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', transition: '0.2s', ':hover': {transform: 'scale(1.02)'} },
+  thumbnail: { position: 'relative' },
+  playOverlay: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '48px', color: '#fff', background: '#0008', borderRadius: '50%', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  difficultyBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold', marginTop: '8px', color: '#000' },
+  
+  // INTERACTIVE LESSON
+  lesson: { background: 'var(--surface)', borderRadius: '12px', padding: '20px', maxWidth: '900px', margin: '0 auto' },
+  lessonHeader: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' },
+  backBtn: { padding: '10px 20px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold' },
+  videoContainer: { position: 'relative', background: '#000', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16/9' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: '#000e', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  overlayContent: { textAlign: 'center', padding: '20px', background: '#1a1a2a', borderRadius: '12px', maxWidth: '400px' },
+  controls: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '20px' },
+  timeline: { marginTop: '30px' },
+  progressBar: { height: '10px', background: '#333', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' },
+  progressFill: { height: '100%', background: '#0af', transition: '0.3s' },
+  timelineSteps: { display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' },
+  timelineStep: { minWidth: '80px', padding: '10px', borderRadius: '8px', textAlign: 'center', fontSize: '12px' },
+  
+  // CHORD DETECTOR
+  detector: { background: '#222', borderRadius: '10px', padding: '15px', marginTop: '15px' },
+  confidenceBar: { height: '30px', background: '#333', borderRadius: '15px', overflow: 'hidden', marginBottom: '10px' },
+  confidenceFill: { height: '100%', transition: '0.3s' },
+  
+  // TUNER (unchanged)
   tuner: { background: 'var(--surface)', borderRadius: '12px', padding: '20px', textAlign: 'center' },
   error: { background: '#f662', color: '#f66', padding: '10px', borderRadius: '8px', marginBottom: '10px' },
   strings: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '20px' },
   stringBtn: { padding: '10px 5px', borderRadius: '8px', textAlign: 'center', transition: '0.2s' },
   hearBtn: { marginTop: '5px', background: '#0003', border: 'none', borderRadius: '5px', padding: '4px 8px', cursor: 'pointer' },
-  
   tunerDisplay: { background: '#1a1a2a', borderRadius: '10px', padding: '20px' },
   badge: { display: 'inline-block', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold', color: '#000', marginBottom: '15px' },
   volBar: { height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' },
   volFill: { height: '100%', background: '#0f8', transition: 'width 0.1s' },
-  
   meterBox: { margin: '20px 0' },
   meterLabels: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', marginBottom: '5px' },
   meter: { height: '40px', background: '#222', borderRadius: '20px', position: 'relative', overflow: 'hidden' },
   greenZone: { position: 'absolute', left: '40%', width: '20%', height: '100%', background: '#0f83' },
   centerLine: { position: 'absolute', left: '50%', width: '2px', height: '100%', background: '#0f8', transform: 'translateX(-50%)' },
-  needle: { 
-    position: 'absolute', 
-    top: '5px', 
-    width: '8px', 
-    height: '30px', 
-    borderRadius: '4px', 
-    transform: 'translateX(-50%)',
-    transition: 'left 0.4s ease-out, background 0.3s, box-shadow 0.3s'  // SLOW transition!
-  },
-  
+  needle: { position: 'absolute', top: '5px', width: '8px', height: '30px', borderRadius: '4px', transform: 'translateX(-50%)', transition: 'left 0.4s ease-out, background 0.3s, box-shadow 0.3s' },
   btn: { padding: '12px 25px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', color: '#000', fontSize: '16px' },
   
-  chordGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '10px' },
-  chordCard: { background: '#1a1a2a', borderRadius: '8px', padding: '5px', textAlign: 'center' },
-  
-  songCard: { background: '#1a1a2a', borderRadius: '8px', padding: '15px', marginBottom: '10px' },
+  // CHORDS
+  chordGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '15px' },
+  chordCard: { background: '#1a1a2a', borderRadius: '8px', padding: '10px', textAlign: 'center' },
   chordTag: { display: 'inline-block', background: '#0af', color: '#000', padding: '2px 8px', borderRadius: '4px', margin: '5px 3px 5px 0', fontSize: '12px', fontWeight: 'bold' }
 };
 
