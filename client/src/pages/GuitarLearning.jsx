@@ -1560,237 +1560,253 @@ const ChordDetectorWithFeedback = ({ targetChord, onChordDetected, mode }) => {
 // Continue with GuitarTuner and helpers...
 // Continuing GuitarLearning.jsx - PART 5: GUITAR TUNER, HELPERS & STYLES
 
-// ========== GUITAR TUNER ==========
+// Helper function for reference tones
+const playTone = (freq) => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 2);
+  } catch (e) {
+    console.error('Audio error:', e);
+  }
+};
+
+// ========== GUITAR TUNER (GOOD OLD VERSION!) ==========
 const GuitarTuner = () => {
+  const [selected, setSelected] = useState(null);
   const [listening, setListening] = useState(false);
-  const [detectedNote, setDetectedNote] = useState(null);
-  const [detectedFreq, setDetectedFreq] = useState(0);
   const [cents, setCents] = useState(0);
+  const [volume, setVolume] = useState(0);
+  const [error, setError] = useState(null);
   
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const dataArrayRef = useRef(null);
-  const sourceRef = useRef(null);
-  const animationRef = useRef(null);
-  
-  useEffect(() => {
-    return () => {
-      stopListening();
-    };
-  }, []);
-  
-  const startListening = async () => {
+  const audioCtx = useRef(null);
+  const analyser = useRef(null);
+  const stream = useRef(null);
+  const animFrame = useRef(null);
+  const smoothedCents = useRef(0);
+  const readings = useRef([]);
+
+  const start = async () => {
+    if (!selected) return setError('Pick a string first!');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 8192;
-      
-      sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
-      sourceRef.current.connect(analyserRef.current);
-      
-      const bufferLength = analyserRef.current.frequencyBinCount;
-      dataArrayRef.current = new Uint8Array(bufferLength);
-      
+      stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyser.current = audioCtx.current.createAnalyser();
+      analyser.current.fftSize = 4096;
+      audioCtx.current.createMediaStreamSource(stream.current).connect(analyser.current);
       setListening(true);
-      detectPitch();
-    } catch (error) {
-      console.error('Microphone error:', error);
-    }
+      setError(null);
+      readings.current = [];
+      smoothedCents.current = 0;
+      analyze();
+    } catch (e) { setError('Mic error: ' + e.message); }
   };
-  
-  const stopListening = () => {
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.disconnect();
-        sourceRef.current.mediaStream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
-    }
-    if (audioContextRef.current) {
-      try {
-        audioContextRef.current.close();
-      } catch (e) {}
-    }
+
+  const stop = () => {
+    if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    if (stream.current) stream.current.getTracks().forEach(t => t.stop());
+    if (audioCtx.current) audioCtx.current.close();
     setListening(false);
+    setCents(0);
+    setVolume(0);
   };
-  
-  const detectPitch = () => {
-    if (!analyserRef.current || !dataArrayRef.current) return;
+
+  const analyze = () => {
+    if (!analyser.current) return;
+    const buf = new Uint8Array(analyser.current.fftSize);
+    analyser.current.getByteTimeDomainData(buf);
     
-    try {
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) sum += Math.abs(buf[i] - 128);
+    const vol = Math.min(100, (sum / buf.length) * 4);
+    setVolume(vol);
+    
+    if (vol > 10 && selected) {
+      const size = buf.length;
+      const half = size / 2;
+      let bestOff = -1, bestCorr = 0;
       
-      const volume = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
+      for (let off = 30; off < half; off++) {
+        let corr = 0;
+        for (let i = 0; i < half; i++) {
+          corr += Math.abs((buf[i] - 128) - (buf[i + off] - 128));
+        }
+        corr = 1 - corr / half / 128;
+        if (corr > bestCorr) { bestCorr = corr; bestOff = off; }
+      }
       
-      if (volume > 15) {
-        const freq = autoCorrelate(dataArrayRef.current, audioContextRef.current.sampleRate);
+      if (bestCorr > 0.5 && bestOff > 0) {
+        const freq = audioCtx.current.sampleRate / bestOff;
+        const target = selected.freq;
         
-        if (freq > 0) {
-          const note = frequencyToNote(freq);
-          setDetectedNote(note);
-          setDetectedFreq(freq);
+        if (freq > target * 0.5 && freq < target * 2) {
+          let c = 1200 * Math.log2(freq / target);
+          if (c > 600) c -= 1200;
+          if (c < -600) c += 1200;
           
-          const targetString = TUNING.find(t => t.name === note.name);
-          if (targetString) {
-            const centsOff = 1200 * Math.log2(freq / targetString.freq);
-            setCents(centsOff);
-          }
+          readings.current.push(c);
+          if (readings.current.length > 15) readings.current.shift();
+          
+          const sorted = [...readings.current].sort((a, b) => a - b);
+          const median = sorted[Math.floor(sorted.length / 2)];
+          
+          smoothedCents.current = smoothedCents.current * 0.92 + median * 0.08;
+          setCents(Math.round(smoothedCents.current));
         }
       }
-      
-      animationRef.current = requestAnimationFrame(detectPitch);
-    } catch (e) {
-      console.error('Pitch detection error:', e);
     }
+    animFrame.current = requestAnimationFrame(analyze);
   };
-  
-  const autoCorrelate = (buffer, sampleRate) => {
-    const SIZE = buffer.length;
-    const rms = Math.sqrt(buffer.reduce((sum, val) => sum + val * val, 0) / SIZE);
-    
-    if (rms < 0.01) return -1;
-    
-    let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
-    for (let i = 0; i < SIZE / 2; i++) {
-      if (Math.abs(buffer[i]) < threshold) {
-        r1 = i;
-        break;
-      }
-    }
-    
-    for (let i = 1; i < SIZE / 2; i++) {
-      if (Math.abs(buffer[SIZE - i]) < threshold) {
-        r2 = SIZE - i;
-        break;
-      }
-    }
-    
-    const correlations = new Array(SIZE).fill(0);
-    for (let i = r1; i < r2; i++) {
-      for (let j = 0; j < r2 - i; j++) {
-        correlations[i] += buffer[j] * buffer[j + i];
-      }
-    }
-    
-    let d = r1;
-    let maxCorrelation = correlations[r1];
-    for (let i = r1; i < r2; i++) {
-      if (correlations[i] > maxCorrelation) {
-        maxCorrelation = correlations[i];
-        d = i;
-      }
-    }
-    
-    if (maxCorrelation > 0.01) {
-      return sampleRate / d;
-    }
-    
-    return -1;
-  };
-  
-  const frequencyToNote = (freq) => {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const a4 = 440;
-    const halfSteps = 12 * Math.log2(freq / a4);
-    const noteIndex = Math.round(halfSteps) + 9;
-    const octave = Math.floor(noteIndex / 12) + 4;
-    const note = noteNames[(noteIndex % 12 + 12) % 12];
-    
-    return { name: note, octave, freq };
-  };
-  
-  const getColorForCents = (cents) => {
-    if (Math.abs(cents) < 5) return '#0f8';
-    if (Math.abs(cents) < 15) return '#fa0';
-    return '#f44';
+
+  useEffect(() => () => stop(), []);
+
+  const getColor = () => {
+    const c = Math.abs(cents);
+    if (c <= 5) return '#00ff88';
+    if (c <= 15) return '#aaff00';
+    if (c <= 30) return '#ffaa00';
+    return '#ff6b6b';
   };
   
   return (
     <div style={styles.section}>
-      <h2>🎤 Guitar Tuner</h2>
+      <h2>🎸 Guitar Tuner</h2>
       <p style={{color: '#888', marginBottom: '20px'}}>
-        Play each string and tune until the indicator turns green!
+        Select a string, then play it and tune until the needle is centered!
       </p>
       
-      <div style={{...styles.card, maxWidth: '600px', margin: '0 auto'}}>
-        {!listening ? (
-          <button onClick={startListening} style={{...styles.primaryBtn, width: '100%', padding: '20px', fontSize: '18px'}}>
-            🎤 Start Tuner
-          </button>
-        ) : (
-          <>
-            <button onClick={stopListening} style={{...styles.primaryBtn, width: '100%', padding: '20px', fontSize: '18px', background: '#f44', marginBottom: '30px'}}>
-              ⏹️ Stop Tuner
-            </button>
-            
-            {detectedNote && (
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '72px', fontWeight: 'bold', color: getColorForCents(cents), marginBottom: '20px'}}>
-                  {detectedNote.name}{detectedNote.octave}
-                </div>
-                
-                <div style={{fontSize: '24px', color: '#888', marginBottom: '30px'}}>
-                  {Math.round(detectedFreq)} Hz
-                </div>
-                
-                <div style={{position: 'relative', height: '60px', background: '#222', borderRadius: '30px', marginBottom: '20px'}}>
-                  <div style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '4px',
-                    height: '100%',
-                    background: '#666'
-                  }}/>
-                  
-                  <div style={{
-                    position: 'absolute',
-                    left: `${50 + (cents / 50) * 40}%`,
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '20px',
-                    height: '40px',
-                    background: getColorForCents(cents),
-                    borderRadius: '10px',
-                    transition: '0.1s'
-                  }}/>
-                </div>
-                
-                <div style={{fontSize: '18px', fontWeight: 'bold', color: getColorForCents(cents)}}>
-                  {Math.abs(cents) < 5 ? '✓ IN TUNE!' : `${Math.round(cents) > 0 ? '+' : ''}${Math.round(cents)} cents`}
-                </div>
-              </div>
-            )}
-            
-            {!detectedNote && (
-              <div style={{textAlign: 'center', color: '#888', padding: '40px'}}>
-                Pluck a string...
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      {error && <div style={{background: '#f442', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center'}}>{error}</div>}
       
-      <div style={{...styles.card, marginTop: '30px'}}>
-        <h3>🎸 Standard Tuning</h3>
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '15px', marginTop: '15px'}}>
-          {TUNING.map(string => (
-            <div key={string.string} style={{
-              textAlign: 'center',
-              padding: '15px',
-              background: '#222',
-              borderRadius: '8px',
-              border: detectedNote && detectedNote.name === string.name ? '2px solid #0af' : '2px solid transparent'
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '15px', marginBottom: '30px'}}>
+        {TUNING.map(s => (
+          <div key={s.note} onClick={() => !listening && setSelected(s)} style={{
+            padding: '15px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            background: selected?.note === s.note ? s.color : 'rgba(255,255,255,0.05)',
+            color: selected?.note === s.note ? '#000' : '#fff',
+            opacity: listening && selected?.note !== s.note ? 0.4 : 1,
+            cursor: listening ? 'default' : 'pointer',
+            transition: '0.3s',
+            border: '2px solid ' + (selected?.note === s.note ? s.color : 'transparent'),
+            position: 'relative'
+          }}>
+            <div style={{fontSize: '10px', color: selected?.note === s.note ? '#000' : '#888'}}>String {s.string}</div>
+            <div style={{fontSize: '28px', fontWeight: 'bold', margin: '5px 0'}}>{s.name}</div>
+            <div style={{fontSize: '11px', color: selected?.note === s.note ? '#000' : '#888'}}>{Math.round(s.freq)}Hz</div>
+            <button onClick={e => { e.stopPropagation(); playTone(s.freq); }} style={{
+              marginTop: '8px',
+              padding: '5px 10px',
+              background: 'rgba(0,0,0,0.2)',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
             }}>
-              <div style={{fontSize: '24px', fontWeight: 'bold', color: string.color}}>{string.name}</div>
-              <div style={{color: '#888', fontSize: '12px'}}>{string.label}</div>
-              <div style={{color: '#666', fontSize: '11px'}}>{Math.round(string.freq)} Hz</div>
-            </div>
-          ))}
-        </div>
+              🔊
+            </button>
+          </div>
+        ))}
       </div>
+
+      {selected && (
+        <div style={{...styles.card, maxWidth: '600px', margin: '0 auto'}}>
+          <div style={{textAlign: 'center', marginBottom: '20px'}}>
+            <span style={{display: 'inline-block', padding: '8px 20px', borderRadius: '20px', background: selected.color, color: '#000', fontWeight: 'bold', fontSize: '18px'}}>
+              {selected.name} - {selected.label}
+            </span>
+          </div>
+          
+          {listening ? (
+            <>
+              <div style={{height: '30px', background: '#222', borderRadius: '15px', overflow: 'hidden', marginBottom: '10px'}}>
+                <div style={{height: '100%', width: `${volume}%`, background: volume > 10 ? '#0f8' : '#666', transition: '0.1s'}}/>
+              </div>
+              <div style={{textAlign: 'center', fontSize: '12px', color: volume > 10 ? '#0f8' : '#666', marginBottom: '20px'}}>
+                {volume > 10 ? '🎤 Sound detected!' : '🎤 Play the string...'}
+              </div>
+              
+              <div style={{marginBottom: '15px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', marginBottom: '5px'}}>
+                  <span>♭ TOO LOW</span>
+                  <span>✓ PERFECT</span>
+                  <span>TOO HIGH ♯</span>
+                </div>
+                
+                <div style={{position: 'relative', height: '60px', background: '#222', borderRadius: '30px', overflow: 'hidden'}}>
+                  <div style={{position: 'absolute', left: '45%', right: '45%', top: 0, bottom: 0, background: 'rgba(0,255,136,0.2)'}}/>
+                  <div style={{position: 'absolute', left: '50%', top: 0, bottom: 0, width: '2px', background: '#0f8'}}/>
+                  <div style={{
+                    position: 'absolute',
+                    left: `${50 + Math.max(-45, Math.min(45, cents))}%`,
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '24px',
+                    height: '44px',
+                    background: getColor(),
+                    borderRadius: '12px',
+                    boxShadow: `0 0 20px ${getColor()}`,
+                    transition: '0.15s'
+                  }}/>
+                </div>
+              </div>
+              
+              <div style={{textAlign: 'center', marginTop: '20px'}}>
+                <div style={{fontSize: '32px', fontWeight: 'bold', color: getColor(), marginBottom: '5px'}}>
+                  {Math.abs(cents) <= 5 ? '✅ IN TUNE!' : Math.abs(cents) <= 15 ? '👍 Almost!' : cents > 0 ? '⬇️ Too HIGH' : '⬆️ Too LOW'}
+                </div>
+                <div style={{fontSize: '18px', color: '#888'}}>{cents > 0 ? '+' : ''}{cents} cents</div>
+              </div>
+            </>
+          ) : (
+            <p style={{textAlign: 'center', color: '#888', padding: '40px 0'}}>
+              Click START and play the {selected.name} string
+            </p>
+          )}
+          
+          <div style={{display: 'flex', gap: '10px', marginTop: '30px'}}>
+            <button onClick={listening ? stop : start} style={{
+              flex: 1,
+              padding: '15px',
+              background: listening ? '#f44' : '#0f8',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              cursor: 'pointer'
+            }}>
+              {listening ? '⏹ STOP' : '▶ START'}
+            </button>
+            <button onClick={() => { stop(); setSelected(null); }} style={{
+              flex: 1,
+              padding: '15px',
+              background: '#555',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              cursor: 'pointer'
+            }}>
+              ↩ Reset
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {!selected && (
+        <p style={{textAlign: 'center', color: '#888', padding: '40px 0', fontSize: '16px'}}>
+          👆 Click a string above to start tuning
+        </p>
+      )}
     </div>
   );
 };
