@@ -1,5 +1,118 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// ============= USER PROGRESS SYSTEM =============
+const initializeUserData = () => {
+  const stored = localStorage.getItem('guitarAppData');
+  if (stored) return JSON.parse(stored);
+  
+  return {
+    streak: 0,
+    lastPracticeDate: null,
+    totalXP: 0,
+    level: 1,
+    practiceMinutes: 0,
+    lessonsCompleted: [],
+    riffsCompleted: [],
+    achievementsUnlocked: [],
+    practiceHistory: {}, // { 'YYYY-MM-DD': minutes }
+    songsStars: {} // { songId: stars }
+  };
+};
+
+const saveUserData = (data) => {
+  localStorage.setItem('guitarAppData', JSON.stringify(data));
+};
+
+const addXP = (userData, amount, reason) => {
+  const newXP = userData.totalXP + amount;
+  const newLevel = Math.floor(newXP / 100) + 1;
+  
+  return {
+    ...userData,
+    totalXP: newXP,
+    level: newLevel
+  };
+};
+
+const updateStreak = (userData) => {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  
+  if (userData.lastPracticeDate === today) {
+    return userData; // Already practiced today
+  }
+  
+  let newStreak = userData.streak;
+  if (userData.lastPracticeDate === yesterday) {
+    newStreak = userData.streak + 1; // Continue streak
+  } else if (userData.lastPracticeDate !== null) {
+    newStreak = 1; // Streak broken, start over
+  } else {
+    newStreak = 1; // First day
+  }
+  
+  return {
+    ...userData,
+    streak: newStreak,
+    lastPracticeDate: today
+  };
+};
+
+const addPracticeTime = (userData, minutes) => {
+  const today = new Date().toISOString().split('T')[0];
+  const history = {...userData.practiceHistory};
+  history[today] = (history[today] || 0) + minutes;
+  
+  return {
+    ...userData,
+    practiceMinutes: userData.practiceMinutes + minutes,
+    practiceHistory: history
+  };
+};
+
+// ============= ACHIEVEMENTS SYSTEM =============
+const ACHIEVEMENTS = [
+  { id: 'first_practice', name: 'First Steps', desc: 'Complete your first practice session', icon: '🎸', xp: 10 },
+  { id: 'streak_3', name: '3-Day Warrior', desc: 'Practice 3 days in a row', icon: '🔥', xp: 25 },
+  { id: 'streak_7', name: 'Week Champion', desc: 'Practice 7 days in a row', icon: '⭐', xp: 50 },
+  { id: 'streak_30', name: 'Month Master', desc: 'Practice 30 days in a row', icon: '👑', xp: 200 },
+  { id: 'first_song', name: 'First Song!', desc: 'Complete your first full song', icon: '🎵', xp: 30 },
+  { id: 'songs_5', name: 'Song Hero', desc: 'Complete 5 songs', icon: '🎤', xp: 75 },
+  { id: 'first_riff', name: 'Riff Master', desc: 'Learn your first riff', icon: '⚡', xp: 20 },
+  { id: 'practice_30min', name: 'Half Hour Hero', desc: 'Practice for 30 minutes total', icon: '⏱️', xp: 15 },
+  { id: 'practice_5h', name: 'Dedicated', desc: 'Practice for 5 hours total', icon: '💪', xp: 100 },
+  { id: 'level_5', name: 'Level 5!', desc: 'Reach level 5', icon: '🚀', xp: 50 }
+];
+
+const checkAchievements = (userData) => {
+  const newAchievements = [];
+  
+  ACHIEVEMENTS.forEach(achievement => {
+    if (userData.achievementsUnlocked.includes(achievement.id)) return;
+    
+    let unlocked = false;
+    
+    switch(achievement.id) {
+      case 'first_practice': unlocked = userData.practiceMinutes > 0; break;
+      case 'streak_3': unlocked = userData.streak >= 3; break;
+      case 'streak_7': unlocked = userData.streak >= 7; break;
+      case 'streak_30': unlocked = userData.streak >= 30; break;
+      case 'first_song': unlocked = userData.lessonsCompleted.length >= 1; break;
+      case 'songs_5': unlocked = userData.lessonsCompleted.length >= 5; break;
+      case 'first_riff': unlocked = userData.riffsCompleted.length >= 1; break;
+      case 'practice_30min': unlocked = userData.practiceMinutes >= 30; break;
+      case 'practice_5h': unlocked = userData.practiceMinutes >= 300; break;
+      case 'level_5': unlocked = userData.level >= 5; break;
+    }
+    
+    if (unlocked) newAchievements.push(achievement);
+  });
+  
+  return newAchievements;
+};
+
+// ============= GUITAR DATA =============
+
 const TUNING = [
   { note: 'E2', freq: 82.41, string: 6, name: 'E', label: '6th (thickest)', color: '#ff6b6b' },
   { note: 'A2', freq: 110.00, string: 5, name: 'A', label: '5th', color: '#ffaa00' },
@@ -11,24 +124,92 @@ const TUNING = [
 
 const CHORDS = {
   'G': { name: 'G Major', fingers: [[6,3,2], [5,2,1], [1,3,3]], open: [4,3,2], muted: [], 
-         notes: [196, 246.94, 293.66, 392, 493.88, 587.33] }, // G B D G B D
+         notes: [196, 246.94, 293.66, 392, 493.88, 587.33] },
   'C': { name: 'C Major', fingers: [[5,3,3], [4,2,2], [2,1,1]], open: [3,1], muted: [6],
-         notes: [130.81, 164.81, 196, 261.63, 329.63] }, // C E G C E
+         notes: [130.81, 164.81, 196, 261.63, 329.63] },
   'D': { name: 'D Major', fingers: [[3,2,1], [1,2,2], [2,3,3]], open: [4], muted: [6,5],
-         notes: [146.83, 220, 293.66, 369.99] }, // D A D F#
+         notes: [146.83, 220, 293.66, 369.99] },
   'Em': { name: 'E Minor', fingers: [[5,2,2], [4,2,3]], open: [6,3,2,1], muted: [],
-          notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] }, // E B E G B E
+          notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] },
   'Am': { name: 'A Minor', fingers: [[4,2,2], [3,2,3], [2,1,1]], open: [5,1], muted: [6],
-          notes: [110, 164.81, 220, 261.63, 329.63] }, // A E A C E
+          notes: [110, 164.81, 220, 261.63, 329.63] },
   'E': { name: 'E Major', fingers: [[5,2,2], [4,2,3], [3,1,1]], open: [6,2,1], muted: [],
-         notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] }, // E B E G# B E
+         notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] },
   'A': { name: 'A Major', fingers: [[4,2,1], [3,2,2], [2,2,3]], open: [5,1], muted: [6],
-         notes: [110, 164.81, 220, 277.18, 329.63] }, // A E A C# E
+         notes: [110, 164.81, 220, 277.18, 329.63] },
   'Dm': { name: 'D Minor', fingers: [[1,1,1], [3,2,3], [2,3,2]], open: [4], muted: [6,5],
-          notes: [146.83, 220, 293.66, 349.23] } // D A D F
+          notes: [146.83, 220, 293.66, 349.23] }
 };
 
-// 🎵 EXPANDED SONG LIBRARY - 8 songs!
+// 🎸 ICONIC BEGINNER RIFFS (research-backed!)
+const RIFFS = [
+  {
+    id: 'smoke_on_water',
+    name: 'Smoke on the Water',
+    artist: 'Deep Purple',
+    difficulty: 'Beginner',
+    description: 'THE iconic beginner riff - just 4 notes!',
+    tab: `
+E|--------------------------|
+B|--------------------------|
+G|--------------------------|
+D|--------------------------|
+A|--0-3-5--0-3-6-5--0-3-5-3-0|
+E|--------------------------|
+    `,
+    notes: 'Play on the A string. Numbers = frets. 0 = open string.'
+  },
+  {
+    id: 'seven_nation',
+    name: 'Seven Nation Army',
+    artist: 'The White Stripes',
+    difficulty: 'Beginner',
+    description: 'One string, simple rhythm, everyone knows it!',
+    tab: `
+E|--7-7-10-7-5-3-2--|
+B|------------------|
+G|------------------|
+D|------------------|
+A|------------------|
+E|------------------|
+    `,
+    notes: 'Play on the E string (thinnest). Goes 7-7-10-7-5-3-2.'
+  },
+  {
+    id: 'iron_man',
+    name: 'Iron Man',
+    artist: 'Black Sabbath',
+    difficulty: 'Easy',
+    description: 'Heavy! Intro to power chords.',
+    tab: `
+E|------------------------|
+B|------------------------|
+G|--5--5--8--8--7--7--5-5-|
+D|--5--5--8--8--7--7--5-5-|
+A|--3--3--6--6--5--5--3-3-|
+E|------------------------|
+    `,
+    notes: 'Play the same fret on G, D, and A strings together (power chords).'
+  },
+  {
+    id: 'sunshine',
+    name: 'Sunshine of Your Love',
+    artist: 'Cream',
+    difficulty: 'Easy',
+    description: 'Classic rock riff with a bluesy feel',
+    tab: `
+E|-------------------------|
+B|-------------------------|
+G|-------------------------|
+D|---------10-12-12--------|
+A|--10-12---------12-10----|
+E|-------------------------|
+    `,
+    notes: 'Play on D and A strings. Simple but sounds amazing!'
+  }
+];
+
+// 🎵 SONG LIBRARY
 const LESSONS = [
   {
     id: 1,
@@ -38,6 +219,7 @@ const LESSONS = [
     difficulty: "Beginner",
     chords: ["Em", "D"],
     description: "Perfect first song - only 2 easy chords!",
+    xpReward: 30,
     timeline: [
       { time: 0, chord: null, text: "🎸 Your first song! Just 2 chords!" },
       { time: 8, chord: "Em", text: "Start with Em - super easy!" },
@@ -56,6 +238,7 @@ const LESSONS = [
     difficulty: "Easy",
     chords: ["G", "C", "D"],
     description: "Classic Beatles - 3 basic chords",
+    xpReward: 40,
     timeline: [
       { time: 0, chord: null, text: "🎸 Beatles classic!" },
       { time: 5, chord: "G", text: "G chord" },
@@ -73,6 +256,7 @@ const LESSONS = [
     difficulty: "Beginner",
     chords: ["G", "D", "Am"],
     description: "Iconic song with easy chords",
+    xpReward: 35,
     timeline: [
       { time: 0, chord: null, text: "🎸 Classic Dylan!" },
       { time: 10, chord: "G", text: "Start with G" },
@@ -89,6 +273,7 @@ const LESSONS = [
     difficulty: "Easy",
     chords: ["C", "G", "Am"],
     description: "Beautiful Beatles ballad",
+    xpReward: 40,
     timeline: [
       { time: 0, chord: null, text: "🎸 Let it be..." },
       { time: 8, chord: "C", text: "C chord" },
@@ -106,6 +291,7 @@ const LESSONS = [
     difficulty: "Easy",
     chords: ["C", "G", "D", "Am"],
     description: "Hendrix classic with smooth changes",
+    xpReward: 45,
     timeline: [
       { time: 0, chord: null, text: "🎸 Hey Joe!" },
       { time: 5, chord: "C", text: "C chord" },
@@ -123,6 +309,7 @@ const LESSONS = [
     difficulty: "Medium",
     chords: ["Em", "G", "D", "A"],
     description: "Everyone knows this one!",
+    xpReward: 60,
     timeline: [
       { time: 0, chord: null, text: "🎸 Today is gonna be..." },
       { time: 15, chord: "Em", text: "Em" },
@@ -139,6 +326,7 @@ const LESSONS = [
     difficulty: "Medium",
     chords: ["Em", "G", "A", "C"],
     description: "Pink Floyd masterpiece",
+    xpReward: 65,
     timeline: [
       { time: 0, chord: null, text: "🎸 So you think you can tell..." },
       { time: 58, chord: "Em", text: "Em" },
@@ -155,6 +343,7 @@ const LESSONS = [
     difficulty: "Easy",
     chords: ["G", "Em", "C", "D"],
     description: "Classic 4-chord song",
+    xpReward: 45,
     timeline: [
       { time: 0, chord: null, text: "🎸 When the night..." },
       { time: 10, chord: "G", text: "G" },
@@ -166,215 +355,276 @@ const LESSONS = [
   }
 ];
 
-const playTone = (freq) => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 2);
-  } catch (e) {
-    console.error('Audio error:', e);
+// 🎸 WARM-UP EXERCISES (research says these are critical!)
+const WARMUPS = [
+  {
+    name: 'Finger Stretch',
+    duration: 60,
+    description: 'Play 1-2-3-4 on each string, then backwards 4-3-2-1',
+    instruction: 'Use all 4 fingers. Index on 1st fret, middle on 2nd, ring on 3rd, pinky on 4th.'
+  },
+  {
+    name: 'Spider Walk',
+    duration: 90,
+    description: 'Classic exercise to build finger independence',
+    instruction: 'E string: 1-2-3-4, A string: 1-2-3-4, D string: 1-2-3-4...'
+  },
+  {
+    name: 'Chord Changes',
+    duration: 120,
+    description: 'Practice switching between G and C',
+    instruction: 'Hold each chord for 4 beats. Focus on smooth transitions!'
   }
-};
+];
 
-// 🔊 SOUND EFFECTS
-const playSoundEffect = (type) => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    if (type === 'correct') {
-      // Happy ascending arpeggio
-      [523.25, 659.25, 783.99].forEach((freq, i) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
-        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.3);
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(ctx.currentTime + i * 0.1);
-        o.stop(ctx.currentTime + i * 0.1 + 0.3);
-      });
-    } else if (type === 'almost') {
-      // Gentle encouraging tone
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = 440;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    }
-  } catch (e) {
-    console.error('Sound effect error:', e);
-  }
-};
-
-
-// 🎸 IMPROVED CHORD DETECTOR WITH WIGGLE ROOM
-const ChordDetector = ({ targetChord, onDetected, isListening }) => {
-  const [detectedNotes, setDetectedNotes] = useState([]);
-  const [confidence, setConfidence] = useState(0);
-  const [volume, setVolume] = useState(0);
-  const [stringStatus, setStringStatus] = useState({});
+export default function GuitarLearning() {
+  const [userData, setUserData] = useState(initializeUserData());
+  const [view, setView] = useState('home'); // home, lessons, riffs, tuner, progress, chords
+  const [activeLesson, setActiveLesson] = useState(null);
+  const [activeRiff, setActiveRiff] = useState(null);
+  const [showAchievement, setShowAchievement] = useState(null);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
   
-  const audioCtx = useRef(null);
-  const analyser = useRef(null);
-  const stream = useRef(null);
-  const animFrame = useRef(null);
-  const hasDetected = useRef(false);
-
-  const start = async () => {
-    try {
-      stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-      analyser.current = audioCtx.current.createAnalyser();
-      analyser.current.fftSize = 8192;
-      audioCtx.current.createMediaStreamSource(stream.current).connect(analyser.current);
-      hasDetected.current = false;
-      analyze();
-    } catch (e) {
-      console.error('Mic error:', e);
-    }
-  };
-
-  const stop = () => {
-    if (animFrame.current) cancelAnimationFrame(animFrame.current);
-    if (stream.current) stream.current.getTracks().forEach(t => t.stop());
-    if (audioCtx.current) audioCtx.current.close();
-    setDetectedNotes([]);
-    setVolume(0);
-    setConfidence(0);
-    setStringStatus({});
-    hasDetected.current = false;
-  };
-
-  const analyze = () => {
-    if (!analyser.current) return;
-    
-    const freqData = new Uint8Array(analyser.current.frequencyBinCount);
-    analyser.current.getByteFrequencyData(freqData);
-    
-    // Calculate volume
-    let sum = 0;
-    for (let i = 0; i < freqData.length; i++) sum += freqData[i];
-    const vol = Math.min(100, (sum / freqData.length) * 2);
-    setVolume(vol);
-    
-    if (vol > 15) {
-      // Find peaks
-      const peaks = [];
-      const sampleRate = audioCtx.current.sampleRate;
-      const binSize = sampleRate / analyser.current.fftSize;
-      
-      for (let i = 5; i < freqData.length / 2; i++) {
-        if (freqData[i] > 100 && freqData[i] > freqData[i-1] && freqData[i] > freqData[i+1]) {
-          peaks.push({ freq: i * binSize, strength: freqData[i] });
-        }
-      }
-      
-      peaks.sort((a, b) => b.strength - a.strength);
-      const topPeaks = peaks.slice(0, 6).map(p => p.freq);
-      setDetectedNotes(topPeaks);
-      
-      // Compare with target (WIGGLE ROOM: 8% tolerance)
-      if (targetChord && CHORDS[targetChord]) {
-        const targetNotes = CHORDS[targetChord].notes;
-        let matches = 0;
-        const matchedStrings = {};
-        
-        for (let peak of topPeaks) {
-          for (let i = 0; i < targetNotes.length; i++) {
-            const note = targetNotes[i];
-            if (Math.abs(peak - note) < note * 0.08) {
-              matches++;
-              matchedStrings[i] = true;
-              break;
-            }
-          }
-        }
-        
-        setStringStatus(matchedStrings);
-        
-        // WIGGLE ROOM: Need 60% match, trigger at 65%
-        const requiredNotes = Math.max(2, Math.ceil(targetNotes.length * 0.6));
-        const conf = Math.min(100, (matches / requiredNotes) * 100);
-        setConfidence(conf);
-        
-        if (conf >= 65 && !hasDetected.current) {
-          hasDetected.current = true;
-          playSoundEffect('correct');
-          setTimeout(() => {
-            if (onDetected) onDetected();
-          }, 300);
-        } else if (conf >= 40 && conf < 65 && Math.random() < 0.05) {
-          playSoundEffect('almost');
-        }
-      }
-    }
-    
-    animFrame.current = requestAnimationFrame(analyze);
-  };
-
+  // Save userData whenever it changes
   useEffect(() => {
-    if (isListening) start();
-    else stop();
-    return () => stop();
-  }, [isListening, targetChord]);
+    saveUserData(userData);
+  }, [userData]);
+  
+  // Check for new achievements
+  useEffect(() => {
+    const newAchievements = checkAchievements(userData);
+    if (newAchievements.length > 0) {
+      newAchievements.forEach((achievement, i) => {
+        setTimeout(() => {
+          setShowAchievement(achievement);
+          setUserData(prev => addXP({
+            ...prev,
+            achievementsUnlocked: [...prev.achievementsUnlocked, achievement.id]
+          }, achievement.xp, `Achievement: ${achievement.name}`));
+          
+          setTimeout(() => setShowAchievement(null), 3000);
+        }, i * 3500);
+      });
+    }
+  }, [userData.streak, userData.lessonsCompleted.length, userData.riffsCompleted.length, userData.practiceMinutes, userData.level]);
+  
+  // Start practice session
+  const startSession = () => {
+    setSessionStartTime(Date.now());
+    setUserData(prev => updateStreak(prev));
+  };
+  
+  // End practice session
+  const endSession = () => {
+    if (!sessionStartTime) return;
+    const minutes = Math.round((Date.now() - sessionStartTime) / 60000);
+    setUserData(prev => addPracticeTime(addXP(prev, minutes * 2, 'Practice time'), minutes));
+    setSessionStartTime(null);
+  };
+  
+  // Complete a lesson
+  const completeLesson = (lessonId, stars) => {
+    const lesson = LESSONS.find(l => l.id === lessonId);
+    setUserData(prev => {
+      const newData = addXP(prev, lesson.xpReward, `Completed ${lesson.title}`);
+      return {
+        ...newData,
+        lessonsCompleted: [...new Set([...prev.lessonsCompleted, lessonId])],
+        songsStars: { ...prev.songsStars, [lessonId]: Math.max(prev.songsStars[lessonId] || 0, stars) }
+      };
+    });
+  };
+  
+  // Complete a riff
+  const completeRiff = (riffId) => {
+    setUserData(prev => {
+      const newData = addXP(prev, 25, 'Learned new riff!');
+      return {
+        ...newData,
+        riffsCompleted: [...new Set([...prev.riffsCompleted, riffId])]
+      };
+    });
+  };
+
+  // Render different views based on state
+  if (activeLesson) {
+    return <InteractiveLesson 
+      lesson={activeLesson} 
+      onExit={() => { setActiveLesson(null); endSession(); }}
+      onComplete={completeLesson}
+    />;
+  }
+  
+  if (activeRiff) {
+    return <RiffLesson 
+      riff={activeRiff} 
+      onExit={() => { setActiveRiff(null); endSession(); }}
+      onComplete={completeRiff}
+    />;
+  }
 
   return (
-    <div style={styles.detector}>
-      <div style={styles.volBar}>
-        <div style={{...styles.volFill, width: `${volume}%`, background: volume > 15 ? '#0f8' : '#666'}}/>
-      </div>
-      <small style={{color: volume > 15 ? '#0f8' : '#666'}}>
-        {volume > 15 ? '🎤 Listening...' : '🎤 Strum your guitar'}
-      </small>
+    <div style={styles.page}>
+      {/* ACHIEVEMENT POPUP */}
+      {showAchievement && (
+        <div style={styles.achievementPopup}>
+          <div style={styles.achievementCard}>
+            <div style={{fontSize: '48px'}}>{showAchievement.icon}</div>
+            <h2>Achievement Unlocked!</h2>
+            <h3>{showAchievement.name}</h3>
+            <p>{showAchievement.desc}</p>
+            <div style={{color: '#0af', fontWeight: 'bold'}}>+{showAchievement.xp} XP</div>
+          </div>
+        </div>
+      )}
       
-      {targetChord && (
-        <div style={{marginTop: '15px'}}>
-          <div style={styles.confidenceBar}>
-            <div style={{
-              ...styles.confidenceFill, 
-              width: `${confidence}%`,
-              background: confidence >= 65 ? '#0f8' : confidence > 40 ? '#fa0' : '#f66'
-            }}/>
+      {/* TOP BAR - User Stats */}
+      <div style={styles.topBar}>
+        <div style={styles.userStats}>
+          <div style={styles.statItem}>
+            <span style={{fontSize: '20px'}}>⚡</span>
+            <div>
+              <small>Level</small>
+              <strong>{userData.level}</strong>
+            </div>
           </div>
-          <div style={{fontSize: '28px', fontWeight: 'bold', color: confidence >= 65 ? '#0f8' : confidence > 40 ? '#fa0' : '#fff', marginTop: '10px'}}>
-            {confidence >= 65 ? '✅ Perfect! Great job!' : 
-             confidence > 40 ? '👍 Almost there! Keep going!' : 
-             '🎸 Try again - you got this!'}
-          </div>
-          <small style={{color: '#888'}}>{Math.round(confidence)}% match</small>
           
-          {/* Visual string feedback */}
-          <div style={{marginTop: '15px', display: 'flex', gap: '5px', justifyContent: 'center'}}>
-            {CHORDS[targetChord].notes.map((note, i) => (
-              <div key={i} style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                background: stringStatus[i] ? '#0f8' : '#333',
-                border: '2px solid ' + (stringStatus[i] ? '#0f8' : '#666'),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                color: stringStatus[i] ? '#000' : '#666',
-                transition: '0.2s'
-              }}>
-                {stringStatus[i] ? '✓' : (6-i)}
-              </div>
-            ))}
+          <div style={styles.statItem}>
+            <span style={{fontSize: '20px'}}>⭐</span>
+            <div>
+              <small>XP</small>
+              <strong>{userData.totalXP}</strong>
+            </div>
+          </div>
+          
+          <div style={styles.statItem}>
+            <span style={{fontSize: '20px'}}>🔥</span>
+            <div>
+              <small>Streak</small>
+              <strong>{userData.streak} days</strong>
+            </div>
+          </div>
+          
+          <div style={styles.statItem}>
+            <span style={{fontSize: '20px'}}>⏱️</span>
+            <div>
+              <small>Practice</small>
+              <strong>{userData.practiceMinutes}min</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NAVIGATION */}
+      <div style={styles.nav}>
+        {['home', 'lessons', 'riffs', 'tuner', 'chords', 'progress'].map(v => (
+          <button 
+            key={v} 
+            onClick={() => setView(v)} 
+            style={{...styles.navBtn, background: view === v ? '#0af' : '#333'}}
+          >
+            {v === 'home' && '🏠 Home'}
+            {v === 'lessons' && '🎵 Songs'}
+            {v === 'riffs' && '⚡ Riffs'}
+            {v === 'tuner' && '🎤 Tuner'}
+            {v === 'chords' && '🎸 Chords'}
+            {v === 'progress' && '📊 Progress'}
+          </button>
+        ))}
+      </div>
+
+      {/* MAIN CONTENT */}
+      {view === 'home' && <HomeView userData={userData} onStart={startSession} setView={setView} />}
+      {view === 'lessons' && <LessonsView userData={userData} setActiveLesson={(l) => { setActiveLesson(l); startSession(); }} />}
+      {view === 'riffs' && <RiffsView userData={userData} setActiveRiff={(r) => { setActiveRiff(r); startSession(); }} />}
+      {view === 'tuner' && <GuitarTuner />}
+      {view === 'chords' && <ChordsView />}
+      {view === 'progress' && <ProgressView userData={userData} />}
+    </div>
+  );
+}
+
+// Will continue with components in next chunk...
+// Continuing GuitarLearning.jsx - PART 2: COMPONENTS
+
+// ========== HOME VIEW ==========
+const HomeView = ({ userData, onStart, setView }) => {
+  const todayPracticed = userData.lastPracticeDate === new Date().toISOString().split('T')[0];
+  
+  return (
+    <div style={styles.section}>
+      <h1 style={{textAlign: 'center', marginBottom: '30px'}}>🎸 Guitar Master</h1>
+      
+      {!todayPracticed && (
+        <div style={{...styles.card, background: '#0af2', border: '2px solid #0af', textAlign: 'center'}}>
+          <h2>⏱️ Ready to practice?</h2>
+          <p>Keep your {userData.streak}-day streak alive!</p>
+          <p style={{color: '#888', fontSize: '14px'}}>Research shows: 15-20 min daily sessions are perfect for beginners!</p>
+        </div>
+      )}
+      
+      {todayPracticed && (
+        <div style={{...styles.card, background: '#0f82', border: '2px solid #0f8', textAlign: 'center'}}>
+          <h2>✅ Great work today!</h2>
+          <p>You've practiced {Object.values(userData.practiceHistory).reduce((a,b)=>a+b,0)} minutes total</p>
+          <p style={{color: '#888', fontSize: '14px'}}>Keep it up! You're building real guitar skills!</p>
+        </div>
+      )}
+      
+      <div style={styles.quickActions}>
+        <button onClick={() => { onStart(); setView('lessons'); }} style={styles.bigBtn}>
+          <div style={{fontSize: '48px'}}>🎵</div>
+          <h3>Learn Songs</h3>
+          <small>{userData.lessonsCompleted.length}/8 completed</small>
+        </button>
+        
+        <button onClick={() => { onStart(); setView('riffs'); }} style={styles.bigBtn}>
+          <div style={{fontSize: '48px'}}>⚡</div>
+          <h3>Learn Riffs</h3>
+          <small>{userData.riffsCompleted.length}/4 mastered</small>
+        </button>
+        
+        <button onClick={() => setView('tuner')} style={styles.bigBtn}>
+          <div style={{fontSize: '48px'}}>🎤</div>
+          <h3>Tune Guitar</h3>
+          <small>Always tune first!</small>
+        </button>
+        
+        <button onClick={() => setView('progress')} style={styles.bigBtn}>
+          <div style={{fontSize: '48px'}}>📊</div>
+          <h3>My Progress</h3>
+          <small>Level {userData.level}</small>
+        </button>
+      </div>
+      
+      {/* WARM-UP REMINDER */}
+      {!todayPracticed && (
+        <div style={{...styles.card, marginTop: '30px'}}>
+          <h3>💪 Don't Forget to Warm Up!</h3>
+          <p style={{color: '#888'}}>Research shows warm-ups prevent injuries and improve learning:</p>
+          {WARMUPS.slice(0,2).map(warmup => (
+            <div key={warmup.name} style={{padding: '10px', background: '#222', borderRadius: '8px', marginTop: '10px'}}>
+              <strong>{warmup.name}</strong> ({warmup.duration}s)
+              <p style={{color: '#aaa', fontSize: '14px', marginTop: '5px'}}>{warmup.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* LATEST ACHIEVEMENTS */}
+      {userData.achievementsUnlocked.length > 0 && (
+        <div style={styles.card}>
+          <h3>🏆 Recent Achievements</h3>
+          <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px'}}>
+            {userData.achievementsUnlocked.slice(-5).map(id => {
+              const ach = ACHIEVEMENTS.find(a => a.id === id);
+              return (
+                <div key={id} style={styles.achievementBadge} title={ach.desc}>
+                  <div style={{fontSize: '24px'}}>{ach.icon}</div>
+                  <small>{ach.name}</small>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -382,186 +632,1161 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
   );
 };
 
+// ========== LESSONS VIEW ==========
+const LessonsView = ({ userData, setActiveLesson }) => {
+  return (
+    <div style={styles.section}>
+      <h2>🎵 Song Library</h2>
+      <p style={{color: '#888', marginBottom: '20px'}}>
+        Learn by playing songs! Videos pause so you can practice each chord.
+      </p>
+      
+      <div style={styles.lessonGrid}>
+        {LESSONS.map(lesson => {
+          const completed = userData.lessonsCompleted.includes(lesson.id);
+          const stars = userData.songsStars[lesson.id] || 0;
+          
+          return (
+            <div key={lesson.id} style={styles.lessonCard} onClick={() => setActiveLesson(lesson)}>
+              <div style={styles.thumbnail}>
+                <img 
+                  src={`https://img.youtube.com/vi/${lesson.youtube}/mqdefault.jpg`} 
+                  alt={lesson.title} 
+                  style={{width: '100%', borderRadius: '8px'}}
+                />
+                <div style={styles.playOverlay}>▶</div>
+                {completed && <div style={styles.completedBadge}>✓</div>}
+              </div>
+              
+              <div style={{padding: '10px'}}>
+                <strong>{lesson.title}</strong>
+                <div style={{color: '#888', fontSize: '12px'}}>{lesson.artist}</div>
+                <div style={{color: '#aaa', fontSize: '11px', marginTop: '3px'}}>{lesson.description}</div>
+                
+                <div style={{marginTop: '5px'}}>
+                  {lesson.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}
+                </div>
+                
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px'}}>
+                  <div style={{...styles.difficultyBadge, background: lesson.difficulty === 'Beginner' ? '#0f8' : lesson.difficulty === 'Easy' ? '#4af' : '#fa0'}}>
+                    {lesson.difficulty}
+                  </div>
+                  
+                  {stars > 0 && (
+                    <div>
+                      {[1,2,3].map(s => (
+                        <span key={s} style={{color: s <= stars ? '#ffa500' : '#333', fontSize: '16px'}}>★</span>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div style={{color: '#0af', fontSize: '12px', fontWeight: 'bold'}}>+{lesson.xpReward} XP</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
-// 🎥 INTERACTIVE LESSON COMPONENT  
-const InteractiveLesson = ({ lesson, onExit }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [waitingForChord, setWaitingForChord] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [mode, setMode] = useState('practice');
+// ========== RIFFS VIEW ==========
+const RiffsView = ({ userData, setActiveRiff }) => {
+  return (
+    <div style={styles.section}>
+      <h2>⚡ Iconic Riffs</h2>
+      <p style={{color: '#888', marginBottom: '20px'}}>
+        Learn legendary guitar riffs! These are research-backed perfect for beginners.
+      </p>
+      
+      <div style={styles.riffGrid}>
+        {RIFFS.map(riff => {
+          const completed = userData.riffsCompleted.includes(riff.id);
+          
+          return (
+            <div key={riff.id} style={styles.riffCard} onClick={() => setActiveRiff(riff)}>
+              {completed && <div style={styles.completedBadge}>✓</div>}
+              
+              <div style={{fontSize: '48px', textAlign: 'center', marginBottom: '10px'}}>
+                {riff.difficulty === 'Beginner' ? '🎸' : '⚡'}
+              </div>
+              
+              <h3>{riff.name}</h3>
+              <div style={{color: '#888', fontSize: '14px', marginBottom: '5px'}}>{riff.artist}</div>
+              <p style={{color: '#aaa', fontSize: '13px'}}>{riff.description}</p>
+              
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px'}}>
+                <div style={{...styles.difficultyBadge, background: riff.difficulty === 'Beginner' ? '#0f8' : '#4af'}}>
+                  {riff.difficulty}
+                </div>
+                <div style={{color: '#0af', fontWeight: 'bold'}}>+25 XP</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      <div style={{...styles.card, marginTop: '30px'}}>
+        <h3>💡 How to Read Tabs</h3>
+        <p style={{color: '#888'}}>
+          Each line represents a guitar string (E is thinnest on top, E is thickest on bottom).
+          Numbers show which fret to press. 0 means play the string open (no frets pressed).
+        </p>
+        <pre style={{background: '#111', padding: '15px', borderRadius: '8px', marginTop: '10px', overflow: 'auto'}}>
+{`E|--0--3--5--  (thinnest string)
+B|----------
+G|----------
+D|----------
+A|----------
+E|----------  (thickest string)`}
+        </pre>
+        <p style={{color: '#888', marginTop: '10px'}}>
+          Read left to right. Play each note in order!
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ========== CHORDS VIEW ==========
+const ChordsView = () => {
+  return (
+    <div style={styles.section}>
+      <h2>🎸 Essential Chords</h2>
+      <p style={{color: '#888', marginBottom: '20px'}}>
+        Master these 8 chords and you can play 90% of popular songs!
+      </p>
+      
+      <div style={styles.chordGrid}>
+        {Object.entries(CHORDS).map(([key, chord]) => (
+          <div key={key} style={styles.chordCard}>
+            <ChordDiagram chord={chord} name={key}/>
+            <small style={{color: '#888', display: 'block', marginTop: '5px'}}>{chord.name}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ========== PROGRESS VIEW ==========
+const ProgressView = ({ userData }) => {
+  // Generate heat map data (last 60 days)
+  const today = new Date();
+  const heatmapDays = [];
+  for (let i = 59; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const minutes = userData.practiceHistory[dateStr] || 0;
+    heatmapDays.push({ date: dateStr, minutes, day: date.getDay() });
+  }
+  
+  const getHeatColor = (minutes) => {
+    if (minutes === 0) return '#1a1a2a';
+    if (minutes < 10) return '#0f84';
+    if (minutes < 20) return '#0f86';
+    if (minutes < 30) return '#0f88';
+    return '#0f8';
+  };
+  
+  const xpToNextLevel = (userData.level * 100) - userData.totalXP;
+  const levelProgress = ((userData.totalXP % 100) / 100) * 100;
+  
+  return (
+    <div style={styles.section}>
+      <h2>📊 Your Progress</h2>
+      
+      {/* XP Progress */}
+      <div style={styles.card}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+          <h3>Level {userData.level}</h3>
+          <span style={{color: '#0af', fontWeight: 'bold'}}>{userData.totalXP} XP</span>
+        </div>
+        <div style={{height: '30px', background: '#222', borderRadius: '15px', overflow: 'hidden'}}>
+          <div style={{height: '100%', width: `${levelProgress}%`, background: 'linear-gradient(90deg, #0af, #0f8)', transition: '0.5s'}}/>
+        </div>
+        <small style={{color: '#888', marginTop: '5px'}}>{xpToNextLevel} XP to Level {userData.level + 1}</small>
+      </div>
+      
+      {/* Stats Grid */}
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginTop: '20px'}}>
+        <div style={styles.statCard}>
+          <div style={{fontSize: '32px'}}>🔥</div>
+          <h2>{userData.streak}</h2>
+          <small>Day Streak</small>
+        </div>
+        
+        <div style={styles.statCard}>
+          <div style={{fontSize: '32px'}}>⏱️</div>
+          <h2>{userData.practiceMinutes}</h2>
+          <small>Total Minutes</small>
+        </div>
+        
+        <div style={styles.statCard}>
+          <div style={{fontSize: '32px'}}>🎵</div>
+          <h2>{userData.lessonsCompleted.length}</h2>
+          <small>Songs Completed</small>
+        </div>
+        
+        <div style={styles.statCard}>
+          <div style={{fontSize: '32px'}}>⚡</div>
+          <h2>{userData.riffsCompleted.length}</h2>
+          <small>Riffs Mastered</small>
+        </div>
+      </div>
+      
+      {/* Practice Heat Map */}
+      <div style={{...styles.card, marginTop: '20px'}}>
+        <h3>📅 Practice Heat Map (Last 60 Days)</h3>
+        <small style={{color: '#888'}}>Keep your streak alive! Research shows daily practice = 3.6x better results!</small>
+        
+        <div style={{marginTop: '15px', display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '4px'}}>
+          {heatmapDays.map((day, i) => (
+            <div 
+              key={i}
+              style={{
+                aspectRatio: '1',
+                background: getHeatColor(day.minutes),
+                borderRadius: '3px',
+                border: '1px solid #333'
+              }}
+              title={`${day.date}: ${day.minutes} min`}
+            />
+          ))}
+        </div>
+        
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px', fontSize: '12px', color: '#888'}}>
+          <span>Less</span>
+          <div style={{width: '15px', height: '15px', background: '#1a1a2a', borderRadius: '3px'}}/>
+          <div style={{width: '15px', height: '15px', background: '#0f84', borderRadius: '3px'}}/>
+          <div style={{width: '15px', height: '15px', background: '#0f88', borderRadius: '3px'}}/>
+          <div style={{width: '15px', height: '15px', background: '#0f8', borderRadius: '3px'}}/>
+          <span>More</span>
+        </div>
+      </div>
+      
+      {/* Achievements */}
+      <div style={{...styles.card, marginTop: '20px'}}>
+        <h3>🏆 Achievements ({userData.achievementsUnlocked.length}/{ACHIEVEMENTS.length})</h3>
+        
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '15px', marginTop: '15px'}}>
+          {ACHIEVEMENTS.map(ach => {
+            const unlocked = userData.achievementsUnlocked.includes(ach.id);
+            
+            return (
+              <div key={ach.id} style={{
+                ...styles.achievementCard,
+                opacity: unlocked ? 1 : 0.3,
+                background: unlocked ? '#0af2' : '#222'
+              }}>
+                <div style={{fontSize: '32px'}}>{ach.icon}</div>
+                <strong style={{fontSize: '12px'}}>{ach.name}</strong>
+                <small style={{color: '#888', fontSize: '10px'}}>{ach.desc}</small>
+                {unlocked && <div style={{color: '#0f8', fontSize: '11px', fontWeight: 'bold', marginTop: '5px'}}>+{ach.xp} XP</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Continue to PART 3...
+// Continuing GuitarLearning.jsx - PART 3: RIFF LESSON & INTERACTIVE COMPONENTS
+
+// ========== RIFF LESSON COMPONENT ==========
+const RiffLesson = ({ riff, onExit, onComplete }) => {
+  const [completed, setCompleted] = useState(false);
+  
+  const handleComplete = () => {
+    setCompleted(true);
+    onComplete(riff.id);
+    
+    setTimeout(() => {
+      onExit();
+    }, 2000);
+  };
+  
+  return (
+    <div style={styles.lessonPage}>
+      {/* HEADER */}
+      <div style={styles.lessonHeader}>
+        <button onClick={onExit} style={styles.backBtn}>← Back</button>
+        <div style={{flex: 1, textAlign: 'center'}}>
+          <h2>{riff.name}</h2>
+          <small style={{color: '#888'}}>{riff.artist}</small>
+        </div>
+        <div style={{width: '80px'}}/>
+      </div>
+      
+      {/* SUCCESS SCREEN */}
+      {completed && (
+        <div style={styles.successOverlay}>
+          <div style={styles.successCard}>
+            <div style={{fontSize: '64px'}}>⚡</div>
+            <h1>Riff Mastered!</h1>
+            <p>{riff.name}</p>
+            <div style={{color: '#0af', fontSize: '24px', fontWeight: 'bold'}}>+25 XP</div>
+          </div>
+        </div>
+      )}
+      
+      {/* MAIN CONTENT */}
+      <div style={styles.riffContent}>
+        <div style={{...styles.card, maxWidth: '800px', margin: '0 auto'}}>
+          <div style={{fontSize: '48px', textAlign: 'center', marginBottom: '15px'}}>🎸</div>
+          <h3 style={{textAlign: 'center', marginBottom: '10px'}}>{riff.description}</h3>
+          
+          {/* DIFFICULTY */}
+          <div style={{textAlign: 'center', marginBottom: '20px'}}>
+            <span style={{...styles.difficultyBadge, background: riff.difficulty === 'Beginner' ? '#0f8' : '#4af', fontSize: '14px', padding: '8px 16px'}}>
+              {riff.difficulty}
+            </span>
+          </div>
+          
+          {/* INSTRUCTIONS */}
+          <div style={{background: '#1a1a2a', padding: '15px', borderRadius: '8px', marginBottom: '20px'}}>
+            <strong style={{color: '#0af'}}>📝 How to play:</strong>
+            <p style={{color: '#ccc', marginTop: '8px'}}>{riff.notes}</p>
+          </div>
+          
+          {/* THE TAB */}
+          <div style={{background: '#000', padding: '20px', borderRadius: '12px', border: '2px solid #0af'}}>
+            <div style={{textAlign: 'center', marginBottom: '10px'}}>
+              <strong style={{color: '#0af'}}>🎼 TAB</strong>
+            </div>
+            <pre style={{
+              fontFamily: 'Courier New, monospace',
+              fontSize: '16px',
+              color: '#0f8',
+              lineHeight: '1.8',
+              overflow: 'auto'
+            }}>
+              {riff.tab}
+            </pre>
+          </div>
+          
+          {/* TIPS */}
+          <div style={{...styles.card, background: '#0f82', marginTop: '20px'}}>
+            <strong>💡 Pro Tips:</strong>
+            <ul style={{marginTop: '10px', paddingLeft: '20px', color: '#ccc'}}>
+              <li>Start SLOW! Speed comes with practice</li>
+              <li>Make sure each note rings clearly</li>
+              <li>Use a metronome to keep steady rhythm</li>
+              <li>Practice the hard parts in small sections</li>
+            </ul>
+          </div>
+          
+          {/* COMPLETE BUTTON */}
+          <button onClick={handleComplete} style={{...styles.primaryBtn, width: '100%', marginTop: '20px', padding: '15px', fontSize: '18px'}}>
+            ✅ I've Got It! Mark as Complete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ========== INTERACTIVE LESSON WITH LOOP & SPEED CONTROLS ==========
+const InteractiveLesson = ({ lesson, onExit, onComplete }) => {
+  const [mode, setMode] = useState('practice'); // practice or playalong
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [detectionResult, setDetectionResult] = useState(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0); // 0.5 to 1.5
+  const [loopEnabled, setLoopEnabled] = useState(false);
+  const [loopStart, setLoopStart] = useState(null);
+  const [loopEnd, setLoopEnd] = useState(null);
+  const [accuracyHistory, setAccuracyHistory] = useState([]);
+  const [sessionTime, setSessionTime] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  
   const playerRef = useRef(null);
-  const intervalRef = useRef(null);
+  const timerRef = useRef(null);
+  const sessionTimerRef = useRef(null);
+  
+  const currentEvent = lesson.timeline[currentEventIndex];
+  
+  // Session timer (15-20 min recommended!)
+  useEffect(() => {
+    sessionTimerRef.current = setInterval(() => {
+      setSessionTime(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(sessionTimerRef.current);
+  }, []);
+  
+  // Micro-break reminder at 10 seconds (research shows this helps!)
+  useEffect(() => {
+    if (sessionTime === 10) {
+      // Could show a quick "Take a 10-sec break!" message
+    }
+  }, [sessionTime]);
+  
+  // Auto-speed adjustment based on accuracy
+  useEffect(() => {
+    if (accuracyHistory.length < 3) return;
+    
+    const recentAccuracy = accuracyHistory.slice(-3);
+    const avgAccuracy = recentAccuracy.reduce((a, b) => a + b, 0) / recentAccuracy.length;
+    
+    if (avgAccuracy > 85 && playbackSpeed < 1.5) {
+      // User is nailing it - speed up!
+      setPlaybackSpeed(prev => Math.min(prev + 0.1, 1.5));
+    } else if (avgAccuracy < 70 && playbackSpeed > 0.5) {
+      // User struggling - slow down
+      setPlaybackSpeed(prev => Math.max(prev - 0.1, 0.5));
+    }
+  }, [accuracyHistory]);
+  
+  const handleChordDetected = (isCorrect, accuracy) => {
+    setAccuracyHistory(prev => [...prev, accuracy].slice(-10)); // Keep last 10
+    
+    if (isCorrect && mode === 'practice') {
+      // Move to next event
+      if (currentEventIndex < lesson.timeline.length - 1) {
+        setCurrentEventIndex(prev => prev + 1);
+      } else {
+        // Song complete!
+        handleComplete();
+      }
+    }
+  };
+  
+  const handleComplete = () => {
+    const avgAccuracy = accuracyHistory.length > 0 
+      ? accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length 
+      : 50;
+    
+    let stars = 1;
+    if (avgAccuracy >= 70) stars = 2;
+    if (avgAccuracy >= 85) stars = 3;
+    
+    setCompleted(true);
+    onComplete(lesson.id, stars);
+  };
+  
+  const setLoopPoint = (type) => {
+    if (!playerRef.current) return;
+    const currentTime = playerRef.current.getCurrentTime();
+    
+    if (type === 'start') {
+      setLoopStart(currentTime);
+    } else {
+      setLoopEnd(currentTime);
+      setLoopEnabled(true);
+    }
+  };
+  
+  const clearLoop = () => {
+    setLoopEnabled(false);
+    setLoopStart(null);
+    setLoopEnd(null);
+  };
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  if (completed) {
+    const avgAccuracy = accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length;
+    const stars = avgAccuracy >= 85 ? 3 : avgAccuracy >= 70 ? 2 : 1;
+    
+    return (
+      <div style={styles.successOverlay}>
+        <div style={styles.successCard}>
+          <div style={{fontSize: '64px'}}>🎉</div>
+          <h1>Song Complete!</h1>
+          <p>{lesson.title} - {lesson.artist}</p>
+          
+          <div style={{margin: '20px 0'}}>
+            {[1,2,3].map(s => (
+              <span key={s} style={{fontSize: '48px', color: s <= stars ? '#ffa500' : '#333'}}>★</span>
+            ))}
+          </div>
+          
+          <div style={{color: '#0af', fontSize: '24px', fontWeight: 'bold', marginBottom: '10px'}}>+{lesson.xpReward} XP</div>
+          <div style={{color: '#888'}}>Average Accuracy: {Math.round(avgAccuracy)}%</div>
+          
+          <button onClick={onExit} style={{...styles.primaryBtn, marginTop: '30px', padding: '15px 40px', fontSize: '18px'}}>
+            Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div style={styles.lessonPage}>
+      {/* HEADER */}
+      <div style={styles.lessonHeader}>
+        <button onClick={onExit} style={styles.backBtn}>← Exit</button>
+        
+        <div style={{flex: 1, textAlign: 'center'}}>
+          <h3>{lesson.title}</h3>
+          <small style={{color: '#888'}}>{lesson.artist}</small>
+        </div>
+        
+        <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+          <div style={{color: '#888', fontSize: '14px'}}>
+            ⏱️ {formatTime(sessionTime)}
+          </div>
+          
+          <select value={mode} onChange={(e) => setMode(e.target.value)} style={styles.modeSelect}>
+            <option value="practice">Practice Mode</option>
+            <option value="playalong">Play Along</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* LOOP & SPEED CONTROLS */}
+      <div style={styles.controlsBar}>
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+          <strong style={{color: '#888', fontSize: '14px'}}>Speed:</strong>
+          <button onClick={() => setPlaybackSpeed(prev => Math.max(prev - 0.1, 0.5))} style={styles.smallBtn}>-</button>
+          <span style={{color: '#0af', fontWeight: 'bold', minWidth: '50px', textAlign: 'center'}}>{Math.round(playbackSpeed * 100)}%</span>
+          <button onClick={() => setPlaybackSpeed(prev => Math.min(prev + 0.1, 1.5))} style={styles.smallBtn}>+</button>
+        </div>
+        
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+          <button onClick={() => setLoopPoint('start')} style={styles.smallBtn}>Set Loop Start</button>
+          <button onClick={() => setLoopPoint('end')} style={styles.smallBtn}>Set Loop End</button>
+          {loopEnabled && (
+            <>
+              <span style={{color: '#0f8', fontSize: '12px'}}>🔁 Loop Active</span>
+              <button onClick={clearLoop} style={{...styles.smallBtn, background: '#f44'}}>Clear</button>
+            </>
+          )}
+        </div>
+        
+        {accuracyHistory.length > 0 && (
+          <div style={{color: '#888', fontSize: '14px'}}>
+            Accuracy: <span style={{color: '#0af', fontWeight: 'bold'}}>
+              {Math.round(accuracyHistory.slice(-5).reduce((a, b) => a + b, 0) / Math.min(accuracyHistory.length, 5))}%
+            </span>
+          </div>
+        )}
+      </div>
+      
+      {/* MAIN LESSON AREA */}
+      <div style={styles.lessonContent}>
+        <VideoPlayer 
+          lesson={lesson} 
+          currentEventIndex={currentEventIndex}
+          setCurrentEventIndex={setCurrentEventIndex}
+          mode={mode}
+          playbackSpeed={playbackSpeed}
+          loopEnabled={loopEnabled}
+          loopStart={loopStart}
+          loopEnd={loopEnd}
+          playerRef={playerRef}
+          timerRef={timerRef}
+        />
+        
+        {currentEvent && currentEvent.chord && (
+          <div style={{marginTop: '30px'}}>
+            <ChordDetectorWithFeedback 
+              targetChord={currentEvent.chord}
+              onChordDetected={handleChordDetected}
+              mode={mode}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Continue with VideoPlayer and ChordDetector...
+// Continuing GuitarLearning.jsx - PART 4: VIDEO PLAYER & CHORD DETECTOR
+
+// ========== VIDEO PLAYER WITH LOOP SUPPORT ==========
+const VideoPlayer = ({ lesson, currentEventIndex, setCurrentEventIndex, mode, playbackSpeed, loopEnabled, loopStart, loopEnd, playerRef, timerRef }) => {
+  const [player, setPlayer] = useState(null);
+  const [isReady, setIsReady] = useState(false);
   const initRef = useRef(false);
   
-  const currentEvent = lesson.timeline[currentStep];
-  const nextEvent = lesson.timeline[currentStep + 1];
-
+  const currentEvent = lesson.timeline[currentEventIndex];
+  
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
     
-    // Load YouTube API
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.body.appendChild(tag);
-      
-      window.onYouTubeIframeAPIReady = () => {
-        createPlayer();
-      };
-    } else {
-      createPlayer();
-    }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScript = document.getElementsByTagName('script')[0];
+    firstScript.parentNode.insertBefore(tag, firstScript);
+    
+    window.onYouTubeIframeAPIReady = () => {
+      try {
+        const newPlayer = new window.YT.Player('youtube-player', {
+          videoId: lesson.youtube,
+          playerVars: { controls: 1, modestbranding: 1 },
+          events: {
+            onReady: (event) => {
+              setPlayer(event.target);
+              playerRef.current = event.target;
+              setIsReady(true);
+            }
+          }
+        });
+      } catch (error) {
+        console.error('YouTube player error:', error);
+      }
+    };
     
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (playerRef.current && playerRef.current.destroy) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (playerRef.current) {
         try {
           playerRef.current.destroy();
         } catch (e) {}
       }
     };
   }, []);
-
-  const createPlayer = () => {
-    try {
-      playerRef.current = new window.YT.Player('youtube-player', {
-        videoId: lesson.youtube,
-        playerVars: { controls: 1, modestbranding: 1 },
-        events: {
-          onReady: () => {
-            intervalRef.current = setInterval(() => {
-              try {
-                if (playerRef.current && playerRef.current.getCurrentTime) {
-                  const time = playerRef.current.getCurrentTime();
-                  
-                  if (mode === 'practice' && nextEvent && time >= nextEvent.time && !waitingForChord) {
-                    playerRef.current.pauseVideo();
-                    setIsPlaying(false);
-                    setWaitingForChord(true);
-                    setIsListening(true);
-                  }
-                }
-              } catch (e) {}
-            }, 100);
-          }
-        }
-      });
-    } catch (e) {
-      console.error('Player error:', e);
-    }
-  };
-
-  const handleChordDetected = () => {
-    setWaitingForChord(false);
-    setIsListening(false);
-    setCurrentStep(currentStep + 1);
-    
-    setTimeout(() => {
+  
+  // Handle playback speed
+  useEffect(() => {
+    if (player && isReady) {
       try {
-        if (playerRef.current) {
-          playerRef.current.playVideo();
-          setIsPlaying(true);
+        player.setPlaybackRate(playbackSpeed);
+      } catch (e) {}
+    }
+  }, [playbackSpeed, player, isReady]);
+  
+  // Handle loop
+  useEffect(() => {
+    if (!player || !isReady || !loopEnabled || loopStart === null || loopEnd === null) return;
+    
+    const loopInterval = setInterval(() => {
+      try {
+        const currentTime = player.getCurrentTime();
+        if (currentTime >= loopEnd) {
+          player.seekTo(loopStart, true);
         }
       } catch (e) {}
-    }, 800);
-  };
-
-  const togglePlay = () => {
-    try {
-      if (!playerRef.current) return;
-      if (isPlaying) {
-        playerRef.current.pauseVideo();
-      } else {
-        playerRef.current.playVideo();
-      }
-      setIsPlaying(!isPlaying);
-    } catch (e) {}
-  };
-
-  const skip = () => {
-    setWaitingForChord(false);
-    setIsListening(false);
-    setCurrentStep(currentStep + 1);
-    try {
-      if (playerRef.current) {
-        playerRef.current.playVideo();
-        setIsPlaying(true);
-      }
-    } catch (e) {}
-  };
-
+    }, 100);
+    
+    return () => clearInterval(loopInterval);
+  }, [player, isReady, loopEnabled, loopStart, loopEnd]);
+  
+  // Handle timeline events
+  useEffect(() => {
+    if (!player || !isReady) return;
+    
+    timerRef.current = setInterval(() => {
+      try {
+        const currentTime = player.getCurrentTime();
+        
+        // Check if we need to move to next event
+        if (currentEventIndex < lesson.timeline.length - 1) {
+          const nextEvent = lesson.timeline[currentEventIndex + 1];
+          if (currentTime >= nextEvent.time && mode === 'playalong') {
+            setCurrentEventIndex(prev => prev + 1);
+          }
+        }
+        
+        // Pause in practice mode at chord changes
+        if (currentEvent && currentEvent.chord && mode === 'practice') {
+          if (Math.abs(currentTime - currentEvent.time) < 0.5) {
+            player.pauseVideo();
+          }
+        }
+      } catch (e) {}
+    }, 100);
+    
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [player, isReady, currentEventIndex, mode]);
+  
   return (
-    <div style={styles.lesson}>
-      <div style={styles.lessonHeader}>
-        <button onClick={onExit} style={styles.backBtn}>← Back</button>
-        <div>
-          <h2>{lesson.title}</h2>
-          <small style={{color: '#888'}}>{lesson.artist} • {lesson.difficulty}</small>
-        </div>
-        <div style={{marginLeft: 'auto', display: 'flex', gap: '10px'}}>
-          <button 
-            onClick={() => setMode('practice')} 
-            style={{...styles.modeBtn, background: mode === 'practice' ? '#0af' : '#333'}}
-          >
-            🎯 Practice
-          </button>
-          <button 
-            onClick={() => setMode('playalong')} 
-            style={{...styles.modeBtn, background: mode === 'playalong' ? '#0af' : '#333'}}
-          >
-            🎸 Play Along
-          </button>
-        </div>
-      </div>
-
-      <div style={styles.videoContainer}>
-        <div id="youtube-player"></div>
-        {waitingForChord && mode === 'practice' && currentEvent.chord && (
-          <div style={styles.overlay}>
-            <div style={styles.overlayContent}>
-              <h1 style={{fontSize: '48px', marginBottom: '10px'}}>⏸️</h1>
-              <h2>Play: {currentEvent.chord}</h2>
-              <p style={{color: '#888'}}>{currentEvent.text}</p>
-              
-              <div style={{margin: '20px 0'}}>
-                <ChordDiagram chord={CHORDS[currentEvent.chord]} name={currentEvent.chord}/>
+    <div>
+      <div id="youtube-player" style={{width: '100%', height: '400px', borderRadius: '12px', overflow: 'hidden'}}></div>
+      
+      {currentEvent && (
+        <div style={{...styles.eventCard, background: currentEvent.chord ? '#0af2' : '#f0f2'}}>
+          <h3>{currentEvent.text}</h3>
+          {currentEvent.chord && (
+            <div style={{marginTop: '10px'}}>
+              <span style={{fontSize: '32px', fontWeight: 'bold', color: '#0af'}}>{currentEvent.chord}</span>
+              <div style={{color: '#888', fontSize: '14px', marginTop: '5px'}}>
+                {mode === 'practice' ? 'Play this chord to continue →' : 'Play along!'}
               </div>
-              
-              <ChordDetector 
-                targetChord={currentEvent.chord} 
-                onDetected={handleChordDetected}
-                isListening={isListening}
-              />
-              
-              <button onClick={skip} style={{...styles.btn, background: '#555', marginTop: '20px'}}>
-                Skip for now ⏭️
-              </button>
             </div>
-          </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== ENHANCED CHORD DETECTOR WITH BETTER FEEDBACK ==========
+const ChordDetectorWithFeedback = ({ targetChord, onChordDetected, mode }) => {
+  const [listening, setListening] = useState(false);
+  const [detectionResult, setDetectionResult] = useState(null);
+  const [stringResults, setStringResults] = useState([]);
+  const hasDetectedRef = useRef(false);
+  
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const sourceRef = useRef(null);
+  const animationRef = useRef(null);
+  
+  const targetChordData = CHORDS[targetChord];
+  
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+  
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 8192;
+      
+      sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      sourceRef.current.connect(analyserRef.current);
+      
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
+      
+      setListening(true);
+      hasDetectedRef.current = false;
+      detectChord();
+    } catch (error) {
+      console.error('Microphone error:', error);
+    }
+  };
+  
+  const stopListening = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.disconnect();
+        sourceRef.current.mediaStream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (e) {}
+    }
+    setListening(false);
+  };
+  
+  const detectChord = () => {
+    if (!analyserRef.current || !dataArrayRef.current) return;
+    
+    try {
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      
+      const volume = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
+      
+      if (volume > 15) {
+        const detectedFreqs = findPeaks(dataArrayRef.current, analyserRef.current);
+        const result = compareWithTarget(detectedFreqs, targetChordData.notes);
+        
+        setDetectionResult(result);
+        setStringResults(result.stringDetails);
+        
+        // Success condition with wiggle room
+        if (result.matchPercentage >= 65 && !hasDetectedRef.current) {
+          hasDetectedRef.current = true;
+          playSuccessSound(result.matchPercentage);
+          onChordDetected(true, result.matchPercentage);
+        }
+      }
+      
+      animationRef.current = requestAnimationFrame(detectChord);
+    } catch (e) {
+      console.error('Detection error:', e);
+    }
+  };
+  
+  const findPeaks = (dataArray, analyser) => {
+    const peaks = [];
+    const sampleRate = audioContextRef.current.sampleRate;
+    const nyquist = sampleRate / 2;
+    const binSize = nyquist / dataArray.length;
+    
+    for (let i = 10; i < dataArray.length; i++) {
+      if (dataArray[i] > 100 && dataArray[i] > dataArray[i-1] && dataArray[i] > dataArray[i+1]) {
+        const freq = i * binSize;
+        if (freq >= 80 && freq <= 1200) {
+          peaks.push(freq);
+        }
+      }
+    }
+    
+    return peaks.slice(0, 6);
+  };
+  
+  const compareWithTarget = (detected, target) => {
+    let matchCount = 0;
+    const tolerance = 0.08; // 8% wiggle room
+    const stringDetails = [];
+    
+    target.forEach((targetFreq, index) => {
+      const match = detected.some(detectedFreq => {
+        const diff = Math.abs(detectedFreq - targetFreq) / targetFreq;
+        return diff < tolerance;
+      });
+      
+      stringDetails.push({ string: 6 - index, expected: targetFreq, detected: match });
+      if (match) matchCount++;
+    });
+    
+    const matchPercentage = (matchCount / target.length) * 100;
+    
+    return {
+      isCorrect: matchPercentage >= 65,
+      matchPercentage,
+      matchCount,
+      totalStrings: target.length,
+      stringDetails
+    };
+  };
+  
+  const playSuccessSound = (accuracy) => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      if (accuracy >= 85) {
+        // Perfect! Play happy arpeggio
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.3);
+          osc.start(audioCtx.currentTime + i * 0.1);
+          osc.stop(audioCtx.currentTime + i * 0.1 + 0.3);
+        });
+      } else {
+        // Close! Play gentle tone
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 440;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      }
+    } catch (e) {}
+  };
+  
+  return (
+    <div style={styles.detectorCard}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+        <h3>Target: {targetChord} ({targetChordData.name})</h3>
+        {!listening ? (
+          <button onClick={startListening} style={styles.primaryBtn}>
+            🎤 Start Detection
+          </button>
+        ) : (
+          <button onClick={stopListening} style={{...styles.primaryBtn, background: '#f44'}}>
+            ⏹️ Stop
+          </button>
         )}
       </div>
+      
+      {listening && (
+        <>
+          <ChordDiagram chord={targetChordData} name={targetChord} />
+          
+          {detectionResult && (
+            <div style={{marginTop: '20px'}}>
+              <div style={{...styles.progressBar, height: '30px', marginBottom: '10px'}}>
+                <div style={{
+                  height: '100%',
+                  width: `${detectionResult.matchPercentage}%`,
+                  background: detectionResult.matchPercentage >= 85 ? '#0f8' : detectionResult.matchPercentage >= 65 ? '#fa0' : '#f44',
+                  transition: '0.3s',
+                  borderRadius: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold'
+                }}>
+                  {Math.round(detectionResult.matchPercentage)}%
+                </div>
+              </div>
+              
+              <div style={{textAlign: 'center', marginBottom: '15px'}}>
+                {detectionResult.matchPercentage >= 85 && <span style={{color: '#0f8', fontSize: '18px', fontWeight: 'bold'}}>🎉 Perfect! Great job!</span>}
+                {detectionResult.matchPercentage >= 65 && detectionResult.matchPercentage < 85 && <span style={{color: '#fa0', fontSize: '18px', fontWeight: 'bold'}}>👍 Almost there! Keep going!</span>}
+                {detectionResult.matchPercentage < 65 && <span style={{color: '#f44', fontSize: '18px', fontWeight: 'bold'}}>🎸 Try again - you got this!</span>}
+              </div>
+              
+              <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                {stringResults.map((result, i) => (
+                  <div key={i} style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: result.detected ? '#0f8' : '#333',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid ' + (result.detected ? '#0f8' : '#666')
+                  }}>
+                    {result.detected ? '✓' : i + 1}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
-      <div style={styles.controls}>
-        <button onClick={togglePlay} style={{...styles.btn, background: isPlaying ? '#f66' : '#0f8'}}>
-          {isPlaying ? '⏸ Pause' : '▶ Play'}
-        </button>
+// Continue with GuitarTuner and helpers...
+// Continuing GuitarLearning.jsx - PART 5: GUITAR TUNER, HELPERS & STYLES
+
+// ========== GUITAR TUNER ==========
+const GuitarTuner = () => {
+  const [listening, setListening] = useState(false);
+  const [detectedNote, setDetectedNote] = useState(null);
+  const [detectedFreq, setDetectedFreq] = useState(0);
+  const [cents, setCents] = useState(0);
+  
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const sourceRef = useRef(null);
+  const animationRef = useRef(null);
+  
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+  
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 8192;
+      
+      sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      sourceRef.current.connect(analyserRef.current);
+      
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
+      
+      setListening(true);
+      detectPitch();
+    } catch (error) {
+      console.error('Microphone error:', error);
+    }
+  };
+  
+  const stopListening = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.disconnect();
+        sourceRef.current.mediaStream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (e) {}
+    }
+    setListening(false);
+  };
+  
+  const detectPitch = () => {
+    if (!analyserRef.current || !dataArrayRef.current) return;
+    
+    try {
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      
+      const volume = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
+      
+      if (volume > 15) {
+        const freq = autoCorrelate(dataArrayRef.current, audioContextRef.current.sampleRate);
+        
+        if (freq > 0) {
+          const note = frequencyToNote(freq);
+          setDetectedNote(note);
+          setDetectedFreq(freq);
+          
+          const targetString = TUNING.find(t => t.name === note.name);
+          if (targetString) {
+            const centsOff = 1200 * Math.log2(freq / targetString.freq);
+            setCents(centsOff);
+          }
+        }
+      }
+      
+      animationRef.current = requestAnimationFrame(detectPitch);
+    } catch (e) {
+      console.error('Pitch detection error:', e);
+    }
+  };
+  
+  const autoCorrelate = (buffer, sampleRate) => {
+    const SIZE = buffer.length;
+    const rms = Math.sqrt(buffer.reduce((sum, val) => sum + val * val, 0) / SIZE);
+    
+    if (rms < 0.01) return -1;
+    
+    let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[i]) < threshold) {
+        r1 = i;
+        break;
+      }
+    }
+    
+    for (let i = 1; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[SIZE - i]) < threshold) {
+        r2 = SIZE - i;
+        break;
+      }
+    }
+    
+    const correlations = new Array(SIZE).fill(0);
+    for (let i = r1; i < r2; i++) {
+      for (let j = 0; j < r2 - i; j++) {
+        correlations[i] += buffer[j] * buffer[j + i];
+      }
+    }
+    
+    let d = r1;
+    let maxCorrelation = correlations[r1];
+    for (let i = r1; i < r2; i++) {
+      if (correlations[i] > maxCorrelation) {
+        maxCorrelation = correlations[i];
+        d = i;
+      }
+    }
+    
+    if (maxCorrelation > 0.01) {
+      return sampleRate / d;
+    }
+    
+    return -1;
+  };
+  
+  const frequencyToNote = (freq) => {
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const a4 = 440;
+    const halfSteps = 12 * Math.log2(freq / a4);
+    const noteIndex = Math.round(halfSteps) + 9;
+    const octave = Math.floor(noteIndex / 12) + 4;
+    const note = noteNames[(noteIndex % 12 + 12) % 12];
+    
+    return { name: note, octave, freq };
+  };
+  
+  const getColorForCents = (cents) => {
+    if (Math.abs(cents) < 5) return '#0f8';
+    if (Math.abs(cents) < 15) return '#fa0';
+    return '#f44';
+  };
+  
+  return (
+    <div style={styles.section}>
+      <h2>🎤 Guitar Tuner</h2>
+      <p style={{color: '#888', marginBottom: '20px'}}>
+        Play each string and tune until the indicator turns green!
+      </p>
+      
+      <div style={{...styles.card, maxWidth: '600px', margin: '0 auto'}}>
+        {!listening ? (
+          <button onClick={startListening} style={{...styles.primaryBtn, width: '100%', padding: '20px', fontSize: '18px'}}>
+            🎤 Start Tuner
+          </button>
+        ) : (
+          <>
+            <button onClick={stopListening} style={{...styles.primaryBtn, width: '100%', padding: '20px', fontSize: '18px', background: '#f44', marginBottom: '30px'}}>
+              ⏹️ Stop Tuner
+            </button>
+            
+            {detectedNote && (
+              <div style={{textAlign: 'center'}}>
+                <div style={{fontSize: '72px', fontWeight: 'bold', color: getColorForCents(cents), marginBottom: '20px'}}>
+                  {detectedNote.name}{detectedNote.octave}
+                </div>
+                
+                <div style={{fontSize: '24px', color: '#888', marginBottom: '30px'}}>
+                  {Math.round(detectedFreq)} Hz
+                </div>
+                
+                <div style={{position: 'relative', height: '60px', background: '#222', borderRadius: '30px', marginBottom: '20px'}}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '4px',
+                    height: '100%',
+                    background: '#666'
+                  }}/>
+                  
+                  <div style={{
+                    position: 'absolute',
+                    left: `${50 + (cents / 50) * 40}%`,
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '20px',
+                    height: '40px',
+                    background: getColorForCents(cents),
+                    borderRadius: '10px',
+                    transition: '0.1s'
+                  }}/>
+                </div>
+                
+                <div style={{fontSize: '18px', fontWeight: 'bold', color: getColorForCents(cents)}}>
+                  {Math.abs(cents) < 5 ? '✓ IN TUNE!' : `${Math.round(cents) > 0 ? '+' : ''}${Math.round(cents)} cents`}
+                </div>
+              </div>
+            )}
+            
+            {!detectedNote && (
+              <div style={{textAlign: 'center', color: '#888', padding: '40px'}}>
+                Pluck a string...
+              </div>
+            )}
+          </>
+        )}
       </div>
-
-      <div style={styles.timeline}>
-        <h3>Lesson Progress</h3>
-        <div style={styles.progressBar}>
-          <div style={{...styles.progressFill, width: `${(currentStep / lesson.timeline.length) * 100}%`}}/>
-        </div>
-        <div style={styles.timelineSteps}>
-          {lesson.timeline.map((event, i) => (
-            <div key={i} style={{
-              ...styles.timelineStep,
-              background: i < currentStep ? '#0f8' : i === currentStep ? '#0af' : '#333'
+      
+      <div style={{...styles.card, marginTop: '30px'}}>
+        <h3>🎸 Standard Tuning</h3>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '15px', marginTop: '15px'}}>
+          {TUNING.map(string => (
+            <div key={string.string} style={{
+              textAlign: 'center',
+              padding: '15px',
+              background: '#222',
+              borderRadius: '8px',
+              border: detectedNote && detectedNote.name === string.name ? '2px solid #0af' : '2px solid transparent'
             }}>
-              <div style={{fontWeight: 'bold'}}>{event.chord || '🎵'}</div>
-              <small>{event.time}s</small>
+              <div style={{fontSize: '24px', fontWeight: 'bold', color: string.color}}>{string.name}</div>
+              <div style={{color: '#888', fontSize: '12px'}}>{string.label}</div>
+              <div style={{color: '#666', fontSize: '11px'}}>{Math.round(string.freq)} Hz</div>
             </div>
           ))}
         </div>
@@ -570,310 +1795,380 @@ const InteractiveLesson = ({ lesson, onExit }) => {
   );
 };
 
-
-// MAIN TUNER COMPONENT
-const GuitarTuner = () => {
-  const [selected, setSelected] = useState(null);
-  const [listening, setListening] = useState(false);
-  const [cents, setCents] = useState(0);
-  const [volume, setVolume] = useState(0);
-  const [error, setError] = useState(null);
-  
-  const audioCtx = useRef(null);
-  const analyser = useRef(null);
-  const stream = useRef(null);
-  const animFrame = useRef(null);
-  const smoothedCents = useRef(0);
-  const readings = useRef([]);
-
-  const start = async () => {
-    if (!selected) return setError('Pick a string first!');
-    try {
-      stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-      analyser.current = audioCtx.current.createAnalyser();
-      analyser.current.fftSize = 4096;
-      audioCtx.current.createMediaStreamSource(stream.current).connect(analyser.current);
-      setListening(true);
-      setError(null);
-      readings.current = [];
-      smoothedCents.current = 0;
-      analyze();
-    } catch (e) { setError('Mic error: ' + e.message); }
-  };
-
-  const stop = () => {
-    if (animFrame.current) cancelAnimationFrame(animFrame.current);
-    if (stream.current) stream.current.getTracks().forEach(t => t.stop());
-    if (audioCtx.current) audioCtx.current.close();
-    setListening(false);
-    setCents(0);
-    setVolume(0);
-  };
-
-  const analyze = () => {
-    if (!analyser.current) return;
-    const buf = new Uint8Array(analyser.current.fftSize);
-    analyser.current.getByteTimeDomainData(buf);
-    
-    let sum = 0;
-    for (let i = 0; i < buf.length; i++) sum += Math.abs(buf[i] - 128);
-    const vol = Math.min(100, (sum / buf.length) * 4);
-    setVolume(vol);
-    
-    if (vol > 10 && selected) {
-      const size = buf.length;
-      const half = size / 2;
-      let bestOff = -1, bestCorr = 0;
+// ========== CHORD DIAGRAM HELPER ==========
+const ChordDiagram = ({ chord, name }) => {
+  return (
+    <div style={{textAlign: 'center'}}>
+      <div style={{fontSize: '24px', fontWeight: 'bold', marginBottom: '10px', color: '#0af'}}>
+        {name}
+      </div>
       
-      for (let off = 30; off < half; off++) {
-        let corr = 0;
-        for (let i = 0; i < half; i++) {
-          corr += Math.abs((buf[i] - 128) - (buf[i + off] - 128));
-        }
-        corr = 1 - corr / half / 128;
-        if (corr > bestCorr) { bestCorr = corr; bestOff = off; }
-      }
-      
-      if (bestCorr > 0.5 && bestOff > 0) {
-        const freq = audioCtx.current.sampleRate / bestOff;
-        const target = selected.freq;
+      <svg width="120" height="150" viewBox="0 0 120 150" style={{margin: '0 auto'}}>
+        {/* Frets */}
+        {[0, 1, 2, 3, 4].map(fret => (
+          <line key={`fret-${fret}`} x1="20" y1={20 + fret * 25} x2="100" y2={20 + fret * 25} stroke="#666" strokeWidth="2"/>
+        ))}
         
-        if (freq > target * 0.5 && freq < target * 2) {
-          let c = 1200 * Math.log2(freq / target);
-          if (c > 600) c -= 1200;
-          if (c < -600) c += 1200;
-          
-          readings.current.push(c);
-          if (readings.current.length > 15) readings.current.shift();
-          
-          const sorted = [...readings.current].sort((a, b) => a - b);
-          const median = sorted[Math.floor(sorted.length / 2)];
-          
-          smoothedCents.current = smoothedCents.current * 0.92 + median * 0.08;
-          setCents(Math.round(smoothedCents.current));
-        }
-      }
-    }
-    animFrame.current = requestAnimationFrame(analyze);
-  };
-
-  useEffect(() => () => stop(), []);
-
-  const getColor = () => {
-    const c = Math.abs(cents);
-    if (c <= 5) return '#00ff88';
-    if (c <= 15) return '#aaff00';
-    if (c <= 30) return '#ffaa00';
-    return '#ff6b6b';
-  };
-
-  return (
-    <div style={styles.tuner}>
-      <h3>🎸 Guitar Tuner</h3>
-      {error && <div style={styles.error}>{error}</div>}
-      
-      <div style={styles.strings}>
-        {TUNING.map(s => (
-          <div key={s.note} onClick={() => !listening && setSelected(s)} style={{
-            ...styles.stringBtn,
-            background: selected?.note === s.note ? s.color : '#2a2a3a',
-            color: selected?.note === s.note ? '#000' : '#fff',
-            opacity: listening && selected?.note !== s.note ? 0.4 : 1,
-            cursor: listening ? 'default' : 'pointer'
-          }}>
-            <small>String {s.string}</small>
-            <div style={{fontSize: '22px', fontWeight: 'bold'}}>{s.name}</div>
-            <small>{s.freq}Hz</small>
-            <button onClick={e => { e.stopPropagation(); playTone(s.freq); }} style={styles.hearBtn}>🔊</button>
-          </div>
+        {/* Strings */}
+        {[0, 1, 2, 3, 4, 5].map(string => (
+          <line key={`string-${string}`} x1={20 + string * 16} y1="20" x2={20 + string * 16} y2="120" stroke="#888" strokeWidth="1.5"/>
         ))}
-      </div>
-
-      {selected && (
-        <div style={styles.tunerDisplay}>
-          <div style={{...styles.badge, background: selected.color}}>{selected.name} - {selected.label}</div>
-          
-          {listening ? (
-            <>
-              <div style={styles.volBar}><div style={{...styles.volFill, width: `${volume}%`}}/></div>
-              <small style={{color: volume > 10 ? '#0f0' : '#666'}}>{volume > 10 ? '🎤 Sound detected' : '🎤 Play string...'}</small>
-              
-              <div style={styles.meterBox}>
-                <div style={styles.meterLabels}><span>♭ LOW</span><span>✓</span><span>HIGH ♯</span></div>
-                <div style={styles.meter}>
-                  <div style={styles.greenZone}/>
-                  <div style={styles.centerLine}/>
-                  <div style={{
-                    ...styles.needle,
-                    left: `${50 + Math.max(-45, Math.min(45, cents))}%`,
-                    background: getColor(),
-                    boxShadow: `0 0 15px ${getColor()}`
-                  }}/>
-                </div>
-              </div>
-              
-              <div style={{fontSize: '28px', fontWeight: 'bold', color: getColor(), marginTop: '10px'}}>
-                {Math.abs(cents) <= 5 ? '✅ IN TUNE!' : Math.abs(cents) <= 15 ? '👍 Almost!' : cents > 0 ? '⬇️ Too HIGH' : '⬆️ Too LOW'}
-              </div>
-              <div style={{color: '#888'}}>{cents > 0 ? '+' : ''}{cents} cents</div>
-            </>
-          ) : (
-            <p style={{color: '#888', margin: '30px 0'}}>Click START and play the {selected.name} string</p>
-          )}
-          
-          <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
-            <button onClick={listening ? stop : start} style={{...styles.btn, background: listening ? '#f66' : '#0f8'}}>
-              {listening ? '⏹ STOP' : '▶ START'}
-            </button>
-            <button onClick={() => { stop(); setSelected(null); }} style={{...styles.btn, background: '#555'}}>↩ Reset</button>
-          </div>
-        </div>
-      )}
-      
-      {!selected && <p style={{color: '#888', textAlign: 'center', marginTop: '20px'}}>👆 Select a string to tune</p>}
+        
+        {/* Finger positions */}
+        {chord.fingers.map(([string, fret, finger], i) => (
+          <circle key={i} cx={20 + (6 - string) * 16} cy={20 + (fret - 0.5) * 25} r="6" fill="#0af"/>
+        ))}
+        
+        {/* Open strings */}
+        {chord.open.map((string, i) => (
+          <circle key={`open-${i}`} cx={20 + (6 - string) * 16} cy="10" r="4" fill="none" stroke="#0f8" strokeWidth="2"/>
+        ))}
+        
+        {/* Muted strings */}
+        {chord.muted.map((string, i) => (
+          <text key={`muted-${i}`} x={20 + (6 - string) * 16} y="12" fontSize="14" fill="#f44" textAnchor="middle">×</text>
+        ))}
+      </svg>
     </div>
   );
 };
 
-
-const ChordDiagram = ({ chord, name }) => (
-  <svg width="100" height="120" viewBox="0 0 100 120">
-    <text x="50" y="12" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">{name}</text>
-    <rect x="15" y="20" width="70" height="3" fill="white"/>
-    {[1,2,3,4].map(f => <line key={f} x1="15" y1={20+f*20} x2="85" y2={20+f*20} stroke="#555" strokeWidth="1.5"/>)}
-    {[0,1,2,3,4,5].map(s => <line key={s} x1={15+s*14} y1="20" x2={15+s*14} y2="100" stroke="#777" strokeWidth="1"/>)}
-    {chord.muted?.map(s => <text key={s} x={15+(6-s)*14} y="16" textAnchor="middle" fill="#f55" fontSize="10">✕</text>)}
-    {chord.open?.map(s => <circle key={s} cx={15+(6-s)*14} cy="15" r="4" fill="none" stroke="#0f0" strokeWidth="1.5"/>)}
-    {chord.fingers.map(([str,fret,fin], i) => (
-      <g key={i}>
-        <circle cx={15+(6-str)*14} cy={20+(fret-0.5)*20} r="7" fill="#0af"/>
-        <text x={15+(6-str)*14} y={20+(fret-0.5)*20+4} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">{fin}</text>
-      </g>
-    ))}
-  </svg>
-);
-
-const GuitarLearning = () => {
-  const [tab, setTab] = useState('lessons');
-  const [activeLesson, setActiveLesson] = useState(null);
-  
-  if (activeLesson) {
-    return <InteractiveLesson lesson={activeLesson} onExit={() => setActiveLesson(null)}/>;
-  }
-  
-  return (
-    <div style={styles.page}>
-      <h1 style={{textAlign: 'center', marginBottom: '20px'}}>🎸 Guitar Learning</h1>
-      <div style={styles.tabs}>
-        {['lessons', 'tuner', 'chords'].map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{...styles.tab, background: tab === t ? '#0af' : '#333'}}>
-            {t === 'lessons' ? '🎥 Lessons' : t === 'tuner' ? '🎤 Tuner' : '🎵 Chords'}
-          </button>
-        ))}
-      </div>
-      
-      {tab === 'lessons' && (
-        <div style={styles.section}>
-          <h3>Interactive Video Lessons</h3>
-          <p style={{color: '#888', marginBottom: '20px'}}>
-            🎸 Learn by doing! Videos pause when it's time to play a chord. We'll listen and only continue when you nail it!<br/>
-            Choose <strong>Practice Mode</strong> (pause & wait) or <strong>Play Along Mode</strong> (keep playing!)
-          </p>
-          <div style={styles.lessonGrid}>
-            {LESSONS.map(lesson => (
-              <div key={lesson.id} style={styles.lessonCard} onClick={() => setActiveLesson(lesson)}>
-                <div style={styles.thumbnail}>
-                  <img src={`https://img.youtube.com/vi/${lesson.youtube}/mqdefault.jpg`} alt={lesson.title} style={{width: '100%', borderRadius: '8px'}}/>
-                  <div style={styles.playOverlay}>▶</div>
-                </div>
-                <div style={{padding: '10px'}}>
-                  <strong>{lesson.title}</strong>
-                  <div style={{color: '#888', fontSize: '12px'}}>{lesson.artist}</div>
-                  <div style={{color: '#aaa', fontSize: '11px', marginTop: '3px'}}>{lesson.description}</div>
-                  <div style={{marginTop: '5px'}}>
-                    {lesson.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}
-                  </div>
-                  <div style={{...styles.difficultyBadge, background: lesson.difficulty === 'Beginner' ? '#0f8' : lesson.difficulty === 'Easy' ? '#4af' : '#fa0'}}>
-                    {lesson.difficulty}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {tab === 'tuner' && <GuitarTuner />}
-      
-      {tab === 'chords' && (
-        <div style={styles.section}>
-          <h3>Essential Chords</h3>
-          <div style={styles.chordGrid}>
-            {Object.entries(CHORDS).map(([k, v]) => (
-              <div key={k} style={styles.chordCard}>
-                <ChordDiagram chord={v} name={k}/>
-                <small style={{color: '#888', display: 'block', marginTop: '5px'}}>{v.name}</small>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-
+// ========== STYLES ==========
 const styles = {
-  page: { minHeight: '100vh', padding: '20px', background: 'var(--background)', maxWidth: '1200px', margin: '0 auto' },
-  tabs: { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' },
-  tab: { padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#fff' },
-  section: { background: 'var(--surface)', borderRadius: '12px', padding: '20px' },
+  page: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 100%)',
+    color: '#fff',
+    padding: '20px',
+    fontFamily: 'system-ui, -apple-system, sans-serif'
+  },
   
-  lessonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
-  lessonCard: { background: '#1a1a2a', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', transition: '0.2s' },
-  thumbnail: { position: 'relative' },
-  playOverlay: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '48px', color: '#fff', background: '#0008', borderRadius: '50%', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  difficultyBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold', marginTop: '8px', color: '#000' },
+  topBar: {
+    background: 'rgba(0,0,0,0.3)',
+    padding: '15px 20px',
+    borderRadius: '12px',
+    marginBottom: '20px',
+    backdropFilter: 'blur(10px)'
+  },
   
-  lesson: { background: 'var(--surface)', borderRadius: '12px', padding: '20px', maxWidth: '900px', margin: '0 auto' },
-  lessonHeader: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' },
-  backBtn: { padding: '10px 20px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold' },
-  modeBtn: { padding: '8px 15px', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
-  videoContainer: { position: 'relative', background: '#000', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16/9' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: '#000e', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
-  overlayContent: { textAlign: 'center', padding: '20px', background: '#1a1a2a', borderRadius: '12px', maxWidth: '400px' },
-  controls: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '20px' },
-  timeline: { marginTop: '30px' },
-  progressBar: { height: '10px', background: '#333', borderRadius: '5px', overflow: 'hidden', marginBottom: '15px' },
-  progressFill: { height: '100%', background: '#0af', transition: '0.3s' },
-  timelineSteps: { display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' },
-  timelineStep: { minWidth: '80px', padding: '10px', borderRadius: '8px', textAlign: 'center', fontSize: '12px' },
+  userStats: {
+    display: 'flex',
+    gap: '30px',
+    justifyContent: 'center',
+    flexWrap: 'wrap'
+  },
   
-  detector: { background: '#222', borderRadius: '10px', padding: '15px', marginTop: '15px' },
-  confidenceBar: { height: '30px', background: '#333', borderRadius: '15px', overflow: 'hidden', marginBottom: '10px' },
-  confidenceFill: { height: '100%', transition: '0.3s' },
+  statItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
   
-  tuner: { background: 'var(--surface)', borderRadius: '12px', padding: '20px', textAlign: 'center' },
-  error: { background: '#f662', color: '#f66', padding: '10px', borderRadius: '8px', marginBottom: '10px' },
-  strings: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '20px' },
-  stringBtn: { padding: '10px 5px', borderRadius: '8px', textAlign: 'center', transition: '0.2s' },
-  hearBtn: { marginTop: '5px', background: '#0003', border: 'none', borderRadius: '5px', padding: '4px 8px', cursor: 'pointer' },
-  tunerDisplay: { background: '#1a1a2a', borderRadius: '10px', padding: '20px' },
-  badge: { display: 'inline-block', padding: '8px 20px', borderRadius: '20px', fontWeight: 'bold', color: '#000', marginBottom: '15px' },
-  volBar: { height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' },
-  volFill: { height: '100%', background: '#0f8', transition: 'width 0.1s' },
-  meterBox: { margin: '20px 0' },
-  meterLabels: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', marginBottom: '5px' },
-  meter: { height: '40px', background: '#222', borderRadius: '20px', position: 'relative', overflow: 'hidden' },
-  greenZone: { position: 'absolute', left: '40%', width: '20%', height: '100%', background: '#0f83' },
-  centerLine: { position: 'absolute', left: '50%', width: '2px', height: '100%', background: '#0f8', transform: 'translateX(-50%)' },
-  needle: { position: 'absolute', top: '5px', width: '8px', height: '30px', borderRadius: '4px', transform: 'translateX(-50%)', transition: 'left 0.4s ease-out, background 0.3s, box-shadow 0.3s' },
-  btn: { padding: '12px 25px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', color: '#000', fontSize: '16px' },
+  nav: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '30px',
+    flexWrap: 'wrap',
+    justifyContent: 'center'
+  },
   
-  chordGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '15px' },
-  chordCard: { background: '#1a1a2a', borderRadius: '8px', padding: '10px', textAlign: 'center' },
-  chordTag: { display: 'inline-block', background: '#0af', color: '#000', padding: '2px 8px', borderRadius: '4px', margin: '5px 3px 5px 0', fontSize: '12px', fontWeight: 'bold' }
+  navBtn: {
+    padding: '12px 20px',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#fff',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: '0.3s',
+    fontSize: '14px'
+  },
+  
+  section: {
+    maxWidth: '1200px',
+    margin: '0 auto'
+  },
+  
+  card: {
+    background: 'rgba(255,255,255,0.05)',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  
+  quickActions: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '20px',
+    marginTop: '30px'
+  },
+  
+  bigBtn: {
+    background: 'rgba(0,170,255,0.2)',
+    border: '2px solid #0af',
+    borderRadius: '16px',
+    padding: '30px 20px',
+    color: '#fff',
+    cursor: 'pointer',
+    transition: '0.3s',
+    textAlign: 'center'
+  },
+  
+  lessonGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '20px'
+  },
+  
+  lessonCard: {
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    cursor: 'pointer',
+    transition: '0.3s',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  
+  thumbnail: {
+    position: 'relative'
+  },
+  
+  playOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    fontSize: '48px',
+    color: '#fff',
+    textShadow: '0 0 10px rgba(0,0,0,0.5)'
+  },
+  
+  completedBadge: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    background: '#0f8',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '24px',
+    fontWeight: 'bold'
+  },
+  
+  chordTag: {
+    display: 'inline-block',
+    background: '#0af2',
+    padding: '3px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    marginRight: '5px',
+    marginTop: '5px'
+  },
+  
+  difficultyBadge: {
+    display: 'inline-block',
+    padding: '4px 12px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: 'bold'
+  },
+  
+  riffGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '20px'
+  },
+  
+  riffCard: {
+    background: 'rgba(255,255,255,0.05)',
+    padding: '25px',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    transition: '0.3s',
+    border: '1px solid rgba(255,255,255,0.1)',
+    position: 'relative'
+  },
+  
+  chordGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+    gap: '20px'
+  },
+  
+  chordCard: {
+    background: 'rgba(255,255,255,0.05)',
+    padding: '20px',
+    borderRadius: '12px',
+    textAlign: 'center',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  
+  statCard: {
+    background: 'rgba(255,255,255,0.05)',
+    padding: '25px',
+    borderRadius: '12px',
+    textAlign: 'center',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  
+  achievementBadge: {
+    background: 'rgba(0,170,255,0.2)',
+    border: '2px solid #0af',
+    padding: '10px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    minWidth: '80px'
+  },
+  
+  achievementCard: {
+    padding: '15px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '5px'
+  },
+  
+  achievementPopup: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    animation: 'fadeIn 0.3s'
+  },
+  
+  achievementCard: {
+    background: 'linear-gradient(135deg, #0af 0%, #0f8 100%)',
+    padding: '40px',
+    borderRadius: '20px',
+    textAlign: 'center',
+    maxWidth: '400px',
+    animation: 'bounceIn 0.5s'
+  },
+  
+  lessonPage: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 100%)',
+    color: '#fff',
+    padding: '20px'
+  },
+  
+  lessonHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '20px',
+    gap: '20px'
+  },
+  
+  backBtn: {
+    padding: '10px 20px',
+    background: '#333',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  
+  modeSelect: {
+    padding: '8px 15px',
+    background: '#333',
+    border: '1px solid #666',
+    borderRadius: '8px',
+    color: '#fff',
+    fontSize: '14px',
+    cursor: 'pointer'
+  },
+  
+  controlsBar: {
+    background: 'rgba(0,0,0,0.3)',
+    padding: '15px 20px',
+    borderRadius: '12px',
+    display: 'flex',
+    gap: '20px',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginBottom: '20px'
+  },
+  
+  smallBtn: {
+    padding: '6px 12px',
+    background: '#444',
+    border: 'none',
+    borderRadius: '6px',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '12px'
+  },
+  
+  lessonContent: {
+    maxWidth: '900px',
+    margin: '0 auto'
+  },
+  
+  eventCard: {
+    padding: '20px',
+    borderRadius: '12px',
+    marginTop: '20px',
+    textAlign: 'center'
+  },
+  
+  detectorCard: {
+    background: 'rgba(255,255,255,0.05)',
+    padding: '25px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.1)'
+  },
+  
+  progressBar: {
+    background: '#222',
+    borderRadius: '15px',
+    overflow: 'hidden'
+  },
+  
+  primaryBtn: {
+    padding: '10px 20px',
+    background: '#0af',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#fff',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: '0.3s'
+  },
+  
+  successOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.9)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999
+  },
+  
+  successCard: {
+    background: 'linear-gradient(135deg, #0af 0%, #0f8 100%)',
+    padding: '50px',
+    borderRadius: '20px',
+    textAlign: 'center',
+    maxWidth: '500px'
+  },
+  
+  riffContent: {
+    padding: '20px'
+  }
 };
-
-export default GuitarLearning;
