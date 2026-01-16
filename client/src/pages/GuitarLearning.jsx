@@ -19,33 +19,24 @@ const CHORDS = {
   'Em': { name: 'E Minor', fingers: [[5,2,2], [4,2,3]], open: [6,3,2,1], muted: [],
           notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] }, // E B E G B E
   'Am': { name: 'A Minor', fingers: [[4,2,2], [3,2,3], [2,1,1]], open: [5,1], muted: [6],
-          notes: [110, 164.81, 220, 261.63, 329.63] }, // A E A C E
-  'E': { name: 'E Major', fingers: [[5,2,2], [4,2,3], [3,1,1]], open: [6,2,1], muted: [],
-         notes: [82.41, 123.47, 164.81, 196, 246.94, 329.63] }, // E B E G# B E
-  'A': { name: 'A Major', fingers: [[4,2,1], [3,2,2], [2,2,3]], open: [5,1], muted: [6],
-         notes: [110, 164.81, 220, 277.18, 329.63] }, // A E A C# E
-  'Dm': { name: 'D Minor', fingers: [[1,1,1], [3,2,3], [2,3,2]], open: [4], muted: [6,5],
-          notes: [146.83, 220, 293.66, 349.23] } // D A D F
+          notes: [110, 164.81, 220, 261.63, 329.63] } // A E A C E
 };
 
-// 🎵 EXPANDED SONG LIBRARY - Now with 8 songs!
+// LESSON DATA - Video timestamps where chords change
 const LESSONS = [
   {
     id: 1,
-    title: "A Horse With No Name",
-    artist: "America",
-    youtube: "zSAJ0l4OBHM",
+    title: "Your First Song",
+    artist: "Simple 2-Chord Song",
+    youtube: "zSAJ0l4OBHM", // Horse With No Name
     difficulty: "Beginner",
     chords: ["Em", "D"],
-    description: "Perfect first song - only 2 easy chords!",
     timeline: [
-      { time: 0, chord: null, text: "🎸 Your first song! Just 2 chords!" },
-      { time: 8, chord: "Em", text: "Start with Em - super easy!" },
-      { time: 12, chord: "D", text: "Switch to D" },
-      { time: 16, chord: "Em", text: "Back to Em" },
-      { time: 20, chord: "D", text: "D again" },
-      { time: 24, chord: "Em", text: "Em" },
-      { time: 28, chord: "D", text: "D" }
+      { time: 0, chord: null, text: "Welcome! Let's learn your first song!" },
+      { time: 15, chord: "Em", text: "First chord: Em" },
+      { time: 35, chord: "D", text: "Switch to D" },
+      { time: 55, chord: "Em", text: "Back to Em" },
+      { time: 75, chord: "D", text: "D again" }
     ]
   },
   {
@@ -55,147 +46,15 @@ const LESSONS = [
     youtube: "0pGOFX1D_jg",
     difficulty: "Easy",
     chords: ["G", "C", "D"],
-    description: "Classic Beatles - 3 basic chords",
     timeline: [
-      { time: 0, chord: null, text: "🎸 Beatles classic!" },
-      { time: 5, chord: "G", text: "G chord" },
-      { time: 13, chord: "C", text: "Switch to C" },
-      { time: 21, chord: "G", text: "Back to G" },
-      { time: 29, chord: "D", text: "D chord" },
-      { time: 37, chord: "G", text: "G" }
-    ]
-  },
-  {
-    id: 3,
-    title: "Knockin' on Heaven's Door",
-    artist: "Bob Dylan",
-    youtube: "lXJSVnX1UtQ",
-    difficulty: "Beginner",
-    chords: ["G", "D", "Am"],
-    description: "Iconic song with easy chords",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 Classic Dylan!" },
+      { time: 0, chord: null, text: "Beatles classic - 3 chords!" },
       { time: 10, chord: "G", text: "Start with G" },
-      { time: 18, chord: "D", text: "D chord" },
-      { time: 26, chord: "Am", text: "Am chord" },
-      { time: 34, chord: "G", text: "Back to G" }
-    ]
-  },
-  {
-    id: 4,
-    title: "Let It Be",
-    artist: "The Beatles",
-    youtube: "2xDzVZcqtYI",
-    difficulty: "Easy",
-    chords: ["C", "G", "Am"],
-    description: "Beautiful Beatles ballad",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 Let it be..." },
-      { time: 8, chord: "C", text: "C chord" },
-      { time: 12, chord: "G", text: "G chord" },
-      { time: 16, chord: "Am", text: "Am chord" },
-      { time: 20, chord: "C", text: "C" },
-      { time: 24, chord: "G", text: "G" }
-    ]
-  },
-  {
-    id: 5,
-    title: "Hey Joe",
-    artist: "Jimi Hendrix",
-    youtube: "W3JsuWz4xWc",
-    difficulty: "Easy",
-    chords: ["C", "G", "D", "Am"],
-    description: "Hendrix classic with smooth changes",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 Hey Joe!" },
-      { time: 5, chord: "C", text: "C chord" },
-      { time: 9, chord: "G", text: "G" },
-      { time: 13, chord: "D", text: "D" },
-      { time: 17, chord: "Am", text: "Am" },
-      { time: 21, chord: "C", text: "C" }
-    ]
-  },
-  {
-    id: 6,
-    title: "Wonderwall",
-    artist: "Oasis",
-    youtube: "bx1Bh8ZvH84",
-    difficulty: "Medium",
-    chords: ["Em", "G", "D", "A"],
-    description: "Everyone knows this one!",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 Today is gonna be..." },
-      { time: 15, chord: "Em", text: "Em" },
-      { time: 19, chord: "G", text: "G" },
-      { time: 23, chord: "D", text: "D" },
-      { time: 27, chord: "A", text: "A" }
-    ]
-  },
-  {
-    id: 7,
-    title: "Wish You Were Here",
-    artist: "Pink Floyd",
-    youtube: "IXdNnw99-Ic",
-    difficulty: "Medium",
-    chords: ["Em", "G", "A", "C"],
-    description: "Pink Floyd masterpiece",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 So you think you can tell..." },
-      { time: 58, chord: "Em", text: "Em" },
-      { time: 62, chord: "G", text: "G" },
-      { time: 66, chord: "Em", text: "Em" },
-      { time: 70, chord: "A", text: "A" }
-    ]
-  },
-  {
-    id: 8,
-    title: "Stand By Me",
-    artist: "Ben E. King",
-    youtube: "hwZNL7QVJjE",
-    difficulty: "Easy",
-    chords: ["G", "Em", "C", "D"],
-    description: "Classic 4-chord song",
-    timeline: [
-      { time: 0, chord: null, text: "🎸 When the night..." },
-      { time: 10, chord: "G", text: "G" },
-      { time: 14, chord: "Em", text: "Em" },
-      { time: 18, chord: "C", text: "C" },
-      { time: 22, chord: "D", text: "D" },
-      { time: 26, chord: "G", text: "G" }
+      { time: 25, chord: "C", text: "Now C chord" },
+      { time: 40, chord: "D", text: "Switch to D" },
+      { time: 55, chord: "G", text: "Back to G" }
     ]
   }
 ];
-
-// 🔊 SOUND EFFECTS
-const playSoundEffect = (type) => {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  
-  if (type === 'correct') {
-    // Happy ascending arpeggio
-    [523.25, 659.25, 783.99].forEach((freq, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
-      g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.3);
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start(ctx.currentTime + i * 0.1);
-      o.stop(ctx.currentTime + i * 0.1 + 0.3);
-    });
-  } else if (type === 'almost') {
-    // Gentle encouraging tone
-    osc.frequency.value = 440;
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-  }
-};
 
 const playTone = (freq) => {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -211,19 +70,16 @@ const playTone = (freq) => {
 };
 
 
-// 🎸 IMPROVED CHORD DETECTOR WITH WIGGLE ROOM
+// CHORD DETECTOR COMPONENT
 const ChordDetector = ({ targetChord, onDetected, isListening }) => {
-  const [detectedNotes, setDetectedNotes] = useState([]);
+  const [detectedFreqs, setDetectedFreqs] = useState([]);
   const [confidence, setConfidence] = useState(0);
   const [volume, setVolume] = useState(0);
-  const [stable, setStable] = useState(false);
-  const [stringStatus, setStringStatus] = useState({}); // Which strings are detected
   
   const audioCtx = useRef(null);
   const analyser = useRef(null);
   const stream = useRef(null);
   const animFrame = useRef(null);
-  const lastSoundTime = useRef(0);
 
   const start = async () => {
     try {
@@ -242,11 +98,9 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
     animFrame.current && cancelAnimationFrame(animFrame.current);
     stream.current?.getTracks().forEach(t => t.stop());
     audioCtx.current?.close();
-    setDetectedNotes([]);
+    setDetectedFreqs([]);
     setVolume(0);
     setConfidence(0);
-    setStable(false);
-    setStringStatus({});
   };
 
   const analyze = () => {
@@ -262,8 +116,6 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
     setVolume(vol);
     
     if (vol > 15) {
-      lastSoundTime.current = Date.now();
-      
       // Find peaks in frequency spectrum
       const peaks = [];
       const sampleRate = audioCtx.current.sampleRate;
@@ -271,63 +123,36 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
       
       for (let i = 5; i < freqData.length / 2; i++) {
         if (freqData[i] > 100 && freqData[i] > freqData[i-1] && freqData[i] > freqData[i+1]) {
-          peaks.push({ freq: i * binSize, strength: freqData[i] });
+          peaks.push(i * binSize);
         }
       }
       
-      // Sort by strength and keep top ones
-      peaks.sort((a, b) => b.strength - a.strength);
-      const topPeaks = peaks.slice(0, 6).map(p => p.freq);
-      setDetectedNotes(topPeaks);
+      setDetectedFreqs(peaks.slice(0, 6)); // Keep top 6 peaks
       
-      // Compare with target chord (WITH WIGGLE ROOM!)
+      // Compare with target chord
       if (targetChord && CHORDS[targetChord]) {
         const targetNotes = CHORDS[targetChord].notes;
         let matches = 0;
-        const matchedStrings = {};
         
-        // WIGGLE ROOM: 8% tolerance instead of 5%
-        const TOLERANCE = 0.08;
-        
-        for (let peak of topPeaks) {
-          for (let i = 0; i < targetNotes.length; i++) {
-            const note = targetNotes[i];
-            if (Math.abs(peak - note) < note * TOLERANCE) {
+        for (let peak of peaks) {
+          for (let note of targetNotes) {
+            // Check if peak is within 5% of note frequency
+            if (Math.abs(peak - note) < note * 0.05) {
               matches++;
-              matchedStrings[i] = true;
               break;
             }
           }
         }
         
-        setStringStatus(matchedStrings);
-        
-        // WIGGLE ROOM: Need 60% match instead of 75%
-        const requiredNotes = Math.max(2, Math.ceil(targetNotes.length * 0.6));
-        const conf = Math.min(100, (matches / requiredNotes) * 100);
+        const conf = Math.min(100, (matches / Math.min(targetNotes.length, 4)) * 100);
         setConfidence(conf);
         
-        // Check if reading is stable (hasn't changed much in last 0.5s)
-        const isStable = Date.now() - lastSoundTime.current < 500 && conf > 60;
-        setStable(isStable);
-        
-        // WIGGLE ROOM: Trigger at 65% confidence instead of 70%
-        if (conf >= 65 && isStable) {
-          playSoundEffect('correct');
+        // If confidence > 70% for 0.5 seconds, chord is detected!
+        if (conf > 70 && onDetected) {
           setTimeout(() => {
-            if (confidence >= 65 && onDetected) {
-              onDetected();
-            }
-          }, 300);
-        } else if (conf >= 40 && conf < 65) {
-          // Almost there sound
-          if (Math.random() < 0.05) playSoundEffect('almost');
+            if (confidence > 70) onDetected();
+          }, 500);
         }
-      }
-    } else {
-      // No sound - reset stability
-      if (Date.now() - lastSoundTime.current > 1000) {
-        setStable(false);
       }
     }
     
@@ -347,46 +172,21 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
       </div>
       <small style={{color: volume > 15 ? '#0f8' : '#666'}}>
         {volume > 15 ? '🎤 Listening...' : '🎤 Strum your guitar'}
-        {stable && ' ⭐ Stable!'}
       </small>
       
       {targetChord && (
-        <div style={{marginTop: '15px'}}>
+        <div style={{marginTop: '10px'}}>
           <div style={styles.confidenceBar}>
             <div style={{
               ...styles.confidenceFill, 
               width: `${confidence}%`,
-              background: confidence >= 65 ? '#0f8' : confidence > 40 ? '#fa0' : '#f66'
+              background: confidence > 70 ? '#0f8' : confidence > 40 ? '#fa0' : '#f66'
             }}/>
           </div>
-          <div style={{fontSize: '28px', fontWeight: 'bold', color: confidence >= 65 ? '#0f8' : confidence > 40 ? '#fa0' : '#fff', marginTop: '10px'}}>
-            {confidence >= 65 ? '✅ Perfect! Great job!' : 
-             confidence > 40 ? '👍 Almost there! Keep going!' : 
-             '🎸 Try again - you got this!'}
+          <div style={{fontSize: '24px', fontWeight: 'bold', color: confidence > 70 ? '#0f8' : '#fa0'}}>
+            {confidence > 70 ? '✅ Perfect!' : confidence > 40 ? '👍 Almost there!' : '🎸 Keep trying!'}
           </div>
           <small style={{color: '#888'}}>{Math.round(confidence)}% match</small>
-          
-          {/* Visual string feedback */}
-          <div style={{marginTop: '15px', display: 'flex', gap: '5px', justifyContent: 'center'}}>
-            {CHORDS[targetChord].notes.map((note, i) => (
-              <div key={i} style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                background: stringStatus[i] ? '#0f8' : '#333',
-                border: '2px solid ' + (stringStatus[i] ? '#0f8' : '#666'),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                color: stringStatus[i] ? '#000' : '#666',
-                transition: '0.2s'
-              }}>
-                {stringStatus[i] ? '✓' : (6-i)}
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>
@@ -394,14 +194,13 @@ const ChordDetector = ({ targetChord, onDetected, isListening }) => {
 };
 
 
-// 🎥 INTERACTIVE LESSON COMPONENT  
+// INTERACTIVE LESSON COMPONENT
 const InteractiveLesson = ({ lesson, onExit }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [waitingForChord, setWaitingForChord] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
-  const [mode, setMode] = useState('practice'); // 'practice' or 'playalong'
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
   
@@ -440,8 +239,8 @@ const InteractiveLesson = ({ lesson, onExit }) => {
               const time = playerRef.current.getCurrentTime();
               setVideoTime(time);
               
-              // In PRACTICE mode: pause and wait for chord
-              if (mode === 'practice' && nextEvent && time >= nextEvent.time && !waitingForChord) {
+              // Check if we hit a chord change point
+              if (nextEvent && time >= nextEvent.time && !waitingForChord) {
                 playerRef.current.pauseVideo();
                 setIsPlaying(false);
                 setWaitingForChord(true);
@@ -465,7 +264,7 @@ const InteractiveLesson = ({ lesson, onExit }) => {
         playerRef.current.playVideo();
         setIsPlaying(true);
       }
-    }, 800);
+    }, 1000);
   };
 
   const togglePlay = () => {
@@ -496,25 +295,11 @@ const InteractiveLesson = ({ lesson, onExit }) => {
           <h2>{lesson.title}</h2>
           <small style={{color: '#888'}}>{lesson.artist} • {lesson.difficulty}</small>
         </div>
-        <div style={{marginLeft: 'auto', display: 'flex', gap: '10px'}}>
-          <button 
-            onClick={() => setMode('practice')} 
-            style={{...styles.modeBtn, background: mode === 'practice' ? '#0af' : '#333'}}
-          >
-            🎯 Practice
-          </button>
-          <button 
-            onClick={() => setMode('playalong')} 
-            style={{...styles.modeBtn, background: mode === 'playalong' ? '#0af' : '#333'}}
-          >
-            🎸 Play Along
-          </button>
-        </div>
       </div>
 
       <div style={styles.videoContainer}>
         <div id="youtube-player"></div>
-        {waitingForChord && mode === 'practice' && (
+        {waitingForChord && (
           <div style={styles.overlay}>
             <div style={styles.overlayContent}>
               <h1 style={{fontSize: '48px', marginBottom: '10px'}}>⏸️</h1>
@@ -532,7 +317,7 @@ const InteractiveLesson = ({ lesson, onExit }) => {
               />
               
               <button onClick={skip} style={{...styles.btn, background: '#555', marginTop: '20px'}}>
-                Skip for now ⏭️
+                Skip for now
               </button>
             </div>
           </div>
@@ -773,8 +558,7 @@ const GuitarLearning = () => {
         <div style={styles.section}>
           <h3>Interactive Video Lessons</h3>
           <p style={{color: '#888', marginBottom: '20px'}}>
-            🎸 Learn by doing! Videos pause when it's time to play a chord. We'll listen and only continue when you nail it!<br/>
-            Choose <strong>Practice Mode</strong> (pause & wait) or <strong>Play Along Mode</strong> (keep playing!)
+            🎸 Learn by doing! Videos pause when it's time to play a chord. We'll listen and only continue when you nail it!
           </p>
           <div style={styles.lessonGrid}>
             {LESSONS.map(lesson => (
@@ -786,11 +570,10 @@ const GuitarLearning = () => {
                 <div style={{padding: '10px'}}>
                   <strong>{lesson.title}</strong>
                   <div style={{color: '#888', fontSize: '12px'}}>{lesson.artist}</div>
-                  <div style={{color: '#aaa', fontSize: '11px', marginTop: '3px'}}>{lesson.description}</div>
                   <div style={{marginTop: '5px'}}>
                     {lesson.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}
                   </div>
-                  <div style={{...styles.difficultyBadge, background: lesson.difficulty === 'Beginner' ? '#0f8' : lesson.difficulty === 'Easy' ? '#4af' : '#fa0'}}>
+                  <div style={{...styles.difficultyBadge, background: lesson.difficulty === 'Beginner' ? '#0f8' : '#fa0'}}>
                     {lesson.difficulty}
                   </div>
                 </div>
@@ -835,9 +618,8 @@ const styles = {
   
   // INTERACTIVE LESSON
   lesson: { background: 'var(--surface)', borderRadius: '12px', padding: '20px', maxWidth: '900px', margin: '0 auto' },
-  lessonHeader: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' },
+  lessonHeader: { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' },
   backBtn: { padding: '10px 20px', background: '#333', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold' },
-  modeBtn: { padding: '8px 15px', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
   videoContainer: { position: 'relative', background: '#000', borderRadius: '12px', overflow: 'hidden', aspectRatio: '16/9' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: '#000e', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   overlayContent: { textAlign: 'center', padding: '20px', background: '#1a1a2a', borderRadius: '12px', maxWidth: '400px' },
