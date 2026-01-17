@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ChordPlayAlong from '../components/ChordPlayAlong';
 
 // ============= USER PROGRESS SYSTEM =============
 const initializeUserData = () => {
@@ -139,6 +140,71 @@ const CHORDS = {
          notes: [110, 164.81, 220, 277.18, 329.63] },
   'Dm': { name: 'D Minor', fingers: [[1,1,1], [3,2,3], [2,3,2]], open: [4], muted: [6,5],
           notes: [146.83, 220, 293.66, 349.23] }
+};
+
+// ============= CHORD DETECTION SYSTEM =============
+// Chord templates for real-time detection (chromagram pattern matching)
+// Each template maps to 12 pitch classes: C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+const CHORD_TEMPLATES = {
+  'G':  [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1],  // G, B, D
+  'C':  [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],  // C, E, G
+  'D':  [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],  // D, F#, A
+  'Em': [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1],  // E, G, B
+  'Am': [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],  // A, C, E
+  'E':  [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],  // E, G#, B
+  'A':  [0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],  // A, C#, E
+  'Dm': [1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0],  // D, F, A
+};
+
+// Note names for chromagram
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// Detect chord from frequency analysis
+const detectChordFromFrequencies = (frequencies, sampleRate) => {
+  // Build chromagram (12-bin pitch class profile)
+  const chromagram = new Array(12).fill(0);
+  const fftSize = frequencies.length;
+  
+  for (let i = 0; i < fftSize / 2; i++) {
+    const freq = (i * sampleRate) / fftSize;
+    if (freq < 80 || freq > 1000) continue; // Guitar range
+    
+    // Convert frequency to pitch class (0-11)
+    const noteNum = 12 * Math.log2(freq / 440) + 69; // MIDI note number
+    const pitchClass = Math.round(noteNum) % 12;
+    
+    if (pitchClass >= 0 && pitchClass < 12) {
+      chromagram[pitchClass] += frequencies[i];
+    }
+  }
+  
+  // Normalize chromagram
+  const maxVal = Math.max(...chromagram);
+  if (maxVal === 0) return null;
+  
+  for (let i = 0; i < 12; i++) {
+    chromagram[i] = chromagram[i] / maxVal;
+  }
+  
+  // Match against chord templates
+  let bestMatch = null;
+  let bestScore = 0;
+  
+  for (const [chordName, template] of Object.entries(CHORD_TEMPLATES)) {
+    let score = 0;
+    for (let i = 0; i < 12; i++) {
+      if (template[i] === 1) {
+        score += chromagram[i];
+      }
+    }
+    
+    if (score > bestScore && score > 0.5) {
+      bestScore = score;
+      bestMatch = chordName;
+    }
+  }
+  
+  return { chord: bestMatch, confidence: bestScore };
 };
 
 // 🎸 ICONIC BEGINNER RIFFS (research-backed!)
@@ -517,7 +583,7 @@ export default function GuitarLearning() {
 
       {/* NAVIGATION */}
       <div style={styles.nav}>
-        {['home', 'lessons', 'riffs', 'tuner', 'chords', 'progress'].map(v => (
+        {['home', 'lessons', 'riffs', 'playalong', 'tuner', 'chords', 'progress'].map(v => (
           <button 
             key={v} 
             onClick={() => setView(v)} 
@@ -526,6 +592,7 @@ export default function GuitarLearning() {
             {v === 'home' && '🏠 Home'}
             {v === 'lessons' && '🎵 Songs'}
             {v === 'riffs' && '⚡ Riffs'}
+            {v === 'playalong' && '🎮 Play Along'}
             {v === 'tuner' && '🎤 Tuner'}
             {v === 'chords' && '🎸 Chords'}
             {v === 'progress' && '📊 Progress'}
@@ -986,6 +1053,165 @@ const RiffLesson = ({ riff, onExit, onComplete }) => {
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// ========== REAL-TIME CHORD DETECTOR COMPONENT ==========
+const ChordDetector = ({ expectedChord, onChordDetected }) => {
+  const [detectedChord, setDetectedChord] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const [confidence, setConfidence] = useState(0);
+  
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+  
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 4096; // Higher resolution for better chord detection
+      analyser.smoothingTimeConstant = 0.8;
+      analyserRef.current = analyser;
+      
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      
+      setIsListening(true);
+      detectChord();
+    } catch (err) {
+      console.error('Microphone access denied:', err);
+      alert('Please allow microphone access to detect chords!');
+    }
+  };
+  
+  const stopListening = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    setIsListening(false);
+  };
+  
+  const detectChord = () => {
+    if (!analyserRef.current) return;
+    
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    analyser.getByteFrequencyData(dataArray);
+    
+    // Detect chord from frequency data
+    const result = detectChordFromFrequencies(dataArray, audioContextRef.current.sampleRate);
+    
+    if (result && result.chord) {
+      setDetectedChord(result.chord);
+      setConfidence(result.confidence);
+      
+      // Check if it matches expected chord
+      if (expectedChord && result.chord === expectedChord && result.confidence > 0.6) {
+        onChordDetected && onChordDetected(true, result.confidence * 100);
+      }
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(detectChord);
+  };
+  
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+  
+  const isCorrect = detectedChord === expectedChord;
+  const confidencePercent = Math.round(confidence * 100);
+  
+  return (
+    <div style={styles.detectorCard}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px'}}>
+        <h4>🎤 Chord Detection</h4>
+        <button onClick={toggleListening} style={{
+          ...styles.primaryBtn,
+          background: isListening ? '#f44' : '#0f8'
+        }}>
+          {isListening ? '⏹ Stop' : '▶️ Start'} Listening
+        </button>
+      </div>
+      
+      {expectedChord && (
+        <div style={{marginBottom: '15px'}}>
+          <div style={{color: '#888'}}>Target Chord:</div>
+          <div style={{fontSize: '32px', fontWeight: 'bold', color: '#0af'}}>{expectedChord}</div>
+        </div>
+      )}
+      
+      {isListening && (
+        <div>
+          <div style={{color: '#888'}}>Detected:</div>
+          <div style={{
+            fontSize: '48px',
+            fontWeight: 'bold',
+            color: isCorrect ? '#0f8' : '#f44',
+            marginBottom: '10px'
+          }}>
+            {detectedChord || '...'}</div>
+          
+          {detectedChord && (
+            <div>
+              <div style={{color: '#888', fontSize: '14px'}}>Confidence: {confidencePercent}%</div>
+              <div style={styles.progressBar}>
+                <div style={{
+                  width: `${confidencePercent}%`,
+                  height: '8px',
+                  background: isCorrect ? '#0f8' : '#f44',
+                  borderRadius: '4px',
+                  transition: '0.3s'
+                }}/>
+              </div>
+            </div>
+          )}
+          
+          {isCorrect && (
+            <div style={{
+              marginTop: '15px',
+              padding: '15px',
+              background: '#0f82',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{fontSize: '24px'}}>✅</div>
+              <strong>Perfect! Great job!</strong>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {!isListening && (
+        <div style={{color: '#888', textAlign: 'center', padding: '20px'}}>
+          Click "Start Listening" to detect your chord
+        </div>
+      )}
     </div>
   );
 };
