@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ChordPlayAlong from '../components/ChordPlayAlong';
 
 // ============= USER PROGRESS SYSTEM =============
 const initializeUserData = () => {
