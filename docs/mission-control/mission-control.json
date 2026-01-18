@@ -7,15 +7,20 @@
   "owner": "Riddick (age 10)",
   
   "currentStatus": {
-    "production": "DEPLOYING - REAL ONLINE MULTIPLAYER OUPA CHESS 🌍♟️",
-    "lastDeploy": "2026-01-17T04:25:00Z",
-    "health": "Beijing vs South Africa chess is LIVE!",
-    "commitHash": "755955c"
+    "production": "DEPLOYING - OUPA-PROOF 4-LETTER CODE SYSTEM 🎯",
+    "lastDeploy": "2026-01-17T04:35:00Z",
+    "health": "Stupidly simple chess for grandpas!",
+    "commitHash": "d6f701d"
   },
   
   "importantReminder": "ALWAYS UPDATE MISSION CONTROL AT END OF EACH SESSION!",
   
   "recentChanges": [
+    "2026-01-17T04:35Z: 🎯 OUPA-PROOF - 4-letter code system (NO complicated URLs!)",
+    "2026-01-17T04:35Z: Simple flow: /oupa for everyone, just type code",
+    "2026-01-17T04:35Z: HUGE code display (72px) - impossible to miss",
+    "2026-01-17T04:35Z: Codes without I/O (ABCD not AB1O - clearer)",
+    "2026-01-17T04:35Z: Can say code over phone/WhatsApp verbally",
     "2026-01-17T04:25Z: 🌍 REAL ONLINE MULTIPLAYER - Socket.io room-based chess!",
     "2026-01-17T04:25Z: Create game → shareable link system",
     "2026-01-17T04:25Z: Real-time move synchronization across devices",
@@ -79,16 +84,18 @@
       "Real-time chord detection",
       "Sound effects",
       "Visual feedback",
-      "♟️ OUPA'S CHESS - REAL ONLINE MULTIPLAYER 🌍",
-      "Socket.io room-based multiplayer",
-      "Shareable game links (riddickchess.site/oupa?room=XXX)",
-      "Real-time move synchronization",
-      "Synchronized 10-minute timers",
-      "Reconnection support (30 sec grace)",
-      "Works across continents (Beijing ↔ South Africa)",
-      "No auth required - just share link!",
-      "One-click copy link",
-      "Clean grandpa-proof UI"
+      "♟️ OUPA'S CHESS - OUPA-PROOF 4-LETTER CODES 🎯",
+      "Socket.io real-time multiplayer",
+      "4-letter codes only (ABCD style, no I/O confusion)",
+      "Everyone goes to /oupa (NO URL parameters!)",
+      "CREATE → Get code → Tell Oupa → Type code → JOIN",
+      "72px giant code display",
+      "Can say code verbally over phone",
+      "Copy code button",
+      "Real-time synchronization",
+      "10-minute timers",
+      "Works Beijing ↔ South Africa",
+      "Grandpa-proof interface"
     ],
     "needsWork": [
       "Guitar metronome feature (future)",
@@ -104,7 +111,7 @@
     "/admin/guitar": "🎸 LEGENDARY GUITAR LEARNING CENTER 🎸",
     "/admin/hehe": "Secret store admin",
     "/admin": "Fake admin (troll page for hackers)",
-    "/oupa": "♟️ OUPA'S CHESS - Grandpa-proof interface (PUBLIC) 😂"
+    "/oupa": "🎯 OUPA CHESS - 4-letter code system (PUBLIC, OUPA-PROOF!) 😂"
   },
   
   "sessionHighlights": {
