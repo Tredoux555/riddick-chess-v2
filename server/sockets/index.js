@@ -284,6 +284,12 @@ function initializeSocket(io) {
     });
 
     // ========================================
+    // OUPA CHESS - SIMPLE MULTIPLAYER
+    // (No auth required!)
+    // ========================================
+    handleOupaSocket(io, socket);
+
+    // ========================================
     // GAME EVENTS
     // ========================================
 
@@ -962,6 +968,205 @@ function filterBadWords(text) {
     filtered = filtered.replace(regex, '*'.repeat(word.length));
   }
   return filtered;
+}
+
+// ============================================
+// 🎯 OUPA CHESS - SIMPLE MULTIPLAYER ROOMS
+// ============================================
+const oupaGames = new Map(); // roomId -> { white, black, chess, whiteTime, blackTime, ... }
+
+function generateRoomId() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function handleOupaSocket(io, socket) {
+  // Create a new game room
+  socket.on('oupa:create', (callback) => {
+    const roomId = generateRoomId();
+    const chess = new Chess();
+    
+    oupaGames.set(roomId, {
+      roomId,
+      white: { socketId: socket.id, name: 'White' },
+      black: null,
+      chess,
+      position: chess.fen(),
+      whiteTime: 600,  // 10 minutes in seconds
+      blackTime: 600,
+      lastMoveTime: null,
+      timerInterval: null,
+      status: 'waiting'  // waiting, playing, finished
+    });
+    
+    socket.join(roomId);
+    callback({ roomId, color: 'white' });
+    console.log(`[OUPA] Room ${roomId} created by ${socket.id}`);
+  });
+  
+  // Join an existing game room
+  socket.on('oupa:join', ({ roomId }, callback) => {
+    const game = oupaGames.get(roomId);
+    
+    if (!game) {
+      return callback({ error: 'Room not found' });
+    }
+    
+    if (game.black) {
+      return callback({ error: 'Room is full' });
+    }
+    
+    game.black = { socketId: socket.id, name: 'Black' };
+    game.status = 'playing';
+    socket.join(roomId);
+    
+    // Start the clock
+    game.lastMoveTime = Date.now();
+    game.timerInterval = setInterval(() => {
+      const elapsed = (Date.now() - game.lastMoveTime) / 1000;
+      const turn = game.chess.turn();
+      
+      if (turn === 'w') {
+        game.whiteTime = Math.max(0, game.whiteTime - elapsed);
+        if (game.whiteTime <= 0) {
+          endOupaGame(io, roomId, 'Black wins on time!');
+        }
+      } else {
+        game.blackTime = Math.max(0, game.blackTime - elapsed);
+        if (game.blackTime <= 0) {
+          endOupaGame(io, roomId, 'White wins on time!');
+        }
+      }
+      
+      game.lastMoveTime = Date.now();
+      
+      // Broadcast time updates
+      io.to(roomId).emit('oupa:time', {
+        whiteTime: Math.round(game.whiteTime),
+        blackTime: Math.round(game.blackTime)
+      });
+    }, 1000);
+    
+    callback({ roomId, color: 'black' });
+    
+    // Notify white player that black joined
+    io.to(game.white.socketId).emit('oupa:opponent_joined');
+    
+    console.log(`[OUPA] ${socket.id} joined room ${roomId}`);
+  });
+  
+  // Make a move
+  socket.on('oupa:move', ({ roomId, from, to }, callback) => {
+    const game = oupaGames.get(roomId);
+    
+    if (!game) {
+      return callback({ error: 'Room not found' });
+    }
+    
+    // Verify it's the right player's turn
+    const turn = game.chess.turn();
+    const isWhiteTurn = turn === 'w';
+    const isWhitePlayer = socket.id === game.white.socketId;
+    
+    if (isWhiteTurn !== isWhitePlayer) {
+      return callback({ error: 'Not your turn' });
+    }
+    
+    try {
+      const move = game.chess.move({ from, to, promotion: 'q' });
+      
+      if (!move) {
+        return callback({ error: 'Invalid move' });
+      }
+      
+      game.position = game.chess.fen();
+      game.lastMoveTime = Date.now();
+      
+      // Check for game over
+      if (game.chess.isGameOver()) {
+        let result;
+        if (game.chess.isCheckmate()) {
+          result = `${turn === 'w' ? 'White' : 'Black'} wins by checkmate!`;
+        } else if (game.chess.isDraw()) {
+          result = 'Draw!';
+        } else if (game.chess.isStalemate()) {
+          result = 'Stalemate!';
+        }
+        endOupaGame(io, roomId, result);
+      }
+      
+      // Broadcast move to both players
+      io.to(roomId).emit('oupa:move_made', {
+        from,
+        to,
+        position: game.position,
+        turn: game.chess.turn()
+      });
+      
+      callback({ success: true });
+    } catch (err) {
+      callback({ error: 'Invalid move' });
+    }
+  });
+  
+  // Resign
+  socket.on('oupa:resign', ({ roomId }) => {
+    const game = oupaGames.get(roomId);
+    if (!game) return;
+    
+    const isWhite = socket.id === game.white.socketId;
+    const result = isWhite ? 'Black wins by resignation!' : 'White wins by resignation!';
+    endOupaGame(io, roomId, result);
+  });
+  
+  // Offer draw
+  socket.on('oupa:draw', ({ roomId }) => {
+    const game = oupaGames.get(roomId);
+    if (!game || game.status !== 'playing') return;
+    
+    endOupaGame(io, roomId, 'Game drawn by agreement!');
+  });
+  
+  // Disconnect handling
+  socket.on('disconnect', () => {
+    // Find games this socket is in
+    for (const [roomId, game] of oupaGames.entries()) {
+      if (game.white?.socketId === socket.id || game.black?.socketId === socket.id) {
+        const isWhite = game.white?.socketId === socket.id;
+        io.to(roomId).emit('oupa:opponent_disconnected', {
+          color: isWhite ? 'white' : 'black'
+        });
+        
+        // Clean up after 30 seconds if still disconnected
+        setTimeout(() => {
+          if (oupaGames.has(roomId)) {
+            endOupaGame(io, roomId, `${isWhite ? 'White' : 'Black'} disconnected`);
+          }
+        }, 30000);
+      }
+    }
+  });
+}
+
+function endOupaGame(io, roomId, result) {
+  const game = oupaGames.get(roomId);
+  if (!game) return;
+  
+  if (game.timerInterval) {
+    clearInterval(game.timerInterval);
+    game.timerInterval = null;
+  }
+  
+  game.status = 'finished';
+  
+  io.to(roomId).emit('oupa:game_over', { result });
+  
+  console.log(`[OUPA] Game ${roomId} ended: ${result}`);
+  
+  // Clean up after 5 minutes
+  setTimeout(() => {
+    oupaGames.delete(roomId);
+    console.log(`[OUPA] Room ${roomId} cleaned up`);
+  }, 300000);
 }
 
 module.exports = { initializeSocket, activeGames, userSockets };
