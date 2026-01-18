@@ -971,12 +971,22 @@ function filterBadWords(text) {
 }
 
 // ============================================
-// 🎯 OUPA CHESS - SIMPLE MULTIPLAYER ROOMS
+// 🎯 OUPA CHESS - SIMPLE 4-LETTER CODE SYSTEM
 // ============================================
 const oupaGames = new Map(); // roomId -> { white, black, chess, whiteTime, blackTime, ... }
 
 function generateRoomId() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  // Generate simple 4-letter code like ABCD
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Exclude I and O (confusing)
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  // Make sure it's unique
+  if (oupaGames.has(code)) {
+    return generateRoomId();
+  }
+  return code;
 }
 
 function handleOupaSocket(io, socket) {
