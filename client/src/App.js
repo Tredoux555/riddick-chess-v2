@@ -34,6 +34,8 @@ import Learn from './pages/Learn';
 import AdminLessons from './pages/AdminLessons';
 import TestBoard from './pages/TestBoard';
 import GuitarLearning from './pages/GuitarLearning';
+import OupaChess from './pages/Oupa/OupaChess';
+
 
 // Bot and Analysis components
 import BotSelection from './components/BotSelection';
@@ -122,6 +124,9 @@ function App() {
             <ProtectedRoute><Settings /></ProtectedRoute>
           } />
           <Route path="/learn" element={<Learn />} />
+
+          {/* OUPA'S CHESS PAGE - Simple grandpa-proof chess! 😂 */}
+          <Route path="/oupa" element={<OupaChess />} />
 
           {/* Club members only */}
           <Route path="/club" element={
