@@ -841,9 +841,21 @@ const Home = () => {
         /* Quick Actions */
         .quick-actions {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          grid-template-columns: repeat(4, 1fr);
           gap: 16px;
           margin-bottom: 32px;
+        }
+
+        @media (max-width: 1000px) {
+          .quick-actions {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 500px) {
+          .quick-actions {
+            grid-template-columns: 1fr;
+          }
         }
 
         .action-card {
@@ -851,11 +863,12 @@ const Home = () => {
           backdrop-filter: blur(10px);
           border: 1px solid var(--border-color);
           border-radius: 16px;
-          padding: 24px;
+          padding: 24px 16px;
           text-align: center;
           color: var(--text-primary);
           transition: all 0.3s ease;
           text-decoration: none;
+          min-width: 0;
         }
 
         .action-card:hover {
@@ -901,8 +914,14 @@ const Home = () => {
         /* Dashboard Grid */
         .dashboard-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: repeat(2, 1fr);
           gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         .dash-card {
@@ -912,6 +931,7 @@ const Home = () => {
           border-radius: 16px;
           overflow: hidden;
           transition: all 0.3s ease;
+          min-width: 0;
         }
 
         .dash-card:hover {
@@ -946,34 +966,39 @@ const Home = () => {
 
         /* Ratings */
         .ratings-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
 
         .rating-item {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 12px;
+          gap: 12px;
+          padding: 14px 16px;
           background: var(--bg-tertiary);
-          border-radius: 10px;
+          border-radius: 12px;
+          min-width: 0;
         }
 
         .rating-emoji {
-          font-size: 1.25rem;
+          font-size: 1.5rem;
+          flex-shrink: 0;
         }
 
         .rating-type {
           flex: 1;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
           color: var(--text-secondary);
+          min-width: 0;
         }
 
         .rating-number {
           font-family: 'Space Grotesk', sans-serif;
           font-weight: 700;
-          font-size: 1.1rem;
+          font-size: 1.25rem;
+          color: #a78bfa;
+          flex-shrink: 0;
         }
 
         /* Stats */
