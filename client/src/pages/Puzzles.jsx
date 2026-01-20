@@ -189,3 +189,110 @@ const Puzzles = () => {
 export default Puzzles;
 // Cache bust: 1766724523
 // Build 1766728276
+hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .puzzle-info-section {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .info-card {
+          background: rgba(30, 30, 50, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid var(--border-color);
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+        }
+
+        .info-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: var(--text-secondary);
+          margin-bottom: 12px;
+        }
+
+        .star-icon { color: #fbbf24; }
+
+        .rating-display {
+          font-size: 3rem;
+          font-weight: 700;
+          font-family: 'Space Grotesk', sans-serif;
+          background: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .rating-label {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          margin-top: 4px;
+        }
+
+        .rush-card {
+          position: relative;
+          display: block;
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(239, 68, 68, 0.2) 100%);
+          border: 1px solid rgba(249, 115, 22, 0.3);
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+          text-decoration: none;
+          color: white;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .rush-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 15px 40px rgba(249, 115, 22, 0.2);
+          border-color: rgba(249, 115, 22, 0.5);
+        }
+
+        .rush-glow {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 150px;
+          height: 150px;
+          background: radial-gradient(circle, rgba(249, 115, 22, 0.3) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .rush-icon {
+          font-size: 2.5rem;
+          color: #f97316;
+          margin-bottom: 8px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .rush-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          font-family: 'Space Grotesk', sans-serif;
+          position: relative;
+          z-index: 1;
+        }
+
+        .rush-desc {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          margin-top: 4px;
+          position: relative;
+          z-index: 1;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Puzzles;
