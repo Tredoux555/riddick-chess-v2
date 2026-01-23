@@ -214,7 +214,7 @@ const Profile = () => {
                       {Math.floor(game.time_control / 60)} min
                     </div>
                     <div className="game-date">
-                      {new Date(game.completed_at).toLocaleDateString()}
+                      {game.completed_at ? new Date(game.completed_at).toLocaleDateString() : 'Recent'}
                     </div>
                   </Link>
                 ))}

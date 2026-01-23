@@ -122,7 +122,7 @@ const Leaderboards = () => {
                 </div>
                 {activeCategory !== 'achievements' && entry.games && (
                   <div className="games-played">
-                    {entry.games} games
+                    {entry.games} {entry.games === 1 ? 'game' : 'games'}
                   </div>
                 )}
                 {activeCategory === 'achievements' && (
