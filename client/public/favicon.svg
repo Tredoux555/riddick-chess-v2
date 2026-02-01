@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#6366f1"/>
-    </linearGradient>
-  </defs>
-  <!-- Background circle -->
-  <circle cx="32" cy="32" r="30" fill="url(#bg)"/>
-  <!-- Chess King Crown -->
-  <path d="M32 12 L32 18 M26 18 L38 18 M24 22 L24 28 L28 24 L32 28 L36 24 L40 28 L40 22 Z" stroke="white" stroke-width="2" fill="none"/>
-  <!-- King Body -->
-  <path d="M22 30 L42 30 L44 48 L20 48 Z" fill="white"/>
-  <!-- King Base -->
-  <rect x="18" y="48" width="28" height="6" rx="2" fill="white"/>
-  <!-- R initial -->
-  <text x="32" y="44" text-anchor="middle" font-family="Arial Black" font-size="14" font-weight="bold" fill="#8b5cf6">R</text>
-</svg>
+²ø1šYì
