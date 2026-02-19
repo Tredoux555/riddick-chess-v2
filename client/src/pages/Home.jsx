@@ -648,7 +648,7 @@ const Home = () => {
     <div className="dashboard">
       <div className="welcome-section">
         <div className="welcome-glow"></div>
-        <h1>Welcome back, <span className="username-highlight">{user.username}</span>! 👋</h1>
+        <h1>Welcome back, <span className="username-highlight" style={{fontFamily: "'Space Grotesk', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif"}}>{user.username}</span>! 👋</h1>
         <p>Ready to play some chess?</p>
       </div>
 
