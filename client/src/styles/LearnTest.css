@@ -1,0 +1,252 @@
+/* ============================================
+   LEARN TEST PAGE - CLEAN & BEAUTIFUL TYPOGRAPHY
+   ============================================ */
+
+.learn-test-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 3rem 2rem;
+}
+
+.learn-test-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.learn-test-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.test-badge {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.learn-test-title {
+  font-size: 4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  margin-bottom: 1rem;
+  letter-spacing: -2px;
+  line-height: 1.1;
+}
+
+.learn-test-subtitle {
+  color: #9ca3af;
+  font-size: 1.25rem;
+  font-weight: 400;
+  font-family: 'Inter', -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.lesson-card {
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+  position: relative;
+}
+
+.lesson-card:hover {
+  background: rgba(26, 26, 46, 0.6);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.lesson-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  opacity: 0.9;
+}
+
+/* CLEAN WOODEN CHESSBOARD */
+.chessboard-icon {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 0;
+  border: 2px solid #3d2817;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+  background: #2a1810;
+}
+
+.chessboard-icon div {
+  aspect-ratio: 1;
+}
+
+/* Light squares */
+.chessboard-icon div:nth-child(odd) {
+  background: #f0d9b5;
+}
+
+/* Dark squares */
+.chessboard-icon div:nth-child(even) {
+  background: #b58863;
+}
+
+/* Fix pattern */
+.chessboard-icon div:nth-child(8n+1),
+.chessboard-icon div:nth-child(8n+3),
+.chessboard-icon div:nth-child(8n+5),
+.chessboard-icon div:nth-child(8n+7) {
+  background: #f0d9b5;
+}
+
+.chessboard-icon div:nth-child(8n+2),
+.chessboard-icon div:nth-child(8n+4),
+.chessboard-icon div:nth-child(8n+6),
+.chessboard-icon div:nth-child(8n+8) {
+  background: #b58863;
+}
+
+.chessboard-icon div:nth-child(n+9):nth-child(-n+16):nth-child(odd),
+.chessboard-icon div:nth-child(n+25):nth-child(-n+32):nth-child(odd),
+.chessboard-icon div:nth-child(n+41):nth-child(-n+48):nth-child(odd),
+.chessboard-icon div:nth-child(n+57):nth-child(-n+64):nth-child(odd) {
+  background: #b58863;
+}
+
+.chessboard-icon div:nth-child(n+9):nth-child(-n+16):nth-child(even),
+.chessboard-icon div:nth-child(n+25):nth-child(-n+32):nth-child(even),
+.chessboard-icon div:nth-child(n+41):nth-child(-n+48):nth-child(even),
+.chessboard-icon div:nth-child(n+57):nth-child(-n+64):nth-child(even) {
+  background: #f0d9b5;
+}
+
+.lesson-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.lesson-description {
+  color: #9ca3af;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 400;
+}
+
+.lesson-stats {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #10b981;
+  font-weight: 700;
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+.features-section {
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 16px;
+  padding: 2.5rem;
+  margin-top: 4rem;
+  backdrop-filter: blur(12px);
+}
+
+.features-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #34d399;
+  margin-bottom: 1.5rem;
+  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.feature-item {
+  padding: 0.875rem 1rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.feature-item:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateX(4px);
+}
+
+.check {
+  color: #10b981;
+  margin-right: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .learn-test-title {
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+  }
+  
+  .lessons-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .features-list {
+    grid-template-columns: 1fr;
+  }
+}

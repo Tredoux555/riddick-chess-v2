@@ -31,6 +31,7 @@ import SecretStoreWants from './pages/SecretStoreWants';
 import StoreWants from './pages/StoreWants';
 import FakeAdmin from './pages/FakeAdmin';
 import Learn from './pages/Learn';
+import LearnTest from './pages/LearnTest';
 import AdminLessons from './pages/AdminLessons';
 import TestBoard from './pages/TestBoard';
 import GuitarLearning from './pages/GuitarLearning';
@@ -124,6 +125,7 @@ function App() {
             <ProtectedRoute><Settings /></ProtectedRoute>
           } />
           <Route path="/learn" element={<Learn />} />
+          <Route path="/learn-test" element={<LearnTest />} />
 
           {/* OUPA'S CHESS PAGE - Simple grandpa-proof chess! 😂 */}
           <Route path="/oupa" element={<OupaChess />} />
