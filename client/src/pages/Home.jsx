@@ -781,7 +781,7 @@ const Home = () => {
         )}
 
         {/* Oupa link only for Riddick */}
-        {user.username === 'Handsome Riddick 😎' && (
+        {user.username && user.username.includes('Riddick') && (
           <div className="dash-card">
             <div className="dash-card-body">
               <div className="quick-links">
