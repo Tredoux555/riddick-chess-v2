@@ -780,21 +780,16 @@ const Home = () => {
           </div>
         )}
 
-        {/* Quick Links Card */}
-        <div className="dash-card">
-          <div className="dash-card-header">
-            <h3>🚀 Quick Links</h3>
-          </div>
-          <div className="dash-card-body">
-            <div className="quick-links">
-              <Link to="/leaderboards" className="quick-link">📊 Leaderboards</Link>
-              <Link to="/achievements" className="quick-link">🏆 Achievements</Link>
-              <Link to="/learn" className="quick-link">📚 Learn Chess</Link>
-              <Link to="/guitar" className="quick-link">🎸 Guitar</Link>
-              <Link to="/oupa" className="quick-link">👴 Play with Oupa</Link>
+        {/* Oupa link only for Riddick */}
+        {user.username === 'Handsome Riddick 😎' && (
+          <div className="dash-card">
+            <div className="dash-card-body">
+              <div className="quick-links">
+                <Link to="/oupa" className="quick-link">👴 Play with Oupa</Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
 
