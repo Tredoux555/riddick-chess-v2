@@ -312,7 +312,7 @@ h4 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-family: var(--font-display);
+  font-family: var(--font-display), 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
