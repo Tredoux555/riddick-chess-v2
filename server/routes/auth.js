@@ -6,7 +6,7 @@ const { OAuth2Client } = require('google-auth-library');
 const pool = require('../utils/db');
 const { authenticateToken } = require('../middleware/auth');
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client("438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com");
 
 // Register
 router.post('/register', async (req, res) => {
@@ -109,7 +109,7 @@ router.post('/google', async (req, res) => {
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID
+      audience: "438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com"
     });
 
     const payload = ticket.getPayload();
@@ -165,8 +165,8 @@ router.post('/google', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Google auth error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Google auth error:', error.message);
+    res.status(500).json({ error: error.message || 'Server error' });
   }
 });
 
