@@ -648,7 +648,7 @@ const Home = () => {
     <div className="dashboard">
       <div className="welcome-section">
         <div className="welcome-glow"></div>
-        <h1>Welcome back, <span className="username-highlight" style={{fontFamily: "'Space Grotesk', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif"}}>{user.username}</span>! 👋</h1>
+        <h1>Welcome back, <span className="username-highlight">{user.username.replace(/[\u{1F000}-\u{1FFFF}]/gu, '').trim()}</span> <span style={{fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'"}}>{user.username.match(/[\u{1F000}-\u{1FFFF}]/gu) || ''}</span>! 👋</h1>
         <p>Ready to play some chess?</p>
       </div>
 

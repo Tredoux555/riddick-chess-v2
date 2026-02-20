@@ -31,7 +31,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
-          <span style={{fontFamily: "'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif", marginRight: '8px'}}>♟️</span>
+          <img src="/favicon.png" alt="pawn" style={{width: '28px', height: '28px', marginRight: '8px'}} />
           <span>Riddick Chess</span>
         </Link>
 
