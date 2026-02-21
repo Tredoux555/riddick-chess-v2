@@ -820,7 +820,7 @@ function initializeSocket(io) {
           if (game.whiteId === userId || game.blackId === userId) {
             game.disconnectedPlayer = userId;
             
-            // Wait 3 seconds before notifying - player might just be refreshing
+            // Wait 15 seconds before notifying - player might just be navigating/refreshing
             setTimeout(() => {
               // Check if still disconnected (didn't reconnect quickly)
               if (game.disconnectedPlayer === userId) {
@@ -1108,6 +1108,7 @@ function handleOupaSocket(io, socket) {
       io.to(roomId).emit('oupa:move_made', {
         from,
         to,
+        move: from + to,
         position: game.position,
         turn: game.chess.turn()
       });

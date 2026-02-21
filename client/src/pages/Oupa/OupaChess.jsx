@@ -22,6 +22,7 @@ export default function OupaChess() {
   const [blackTime, setBlackTime] = useState(600);
   const [gameStatus, setGameStatus] = useState('menu'); // menu, waiting, playing, finished
   const [gameResult, setGameResult] = useState(null);
+  const [lastMove, setLastMove] = useState(null);
   
   // Initialize socket
   useEffect(() => {
@@ -46,9 +47,10 @@ export default function OupaChess() {
       setGameStatus('playing');
     });
     
-    socket.on('oupa:move_made', ({ position, turn }) => {
+    socket.on('oupa:move_made', ({ position, turn, move }) => {
       setPosition(position);
       setCurrentTurn(turn);
+      if (move) setLastMove({ from: move.substring(0, 2), to: move.substring(2, 4) });
     });
     
     socket.on('oupa:time', ({ whiteTime, blackTime }) => {
@@ -279,6 +281,12 @@ export default function OupaChess() {
               boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
             }}
             boardOrientation={playerColor}
+            customSquareStyles={{
+              ...(lastMove ? {
+                [lastMove.from]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+                [lastMove.to]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' }
+              } : {})
+            }}
           />
         </div>
         

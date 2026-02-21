@@ -42,6 +42,7 @@ const Game = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingPromotion, setPendingPromotion] = useState(null);
   const [tournamentId, setTournamentId] = useState(null);
+  const [lastMove, setLastMove] = useState(null);
 
   useEffect(() => {
     preloadSounds();
@@ -102,7 +103,10 @@ const Game = () => {
       setWhiteTime(data.whiteTime);
       setBlackTime(data.blackTime);
       setMoveHistory(prev => [...prev, data.move]);
-      
+      // Highlight last move squares
+      if (data.move) {
+        setLastMove({ from: data.move.substring(0, 2), to: data.move.substring(2, 4) });
+      }
       // Play sound
       playMoveSound(data.move, chess.isCheck());
     });
@@ -418,6 +422,12 @@ const Game = () => {
               }}
               customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
               customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
+              customSquareStyles={{
+                ...(lastMove ? {
+                  [lastMove.from]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+                  [lastMove.to]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' }
+                } : {})
+              }}
               animationDuration={200}
               showPromotionDialog={!!pendingPromotion}
               promotionToSquare={pendingPromotion?.to}
