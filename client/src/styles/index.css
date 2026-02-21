@@ -1656,3 +1656,47 @@ h4 { font-size: 1.125rem; }
   color: var(--text-secondary);
 }
 
+
+/* Challenge Toast */
+.challenge-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.challenge-toast p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.challenge-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.challenge-actions button {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.challenge-actions button:first-child {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.challenge-actions button:last-child {
+  background: #374151;
+  color: #fff;
+}
+
+.challenge-actions button:hover {
+  opacity: 0.85;
+}

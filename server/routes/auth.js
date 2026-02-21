@@ -138,8 +138,12 @@ router.post('/google', async (req, res) => {
         );
       }
     } else {
-      // Create new user
-      const username = name.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now().toString(36);
+      // Create new user - clean username from Google name
+      const cleanName = name
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      const username = cleanName;
       
       result = await pool.query(
         `INSERT INTO users (email, username, google_id, avatar)
