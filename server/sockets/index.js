@@ -896,7 +896,7 @@ async function tryMatch(io, queueKey, timeControl) {
     }
   }
 
-  if (bestPair && (bestDiff < 300 || queue[0].joinedAt < Date.now() - 30000)) {
+  if (bestPair) {
     // Create game
     const [player1, player2] = bestPair;
     
