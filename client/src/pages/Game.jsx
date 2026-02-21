@@ -105,7 +105,7 @@ const Game = () => {
       setMoveHistory(prev => [...prev, data.move]);
       // Highlight last move squares
       if (data.move) {
-        setLastMove({ from: data.move.substring(0, 2), to: data.move.substring(2, 4) });
+        setLastMove({ from: data.move.from, to: data.move.to });
       }
       // Play sound
       playMoveSound(data.move, chess.isCheck());
