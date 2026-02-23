@@ -4,7 +4,7 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { FaSkull, FaArrowLeft, FaRedo, FaArrowRight, FaChessKnight, FaBrain, FaFire } from 'react-icons/fa';
+import { FaSkull, FaArrowLeft, FaRedo, FaArrowRight, FaChessKnight } from 'react-icons/fa';
 import { useBoardSettings } from '../contexts/BoardSettingsContext';
 import killerOpenings from '../data/killerOpenings';
 
@@ -108,7 +108,8 @@ const KillerOpeningPlayer = () => {
         [to]: { backgroundColor: 'rgba(34, 197, 94, 0.35)' },
       });
     }
-  }, [currentStep, opening, gameComplete, defenseTriggered]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, opening, gameComplete, defenseTriggered, makeOpponentMove]);
 
   const makeOpponentMove = useCallback((moveStr) => {
     setGame(prev => {
@@ -203,7 +204,7 @@ const KillerOpeningPlayer = () => {
       let playsDefense = false;
       const responses = step.opponentResponses;
 
-      if (responses?.defense && !responses.defense.isDefense === false) {
+      if (responses?.defense && responses.defense.isDefense) {
         if (mode === 'victim') {
           playsDefense = false;
         } else if (mode === 'smart') {
@@ -257,6 +258,19 @@ const KillerOpeningPlayer = () => {
     return null;
   }, [openingIndex]);
 
+  // Responsive board width
+  const [boardWidth, setBoardWidth] = useState(() =>
+    Math.min(480, typeof window !== 'undefined' ? window.innerWidth - 32 : 480)
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setBoardWidth(Math.min(480, window.innerWidth - 32));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (!opening) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
@@ -265,8 +279,6 @@ const KillerOpeningPlayer = () => {
       </div>
     );
   }
-
-  const boardWidth = Math.min(480, typeof window !== 'undefined' ? window.innerWidth - 32 : 480);
 
   return (
     <PlayerErrorBoundary>
