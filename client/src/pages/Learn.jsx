@@ -1268,7 +1268,8 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           font-size: 1rem;
         }
         .board-container {
-          display: inline-block;
+          display: flex;
+          justify-content: center;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
