@@ -3,33 +3,30 @@
   "url": "riddickchess.site",
   "repo": "~/Desktop/riddick-chess-v2",
   "github": "github.com/Tredoux555/riddick-chess-v2",
-  "lastUpdated": "2026-02-23T14:00:00Z",
+  "lastUpdated": "2026-02-23T16:00:00Z",
   "owner": "Riddick (age 10)",
 
-  "CALL_TO_ACTION": "🚨 BUILD THE KILLER OPENINGS PAGE — This is priority #1. Read docs/HANDOFF_KILLER_OPENINGS.md and start building immediately. Do NOT work on anything else until this is done.",
+  "CALL_TO_ACTION": "🚨 PUSH BUG FIX COMMIT — Run 'git push origin main' first. Then: test Killer Openings on riddickchess.site/killer-openings. Then move to next steps below.",
 
-  "currentPriority": "KILLER OPENINGS TRAINER — promotional feature to attract chess YouTubers/streamers",
+  "currentPriority": "KILLER OPENINGS — BUILT, NEEDS PUSH + TESTING + POLISH",
 
   "killerOpeningsStatus": {
-    "research": "DONE — 10 openings ranked, 10 YouTubers identified, architecture designed",
-    "handoff": "DONE — docs/HANDOFF_KILLER_OPENINGS.md has full spec",
-    "build": "NOT STARTED — This is what needs to happen NOW",
-    "phases": [
-      "Phase 1: Data + Route + Selection Page (KillerOpenings.jsx)",
-      "Phase 2: Guided Board Engine (KillerOpeningPlayer.jsx)",
-      "Phase 3: Bot response trees for all 10 openings",
-      "Phase 4: Polish — XP, achievements, celebration animations",
+    "research": "DONE",
+    "build": "DONE — Phases 1-3 complete, code audited, all chess moves verified legal",
+    "deployment": "PARTIALLY PUSHED — commit 05bd491 is on GitHub, bug fix commit 17faf60 needs 'git push origin main'",
+    "testing": "NOT YET TESTED LIVE — needs manual play-through on riddickchess.site",
+    "remaining": [
+      "Phase 4: Polish — XP integration with server, achievements, sound effects",
       "Phase 5: Demo GIF/screenshots for YouTuber outreach"
     ]
   },
 
   "status": {
+    "killer_openings": "BUILT — 10 openings, guided board, 3 bot modes, selection page, nav link. Needs push + live testing.",
     "learn_page": "22 lessons, puzzles, quizzes, XP system, error boundary — DONE",
     "bot_system": "6 bots, BotGame.jsx INCOMPLETE (missing render method) — BLOCKED",
-    "killer_openings": "RESEARCH DONE, BUILD NOT STARTED",
     "pieces": "Chess.com piece sets working (Neo, Classic, Wood, Glass, Gothic, Metal)",
     "themes": "Board themes working (Green, Brown, Blue)",
-    "centering": "Fixed with flexbox column + align-items center",
     "ip_banning": "Working — banned_ips table in Railway PostgreSQL",
     "light_dark_theme": "Working — warm off-white + green accents",
     "deployment": "Railway auto-deploy from GitHub main branch"
@@ -49,18 +46,21 @@
   },
 
   "nextSteps": [
-    "1. BUILD killer openings page — docs/HANDOFF_KILLER_OPENINGS.md has full spec",
-    "2. Test and deploy killer openings",
-    "3. Create demo GIF/screenshots",
-    "4. Contact chess YouTubers (start Tier 3-4, then Tier 1-2)",
-    "5. THEN finish BotGame.jsx render method (see HANDOFF_BOT_ANALYSIS_JAN4.md)"
+    "1. PUSH: run 'git push origin main' to deploy bug fix commit",
+    "2. TEST: play through Scholar's Mate on riddickchess.site/killer-openings in all 3 modes",
+    "3. POLISH: connect XP rewards to server API, add achievements, sound effects on checkmate",
+    "4. SCREENSHOTS: take demo screenshots/GIF of guided play for YouTuber outreach",
+    "5. OUTREACH: DM chess YouTubers starting with Tier 3-4 (see docs/HANDOFF_KILLER_OPENINGS.md)",
+    "6. BACKLOG: finish BotGame.jsx render method (see HANDOFF_BOT_ANALYSIS_JAN4.md)"
   ],
 
-  "recentFixes": [
-    "Error boundary on Learn page to catch blank screen crashes",
-    "Timer leak fix (moveTimer/completeMoveTimer cleanup)",
-    "Board centering: flexbox column + align-items center",
-    "Queen puzzle added",
-    "scrollTo(0,0) on lesson complete"
+  "recentWork": [
+    "Built Killer Openings selection page (KillerOpenings.jsx)",
+    "Built guided board engine (KillerOpeningPlayer.jsx) with 3 bot modes",
+    "Created data file with all 10 openings — move trees, trap lines, defense lines",
+    "Added /killer-openings routes to App.js",
+    "Added skull icon nav link to Navbar.jsx",
+    "Audited all code — fixed defense logic bug, unused imports, responsive board width",
+    "Verified all 100% chess moves are legal via chess.js test script"
   ]
 }
