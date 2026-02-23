@@ -1707,28 +1707,33 @@ h4 { font-size: 1.125rem; }
    ============================================ */
 
 :root[data-theme="light"] {
-  /* Backgrounds */
-  --bg-primary: #f5f5fa;
-  --bg-secondary: #eeeef5;
-  --bg-tertiary: #e4e4ef;
-  --bg-card: rgba(255, 255, 255, 0.85);
+  /* Backgrounds - warm off-white, not harsh */
+  --bg-primary: #f8f9f5;
+  --bg-secondary: #f0f1ec;
+  --bg-tertiary: #e6e8e0;
+  --bg-card: rgba(255, 255, 252, 0.9);
   --bg-card-solid: #ffffff;
-  --bg-hover: #dcdce8;
+  --bg-hover: #e0e2d8;
 
-  /* Text */
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a4a65;
-  --text-muted: #8888a0;
-  --text-bright: #0a0a12;
+  /* Text - warm dark tones */
+  --text-primary: #1b2420;
+  --text-secondary: #3d4f47;
+  --text-muted: #7a8a82;
+  --text-bright: #0d1512;
 
-  /* Borders */
-  --border-color: rgba(99, 102, 241, 0.2);
-  --border-light: rgba(139, 92, 246, 0.2);
-  --border-subtle: rgba(0, 0, 0, 0.08);
+  /* Green accents for light mode */
+  --accent-primary: #2e7d32;
+  --accent-secondary: #388e3c;
+  --accent-tertiary: #4caf50;
+
+  /* Borders - subtle green tint */
+  --border-color: rgba(46, 125, 50, 0.18);
+  --border-light: rgba(56, 142, 60, 0.22);
+  --border-subtle: rgba(0, 0, 0, 0.06);
 
   /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 252, 0.75);
+  --glass-border: rgba(46, 125, 50, 0.1);
 
   /* Shadows - lighter */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -1736,13 +1741,14 @@ h4 { font-size: 1.125rem; }
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
-  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+  --shadow-glow: 0 0 30px rgba(46, 125, 50, 0.15);
   --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.15);
   --shadow-glow-warning: 0 0 30px rgba(245, 158, 11, 0.15);
 
-  /* Gradient overrides */
-  --gradient-dark: linear-gradient(135deg, #e4e4ef 0%, #dcdce8 100%);
-  --gradient-glow: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  /* Gradients - green tinted */
+  --gradient-primary: linear-gradient(135deg, #2e7d32 0%, #388e3c 50%, #4caf50 100%);
+  --gradient-dark: linear-gradient(135deg, #e6e8e0 0%, #e0e2d8 100%);
+  --gradient-glow: radial-gradient(circle, rgba(46, 125, 50, 0.08) 0%, transparent 70%);
 }
 
 /* Light theme specific element overrides */
@@ -1752,9 +1758,9 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .navbar {
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 252, 0.92) !important;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(46, 125, 50, 0.12);
 }
 
 :root[data-theme="light"] .nav-link {
@@ -1853,7 +1859,7 @@ h4 { font-size: 1.125rem; }
 :root[data-theme="light"] .sidebar a.active,
 :root[data-theme="light"] .admin-sidebar a.active {
   color: var(--accent-primary) !important;
-  background: rgba(99, 102, 241, 0.1) !important;
+  background: rgba(46, 125, 50, 0.1) !important;
 }
 
 :root[data-theme="light"] .btn-secondary {
