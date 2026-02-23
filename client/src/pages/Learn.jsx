@@ -1316,6 +1316,9 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           max-width: 500px;
           margin: 0 auto;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
         .text-bubble {
           background: var(--bg-card);
@@ -1325,6 +1328,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           opacity: 0;
           transform: translateY(-20px);
           transition: all 0.5s ease;
+          width: 100%;
         }
         .text-bubble.show {
           opacity: 1;
@@ -1509,6 +1513,9 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           max-width: 500px;
           margin: 0 auto;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
         .puzzle-challenge h2 {
           font-size: 1.8rem;
