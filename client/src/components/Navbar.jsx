@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
-  FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
+import {
+  FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine,
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot
+  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaSkull
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -25,6 +25,7 @@ const Navbar = () => {
     { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
     { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine />, requiresAuth: false },
     { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
+    { path: '/killer-openings', label: 'Killer Openings', icon: <FaSkull />, requiresAuth: false },
   ];
 
   const visibleLinks = navLinks.filter(link => !link.requiresAuth || user);

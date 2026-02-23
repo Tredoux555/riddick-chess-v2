@@ -36,6 +36,8 @@ import AdminLessons from './pages/AdminLessons';
 import TestBoard from './pages/TestBoard';
 import GuitarLearning from './pages/GuitarLearning';
 import OupaChess from './pages/Oupa/OupaChess';
+import KillerOpenings from './pages/KillerOpenings';
+import KillerOpeningPlayer from './pages/KillerOpeningPlayer';
 
 
 // Bot and Analysis components
@@ -126,6 +128,8 @@ function App() {
           } />
           <Route path="/learn" element={<Learn />} />
           <Route path="/learn-test" element={<LearnTest />} />
+          <Route path="/killer-openings" element={<KillerOpenings />} />
+          <Route path="/killer-openings/:openingId" element={<KillerOpeningPlayer />} />
 
           {/* OUPA'S CHESS PAGE - Simple grandpa-proof chess! 😂 */}
           <Route path="/oupa" element={<OupaChess />} />

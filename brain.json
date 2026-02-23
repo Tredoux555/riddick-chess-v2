@@ -2,28 +2,58 @@
   "project": "riddick-chess-v2",
   "url": "riddickchess.site",
   "repo": "~/Desktop/riddick-chess-v2",
-  "lastUpdated": "2026-02-23T09:30:00Z",
+  "github": "github.com/Tredoux555/riddick-chess-v2",
+  "lastUpdated": "2026-02-23T14:00:00Z",
   "owner": "Riddick (age 10)",
-  
-  "currentPriority": "KILLER OPENINGS TRAINER — promotional feature",
-  
+
+  "CALL_TO_ACTION": "🚨 BUILD THE KILLER OPENINGS PAGE — This is priority #1. Read docs/HANDOFF_KILLER_OPENINGS.md and start building immediately. Do NOT work on anything else until this is done.",
+
+  "currentPriority": "KILLER OPENINGS TRAINER — promotional feature to attract chess YouTubers/streamers",
+
+  "killerOpeningsStatus": {
+    "research": "DONE — 10 openings ranked, 10 YouTubers identified, architecture designed",
+    "handoff": "DONE — docs/HANDOFF_KILLER_OPENINGS.md has full spec",
+    "build": "NOT STARTED — This is what needs to happen NOW",
+    "phases": [
+      "Phase 1: Data + Route + Selection Page (KillerOpenings.jsx)",
+      "Phase 2: Guided Board Engine (KillerOpeningPlayer.jsx)",
+      "Phase 3: Bot response trees for all 10 openings",
+      "Phase 4: Polish — XP, achievements, celebration animations",
+      "Phase 5: Demo GIF/screenshots for YouTuber outreach"
+    ]
+  },
+
   "status": {
-    "learn_page": "22 lessons, puzzles, quizzes, XP system, error boundary",
-    "killer_openings": "HANDOFF WRITTEN — docs/HANDOFF_KILLER_OPENINGS.md — NOT YET BUILT",
+    "learn_page": "22 lessons, puzzles, quizzes, XP system, error boundary — DONE",
+    "bot_system": "6 bots, BotGame.jsx INCOMPLETE (missing render method) — BLOCKED",
+    "killer_openings": "RESEARCH DONE, BUILD NOT STARTED",
     "pieces": "Chess.com piece sets working (Neo, Classic, Wood, Glass, Gothic, Metal)",
     "themes": "Board themes working (Green, Brown, Blue)",
     "centering": "Fixed with flexbox column + align-items center",
     "ip_banning": "Working — banned_ips table in Railway PostgreSQL",
-    "light_dark_theme": "Working — warm off-white + green accents"
+    "light_dark_theme": "Working — warm off-white + green accents",
+    "deployment": "Railway auto-deploy from GitHub main branch"
+  },
+
+  "techStack": {
+    "frontend": "React (CRA) + chess.js + react-chessboard",
+    "backend": "Express + PostgreSQL on Railway",
+    "auth": "JWT Bearer tokens via AuthContext",
+    "boardSettings": "useBoardSettings() from BoardSettingsContext"
+  },
+
+  "keyPatterns": {
+    "auth": "import { useAuth } from '../contexts/AuthContext'; const { token } = useAuth(); headers: { 'Authorization': `Bearer ${token}` }",
+    "board": "import { useBoardSettings } from '../contexts/BoardSettingsContext';",
+    "routing": "App.js — Routes component, ProtectedRoute wrapper for auth-required pages"
   },
 
   "nextSteps": [
-    "BUILD killer openings page with guided bot system",
-    "10 openings ranked by lethality with pre-programmed move trees",
-    "Bot plays opponent moves, arrows guide user through trap",
-    "3 modes: Victim (always falls for trap), Smart (50/50), Realistic",
-    "Create demo GIF/screenshots for YouTuber outreach",
-    "Contact chess YouTubers starting with Tier 3-4 (smaller, faster response)"
+    "1. BUILD killer openings page — docs/HANDOFF_KILLER_OPENINGS.md has full spec",
+    "2. Test and deploy killer openings",
+    "3. Create demo GIF/screenshots",
+    "4. Contact chess YouTubers (start Tier 3-4, then Tier 1-2)",
+    "5. THEN finish BotGame.jsx render method (see HANDOFF_BOT_ANALYSIS_JAN4.md)"
   ],
 
   "recentFixes": [

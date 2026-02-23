@@ -171,35 +171,196 @@ A "Killer Openings" section on riddickchess.site that:
 
 ---
 
-## PREVIOUS SESSION WORK (Context)
+## 🚨 CALL TO ACTION — START HERE 🚨
 
-### What's already built:
-- Learn page with 22 lessons, interactive puzzles, quizzes, XP system
-- Chess.com piece sets working (Neo, Classic, Wood, etc.)
-- Board themes (Green, Brown, Blue)
-- PracticeBoard component with full move validation
-- Error boundary on Learn page
-- Scholar's Mate already exists as a basic lesson (lesson #20)
-
-### What needs to happen:
-1. Create new `/killer-openings` route (or section within Learn)
-2. Build the guided bot engine (pre-programmed move trees)
-3. Design the opening selection UI with skull severity ratings
-4. Build the step-by-step guided play system
-5. Add bot responses for each opening (trap line + defense line)
-6. Add "What if?" branching explanations
-7. XP/achievement system for mastering openings
-8. Create GIF/video demo for outreach to streamers
-
-### Files to modify:
-- `client/src/pages/Learn.jsx` or new `client/src/pages/KillerOpenings.jsx`
-- `client/src/App.jsx` (add route)
-- Navigation component (add menu item)
+**This is what must be built. Research is done. Stop reading context and start coding.**
 
 ---
 
-## TECH STACK REMINDER
+## COMPREHENSIVE BUILD PLAN
+
+### PHASE 1: Data Layer + Route + Selection Page
+**Goal**: User can navigate to /killer-openings and see all 10 openings as cards
+
+**Create**: `client/src/pages/KillerOpenings.jsx`
+- Opening selection grid with 10 cards
+- Each card shows: name, emoji, skull severity rating (☠️), move count, short description
+- Cards sorted by lethality (Scholar's Mate at top)
+- Clicking a card navigates to `/killer-openings/:openingId`
+- Include color-coded difficulty: Green (beginner traps), Orange (intermediate), Red (advanced)
+- Show progress per opening (not started / in progress / mastered)
+- Style consistent with existing Learn page (warm off-white + green accents, light/dark theme)
+
+**Create**: `client/src/data/killerOpenings.js`
+- Export array of all 10 openings with:
+  - `id`, `name`, `emoji`, `severity` (1-5 skulls), `moves` (total count)
+  - `description` (1 line)
+  - `playerColor` ('white' or 'black')
+  - `moveTree`: nested object defining the guided sequence
+    - Each node: `{ move: 'e4', explanation: 'Control the center!', opponentMoves: { main: { move: 'e5', explanation: '...', next: {...} }, defense: { move: 'Nf6', explanation: 'They spotted the trap! ...' } } }`
+  - `trapLine`: array of moves for the "victim" path (opponent falls for it)
+  - `defenseLine`: array of moves showing correct defense + plan B explanation
+
+**Modify**: `client/src/App.js`
+- Add: `import KillerOpenings from './pages/KillerOpenings';`
+- Add: `import KillerOpeningPlayer from './pages/KillerOpeningPlayer';`
+- Add route: `<Route path="/killer-openings" element={<KillerOpenings />} />`
+- Add route: `<Route path="/killer-openings/:openingId" element={<KillerOpeningPlayer />} />`
+
+**Modify**: `client/src/components/Navbar.jsx`
+- Add to navLinks array: `{ path: '/killer-openings', label: 'Killer Openings', icon: <FaSkull />, requiresAuth: false }`
+- Import FaSkull from react-icons/fa
+
+### PHASE 2: Guided Board Engine (The Core Feature)
+**Goal**: Interactive chessboard that teaches one opening step-by-step
+
+**Create**: `client/src/pages/KillerOpeningPlayer.jsx`
+- Uses `react-chessboard` + `chess.js` (same as Learn page)
+- Uses `useBoardSettings()` from BoardSettingsContext for user's theme/pieces
+- Reads opening data from killerOpenings.js based on URL param `:openingId`
+
+**Guided play flow**:
+1. Board starts at initial position
+2. Green arrow overlay shows WHERE user should move (from → to squares)
+3. Text panel on side explains WHY this move works ("Attack the weak f7 pawn!")
+4. User drags piece to make the guided move
+5. If user makes wrong move → red flash + "Not quite! Try the highlighted move"
+6. Bot instantly responds with opponent's most common move
+7. Next arrow appears for user's next move + new explanation
+8. Repeat until checkmate or trap completes
+9. Celebration animation (confetti — already have canvas-confetti) + XP award
+
+**Three bot modes** (toggle buttons above board):
+- 🐣 **Victim Mode**: Bot always plays into the trap (for first-time learning)
+- 🧠 **Smart Mode**: Bot plays defense 50% of the time (for practice)
+- 💀 **Realistic Mode**: Bot plays like a real opponent at that level
+
+**When bot plays the defense** (doesn't fall for trap):
+- Popup: "Your opponent spotted the trap! Here's what to do next..."
+- Show Plan B continuation
+- Board highlights the alternative plan
+
+**UI layout**:
+- Left: Chessboard (responsive, same size as other pages)
+- Right sidebar:
+  - Opening name + skull rating
+  - Current step: "Step 3 of 7"
+  - Move explanation text
+  - Move history
+  - Mode selector (Victim / Smart / Realistic)
+  - "Reset" button
+  - "Back to Openings" link
+  - "Next Opening →" button (after mastering)
+
+### PHASE 3: Move Trees for All 10 Openings
+**Goal**: Every opening has complete guided data
+
+Each opening needs in `killerOpenings.js`:
+1. **Scholar's Mate** — 4 moves, play as white, target f7
+2. **Fool's Mate** — 2 moves, play as BLACK (teach to punish), requires opponent to blunder f3+g4
+3. **Fried Liver Attack** — 7-8 moves, play as white, knight sacrifice on f7
+4. **Blackburne Shilling Gambit** — 5-6 moves, play as BLACK, smothered mate finish
+5. **Légal's Mate** — 7 moves, play as white, queen sacrifice trap
+6. **Englund Gambit Trap** — 5 moves, play as BLACK, wins rook
+7. **Budapest Gambit Trap** — 6 moves, play as BLACK, counter to d4
+8. **Stafford Gambit** — 6-7 moves, play as BLACK (Eric Rosen special)
+9. **Italian Game Trap** — 8 moves, central pawn collapse
+10. **Caro-Kann Smothered Mate** — 8-9 moves, knight smothered mate
+
+For each: trap line + at least 1 defense line with Plan B explanation.
+
+### PHASE 4: Polish
+- XP rewards for completing each opening (10 XP first time, bonus for mastering all 3 modes)
+- Progress tracking: localStorage or user preferences API
+- Achievement: "Trap Master" for mastering all 10
+- Celebration: confetti + sound effect on checkmate
+- Mobile responsive layout (stack sidebar below board on small screens)
+
+### PHASE 5: Promotion Assets
+- Take screenshots of the Killer Openings selection page
+- Record a GIF of the guided play in action (Scholar's Mate walkthrough)
+- Prepare DM template for YouTuber outreach (template in this doc above)
+- Start contacting Tier 3-4 creators first
+
+---
+
+## EXISTING CODEBASE REFERENCE
+
+### Navigation (Navbar.jsx)
+```javascript
+const navLinks = [
+  { path: '/play', label: 'Play', icon: <FaPlay />, requiresAuth: true },
+  { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
+  { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: false },
+  { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
+  { path: '/leaderboards', label: 'Leaderboards', icon: <FaChartLine />, requiresAuth: false },
+  { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
+  // ADD: { path: '/killer-openings', label: 'Killer Openings', icon: <FaSkull />, requiresAuth: false },
+];
+```
+
+### Auth Pattern (use in any component that needs user data)
+```javascript
+import { useAuth } from '../contexts/AuthContext';
+const { token, user } = useAuth();
+// Every fetch: headers: { 'Authorization': `Bearer ${token}` }
+```
+
+### Board Settings (use for theme/pieces)
+```javascript
+import { useBoardSettings } from '../contexts/BoardSettingsContext';
+// Gives user's preferred board theme and piece set
+```
+
+### Learn.jsx Pattern (copy this structure)
+- Error boundary wrapping the page
+- Uses react-chessboard + chess.js
+- Has XP system, lesson progress, confetti celebrations
+- Scholar's Mate is lesson #20 — can reference its move data
+
+### Key Dependencies Already Installed
+- `react-chessboard` — board rendering
+- `chess.js` — move validation and game state
+- `canvas-confetti` — celebration effects
+- `react-hot-toast` — notifications
+- `react-icons/fa` — icons (FaSkull for nav)
+
+### Files to Create
+```
+client/src/
+├── data/killerOpenings.js          # All 10 opening move trees
+├── pages/KillerOpenings.jsx        # Selection grid page
+└── pages/KillerOpeningPlayer.jsx   # Guided play page
+```
+
+### Files to Modify
+```
+client/src/App.js                   # Add 2 routes (lines ~109-128 area)
+client/src/components/Navbar.jsx    # Add nav link (line ~27)
+```
+
+---
+
+## TECH STACK
 - React (CRA) + chess.js + react-chessboard
-- Railway deployment (auto-deploy from GitHub)
-- Repo: ~/Desktop/riddick-chess-v2
+- Railway auto-deploy from GitHub main branch
+- Repo: github.com/Tredoux555/riddick-chess-v2
+- Local: ~/Desktop/riddick-chess-v2
 - URL: riddickchess.site
+
+---
+
+## QUICK START PROMPT FOR NEW CHAT
+
+```
+I'm working on Riddick Chess at the mounted folder.
+
+TASK: Build the Killer Openings trainer feature.
+
+1. Read brain.json for context
+2. Read docs/HANDOFF_KILLER_OPENINGS.md for the full spec
+3. Follow the 5-phase build plan starting at Phase 1
+4. Create killerOpenings.js data file, KillerOpenings.jsx selection page, KillerOpeningPlayer.jsx guided board
+5. Add routes to App.js and nav link to Navbar.jsx
+6. Test locally, then deploy: git add . && git commit -m "Add Killer Openings trainer" && git push
+```
