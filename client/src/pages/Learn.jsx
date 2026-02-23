@@ -1,10 +1,36 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Component } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { FaHeart, FaFire, FaStar, FaLock, FaCheck, FaPlay, FaPause, FaRedo, FaVolumeUp, FaVolumeMute, FaTrophy, FaGem, FaChess, FaChessKnight, FaArrowRight } from 'react-icons/fa';
 import { useBoardSettings } from '../contexts/BoardSettingsContext';
+
+// Error boundary to catch crashes
+class LearnErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center' }}>
+          <h2>Something went wrong 😅</h2>
+          <p style={{ color: '#ff6b6b' }}>{this.state.error?.message}</p>
+          <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }}
+            style={{ marginTop: 16, padding: '10px 24px', borderRadius: 8, background: '#4CAF50', color: '#fff', border: 'none', cursor: 'pointer' }}>
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ============ LESSON DATA WITH ANIMATIONS ============
 const LESSONS = [
@@ -52,11 +78,10 @@ const LESSONS = [
         },
         {
           duration: 4000,
-          fen: '8/8/8/8/4X3/8/8/8 w - - 0 1',
+          fen: '8/8/8/8/4P3/8/8/8 w - - 0 1',
           text: "Every square has a name!",
           subtext: "File + Rank = e4 (the most famous square!)",
           highlight: ['e4'],
-          customPiece: { square: 'e4', symbol: '⭐' },
           animate: 'bounce'
         },
         {
@@ -150,7 +175,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Capture the black pawn!",
-        fen: '8/8/8/3p4/4P3/8/8/8 w - - 0 1',
+        fen: '4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1',
         solution: 'e4d5',
         hint: "Remember: pawns capture diagonally!"
       },
@@ -216,7 +241,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Capture the black rook!",
-        fen: '8/8/8/8/r2R4/8/8/8 w - - 0 1',
+        fen: '4k3/8/8/8/r2R4/8/8/4K3 w - - 0 1',
         solution: 'd4a4',
         hint: "Rooks move in straight lines!"
       },
@@ -290,7 +315,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Capture the knight with your bishop!",
-        fen: '8/6n1/8/8/3B4/8/8/8 w - - 0 1',
+        fen: '4k3/6n1/8/8/3B4/8/8/4K3 w - - 0 1',
         solution: 'd4g7',
         hint: "Bishops move diagonally!"
       },
@@ -356,7 +381,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Find the knight fork! Attack both pieces!",
-        fen: '8/8/8/1q6/8/8/3N4/1r6 w - - 0 1',
+        fen: '4k3/8/8/1q6/8/8/3N4/1r2K3 w - - 0 1',
         solution: 'd2c4',
         hint: "Find the square that attacks both!"
       },
@@ -413,7 +438,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Capture the undefended Rook with your Queen!",
-        fen: '8/8/8/3r4/8/8/8/3QK3 w - - 0 1',
+        fen: '4k3/8/8/3r4/8/8/8/3QK3 w - - 0 1',
         solution: 'd1d5',
         hint: "The Queen can move like a Rook — straight up the file!"
       },
@@ -523,6 +548,7 @@ const LESSONS = [
         { duration: 4000, fen: 'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', text: "Rules for Castling:", subtext: "King & Rook haven't moved, no pieces between, King not in check", highlight: ['e1','h1','f1','g1'], animate: null },
         { duration: 3500, fen: 'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', text: "Pro Tip: Castle EARLY! 🧠", subtext: "Get your King safe and activate your Rook!", highlight: [], animate: 'bounce' }
       ],
+      puzzle: { fen: 'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', instruction: 'Castle kingside! Move the King to g1.', solution: 'e1g1', hint: 'Drag the King two squares toward the Rook!' },
       quiz: { question: "Which pieces move when you castle?", options: ["King only", "Rook only", "King and Rook together", "King and Bishop"], correct: 2, explanation: "Castling moves the King AND a Rook in one turn!" }
     }
   },
@@ -584,8 +610,9 @@ const LESSONS = [
         { duration: 5000, fen: '4k3/8/4r3/8/4B3/8/8/4K3 w - - 0 1', text: "Bishop PINS the Rook to the King!", subtext: "The Rook can't move — King would be in check!", highlight: ['e4','e6','e8'], arrows: [['e4','e8']], animate: 'slideUp' },
         { duration: 4500, fen: '4k3/4q3/8/8/4R3/8/8/4K3 w - - 0 1', text: "A SKEWER is a reverse pin!", subtext: "Attack the valuable piece FIRST — when it moves, take what's behind!", highlight: ['e4','e7','e8'], arrows: [['e4','e8']], animate: 'pulse' },
         { duration: 4000, fen: 'r3k3/8/8/8/8/8/8/R3K3 w Qq - 0 1', text: "Rook skewers King through Queen!", subtext: "King MUST move → Rook takes the Queen! 🎉", highlight: ['a1','a8'], arrows: [['a1','a8']], animate: 'slideRight' },
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Remember: Pins & Skewers use LINES 📏", subtext: "Bishops, Rooks, Queens — all sliding pieces!", highlight: [], animate: 'bounce' }
+        { duration: 3500, fen: '4k3/4q3/8/8/4R3/8/8/4K3 w - - 0 1', text: "Remember: Pins & Skewers use LINES 📏", subtext: "Bishops, Rooks, Queens — all sliding pieces!", highlight: ['e4','e7','e8'], animate: 'bounce' }
       ],
+      puzzle: { fen: 'r3k3/8/8/8/8/8/8/4K2R w Kq - 0 1', instruction: 'Pin the Rook! Attack along the back rank!', solution: 'h1h8', hint: 'Slide the Rook to h8 — the enemy Rook on a8 cant move because the King would be exposed!' },
       quiz: { question: "What's the difference between a pin and a skewer?", options: ["They're the same", "Pin: less valuable in front. Skewer: more valuable in front", "Pins use Bishops, Skewers use Rooks", "There is no difference"], correct: 1, explanation: "Pin = less valuable protects more valuable. Skewer = more valuable is attacked first!" }
     }
   },
@@ -625,8 +652,9 @@ const LESSONS = [
         { duration: 4500, fen: '8/8/3P4/8/8/8/8/8 w - - 0 1', text: "After en passant, the pawn is gone!", subtext: "This only works on the VERY NEXT move!", highlight: ['d6','e5'], animate: null },
         { duration: 4500, fen: '8/4P3/8/8/8/8/8/4K3 w - - 0 1', text: "Pawn Promotion! 👑", subtext: "When a pawn reaches the last rank, it becomes ANY piece!", highlight: ['e7'], arrows: [['e7','e8']], animate: 'slideUp' },
         { duration: 4000, fen: '4Q3/8/8/8/8/8/8/4K3 w - - 0 1', text: "99% of the time: promote to QUEEN! ♛", subtext: "The Queen is the most powerful piece!", highlight: ['e8'], animate: 'pulse' },
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Now you know all the special rules! 🎉", subtext: "En passant catches players off guard — use it!", highlight: [], animate: 'bounce' }
+        { duration: 3500, fen: '8/4P3/8/8/8/8/8/4K3 w - - 0 1', text: "Now you know all the special rules! 🎉", subtext: "En passant catches players off guard — use it!", highlight: ['e7'], arrows: [['e7','e8']], animate: 'bounce' }
       ],
+      puzzle: { fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1', instruction: 'Promote your pawn! Push it to the last rank!', solution: 'e7e8q', hint: 'Move the pawn to e8 — it becomes a Queen!' },
       quiz: { question: "When can you do en passant?", options: ["Any time", "Only when the enemy pawn just moved 2 squares", "When your pawn reaches the end", "Never in real games"], correct: 1, explanation: "En passant only works immediately after a pawn's 2-square advance!" }
     }
   },
@@ -641,13 +669,14 @@ const LESSONS = [
     locked: false,
     video: {
       scenes: [
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Discovered Attacks! 💣", subtext: "Move one piece to unleash another!", highlight: [], animate: 'fadeIn' },
-        { duration: 5000, fen: 'r1bqk2r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQR1K1 w kq - 0 1', text: "The Knight moves and REVEALS the Rook!", subtext: "The piece that moves is the 'discovery'", highlight: ['f3','e1'], animate: 'pulse' },
-        { duration: 5000, fen: 'rnbqk2r/pppp1ppp/5n2/4p1B1/2B1P3/5N2/PPPP1PPP/RN1QK2R w KQkq - 0 1', text: "Discovered CHECK = devastating! ♚", subtext: "Move the Bishop, and the other piece gives check!", highlight: ['g5','c4'], animate: 'pulse' },
-        { duration: 4500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Double Check = UNSTOPPABLE! ⚡", subtext: "BOTH pieces give check — King MUST move!", highlight: [], animate: 'bounce' },
-        { duration: 4000, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Look for pieces lined up on a file or diagonal!", subtext: "Move the front piece to unleash the back one!", highlight: [], animate: null },
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Pro Tip: Set up discoveries early! 🧠", subtext: "Stack your pieces on open lines!", highlight: [], animate: 'bounce' }
+        { duration: 3500, fen: 'r1bqk2r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQR1K1 w kq - 0 1', text: "Discovered Attacks! 💣", subtext: "Move one piece to unleash another!", highlight: ['f3','e1'], animate: 'fadeIn' },
+        { duration: 5000, fen: 'r1bqk2r/pppp1ppp/2n5/4N3/2B1n3/8/PPPP1PPP/RNBQR1K1 b kq - 0 1', text: "Nxe5 DISCOVERS the Rook on e1!", subtext: "The Knight moved, revealing the Rook's attack on the King!", highlight: ['e5','e1','e8'], arrows: [['e1','e8']], animate: 'pulse' },
+        { duration: 5000, fen: 'rnbqk2r/pppp1ppp/5n2/4p1B1/2B1P3/5N2/PPPP1PPP/RN1QK2R b KQkq - 0 1', text: "Discovered CHECK = devastating! ♚", subtext: "Bishop moves to g5, revealing check from the other Bishop!", highlight: ['g5','c4','e8'], arrows: [['c4','f7']], animate: 'pulse' },
+        { duration: 4500, fen: 'r1bk3r/ppppqppp/2n2n2/4N3/2B5/8/PPPP1PPP/RNBQR1K1 w - - 0 1', text: "Double Check = UNSTOPPABLE! ⚡", subtext: "Knight AND Rook both give check — King MUST move!", highlight: ['e5','e1','d8'], arrows: [['e5','c6'],['e1','e7']], animate: 'bounce' },
+        { duration: 4000, fen: 'r1bqk2r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQR1K1 w kq - 0 1', text: "Look for pieces lined up on files & diagonals!", subtext: "Move the front piece to unleash the back one!", highlight: ['f3','e1'], arrows: [['f3','e5']], animate: 'pulse' },
+        { duration: 3500, fen: 'r1bqk2r/pppp1ppp/2n5/4N3/2B1n3/8/PPPP1PPP/RNBQR1K1 b kq - 0 1', text: "Pro Tip: Set up discoveries early! 🧠", subtext: "Stack your pieces on open lines!", highlight: ['e5','e1'], animate: 'bounce' }
       ],
+      puzzle: { fen: 'r1bqk2r/pppp1ppp/2n5/4p3/2B1n3/5N2/PPPP1PPP/RNBQR1K1 w kq - 0 1', instruction: 'Find the discovered attack!', solution: 'f3e5', hint: 'Move the Knight to reveal the Rook!' },
       quiz: { question: "What is a discovered attack?", options: ["Attacking a hidden piece", "Moving one piece to reveal an attack by another", "Finding the opponent's weakness", "A surprise opening move"], correct: 1, explanation: "A discovered attack reveals an attack by a piece behind the one that moved!" }
     }
   },
@@ -689,8 +718,9 @@ const LESSONS = [
         { duration: 4500, fen: '8/8/8/4R3/8/8/8/8 w - - 0 1', text: "Rook = 5 points ♖", subtext: "Dominates files and ranks!", highlight: ['e5'], animate: 'pulse' },
         { duration: 4500, fen: '8/8/8/4Q3/8/8/8/8 w - - 0 1', text: "Queen = 9 points ♕", subtext: "The MOST powerful piece! Protect her!", highlight: ['e5'], animate: 'pulse' },
         { duration: 4000, fen: '8/8/8/4K3/8/8/8/8 w - - 0 1', text: "King = PRICELESS! ♔", subtext: "Lose the King = lose the game! ♾️", highlight: ['e5'], animate: 'bounce' },
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Trade UP, not DOWN! 📈", subtext: "Don't trade your Queen (9) for a Knight (3)!", highlight: [], animate: 'bounce' }
+        { duration: 3500, fen: '4k3/8/8/3b4/4R3/8/8/4K3 w - - 0 1', text: "Trade UP, not DOWN! 📈", subtext: "Your Rook (5) for their Bishop (3)? Bad trade! But Bishop for Rook? Great!", highlight: ['e4','d5'], animate: 'bounce' }
       ],
+      puzzle: { fen: '4k3/8/8/3n4/8/8/8/4KR2 w - - 0 1', instruction: 'Should you capture the Knight with your Rook? No! Find a better move.', solution: 'f1f8', hint: 'Dont trade your Rook (5) for a Knight (3) — use it to checkmate instead!' },
       quiz: { question: "Which trade is good for you?", options: ["Your Queen for their Rook", "Your Bishop for their Rook", "Your Rook for their Pawn", "Your Knight for their Queen"], correct: 1, explanation: "Trading a Bishop (3) for a Rook (5) = you gain 2 points of material!" }
     }
   },
@@ -704,13 +734,14 @@ const LESSONS = [
     locked: false,
     video: {
       scenes: [
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Smothered Mate! 🐴", subtext: "The most beautiful checkmate in chess!", highlight: [], animate: 'fadeIn' },
-        { duration: 5000, fen: 'r1b2rk1/pp3ppp/2n2n2/3qN3/8/8/PPPPQPPP/R1B1K2R w KQ - 0 1', text: "The Knight is the ONLY piece that can do this!", subtext: "Because it JUMPS over other pieces!", highlight: ['e5'], animate: 'pulse' },
-        { duration: 5000, fen: '6rk/5Npp/8/8/8/8/8/6K1 w - - 0 1', text: "Knight on f7 gives check!", subtext: "King is forced to h8 corner...", highlight: ['f7','h8'], arrows: [['f7','h8']], animate: 'pulse' },
+        { duration: 3500, fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', text: "Smothered Mate! 🐴", subtext: "The most beautiful checkmate in chess!", highlight: ['f7','h8'], animate: 'fadeIn' },
+        { duration: 5000, fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', text: "The Knight is the ONLY piece that can do this!", subtext: "Because it JUMPS over other pieces!", highlight: ['f7'], animate: 'pulse' },
+        { duration: 5000, fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', text: "Knight on f7 gives check!", subtext: "King is forced to h8 corner...", highlight: ['f7','h8'], arrows: [['f7','h8']], animate: 'pulse' },
         { duration: 5000, fen: 'Q5rk/5Npp/8/8/8/8/8/6K1 w - - 0 1', text: "Queen sacrifices on g8!! Qg8+!!", subtext: "Rook MUST capture! Rxg8...", highlight: ['a8','g8'], arrows: [['a8','g8']], animate: 'pulse' },
         { duration: 5000, fen: '6rk/5Npp/8/8/8/8/8/6K1 w - - 0 1', text: "Nf7# — SMOTHERED MATE! 💥", subtext: "King can't move — blocked by its own pieces!", highlight: ['f7','h8','g8','g7','h7'], animate: 'bounce' },
-        { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Look for this when the King is in the corner! 👀", subtext: "Knight + Queen sacrifice = perfection!", highlight: [], animate: 'bounce' }
+        { duration: 3500, fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', text: "Look for this when the King is in the corner! 👀", subtext: "Knight + Queen sacrifice = perfection!", highlight: ['f7','a1'], animate: 'bounce' }
       ],
+      puzzle: { fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', instruction: 'Set up smothered mate! Sacrifice the Queen!', solution: 'a1g7', hint: 'The Queen needs to go where the Rook must capture...' },
       quiz: { question: "Why can only a Knight deliver smothered mate?", options: ["It's the strongest piece", "It can jump over blocking pieces", "It moves in an L-shape", "It's the smallest piece"], correct: 1, explanation: "Only the Knight can jump over the pieces surrounding the King!" }
     }
   },
@@ -729,8 +760,9 @@ const LESSONS = [
         { duration: 5000, fen: 'r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1', text: "Look for WEAK squares & pawns", subtext: "Undefended pawns are targets! Attack them!", highlight: ['d6','d3'], animate: 'pulse' },
         { duration: 4500, fen: 'r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1', text: "Connect your ROOKS on the back rank!", subtext: "Rooks are strongest on open files!", highlight: ['a1','f1'], arrows: [['a1','f1']], animate: null },
         { duration: 4500, fen: 'r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1', text: "Knights love OUTPOSTS! 🐴", subtext: "A square protected by your pawn where enemy pawns can't kick it out", highlight: ['e5','d5'], animate: 'pulse' },
-        { duration: 4000, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Remember: Improve your WORST piece! 🔧", subtext: "Every move should make your position better!", highlight: [], animate: 'bounce' }
+        { duration: 4000, fen: 'r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1', text: "Remember: Improve your WORST piece! 🔧", subtext: "Every move should make your position better!", highlight: ['c1'], arrows: [['c1','e3']], animate: 'bounce' }
       ],
+      puzzle: { fen: 'r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1', instruction: 'Improve your worst piece! Develop the bishop.', solution: 'c1e3', hint: 'The bishop on c1 is doing nothing — bring it to e3!' },
       quiz: { question: "What should you do in the middlegame?", options: ["Move pawns randomly", "Make a plan and improve your pieces", "Trade all pieces immediately", "Only attack the King"], correct: 1, explanation: "A plan + active pieces = winning middlegame strategy!" }
     }
   },
@@ -749,8 +781,9 @@ const LESSONS = [
         { duration: 4500, fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/5Q2/PPPP1PPP/RNB1KBNR b KQkq - 0 1', text: "2. Qf3?! — Queen comes out early!", subtext: "Aiming at f7... the weakest square!", highlight: ['f3','f7'], arrows: [['f3','f7']], animate: 'pulse' },
         { duration: 4500, fen: 'rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1', text: "3. Bc4 — Bishop ALSO aims at f7!", subtext: "Two pieces attacking one weak spot!", highlight: ['c4','f7'], arrows: [['c4','f7'],['f3','f7']], animate: 'pulse' },
         { duration: 5000, fen: 'rnbqkb1r/pppp1Qpp/5n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 1', text: "4. Qxf7# — CHECKMATE! 💀", subtext: "King can't escape! Game over in 4 moves!", highlight: ['f7','e8'], animate: 'bounce' },
-        { duration: 5000, fen: 'rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1', text: "HOW TO STOP IT: Play Nf6! 🛡️", subtext: "Nf6 defends AND develops — never fall for this!", highlight: ['g8','f6'], arrows: [['g8','f6']], animate: 'pulse' }
+        { duration: 5000, fen: 'rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1', text: "HOW TO STOP IT: Play Nf6! 🛡️", subtext: "Nf6 defends AND develops — never fall for this!", highlight: ['f6','f7'], arrows: [['f6','f7']], animate: 'pulse' }
       ],
+      puzzle: { fen: 'rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1', instruction: 'You are Black! Stop the Scholar\'s Mate threat on f7!', solution: 'g8f6', hint: 'Develop your Knight to f6 — it defends f7 AND develops a piece!' },
       quiz: { question: "What's the best defense against Scholar's Mate?", options: ["Move your King", "Play Nf6 — develop and defend!", "Push pawns", "Ignore it"], correct: 1, explanation: "Nf6 blocks the Queen's attack on f7 AND develops a piece!" }
     }
   },
@@ -799,19 +832,25 @@ const Learn = () => {
 
   if (selectedLesson) {
     if (selectedLesson.isPractice) {
-      return <PracticeBoard customPieces={customPieces} currentTheme={currentTheme} onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }} />;
+      return (
+        <LessonErrorBoundary onReset={() => { setSelectedLesson(null); window.scrollTo(0, 0); }}>
+          <PracticeBoard customPieces={customPieces} currentTheme={currentTheme} onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }} />
+        </LessonErrorBoundary>
+      );
     }
     return (
-      <LessonPlayer 
-        lesson={selectedLesson} 
-        customPieces={customPieces}
-        currentTheme={currentTheme}
-        onComplete={() => {
-          completeLesson(selectedLesson.id, selectedLesson.xp);
-          setSelectedLesson(null);
-        }}
-        onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }}
-      />
+      <LessonErrorBoundary onReset={() => { setSelectedLesson(null); window.scrollTo(0, 0); }}>
+        <LessonPlayer 
+          lesson={selectedLesson} 
+          customPieces={customPieces}
+          currentTheme={currentTheme}
+          onComplete={() => {
+            completeLesson(selectedLesson.id, selectedLesson.xp);
+            setSelectedLesson(null);
+          }}
+          onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }}
+        />
+      </LessonErrorBoundary>
     );
   }
 
@@ -988,6 +1027,32 @@ const Learn = () => {
   );
 };
 
+// ============ ERROR BOUNDARY ============
+class LessonErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <h2>⚠️ Something went wrong</h2>
+          <p style={{ color: 'var(--text-muted)', marginTop: 12 }}>The lesson hit an error. Click below to go back.</p>
+          <button onClick={() => { this.setState({ hasError: false }); this.props.onReset(); }} 
+            style={{ marginTop: 20, padding: '12px 24px', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: '1rem' }}>
+            ← Back to Lessons
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ============ LESSON PLAYER (VIDEO + QUIZ) ============
 const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }) => {
   const [phase, setPhase] = useState('video'); // 'video', 'puzzle', 'quiz', 'complete'
@@ -1012,17 +1077,14 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
     const textTimer = setTimeout(() => setShowText(true), 300);
     
     // Handle move animation if present
+    let moveTimer, completeMoveTimer;
     if (scene.moveAnimation) {
-      const moveTimer = setTimeout(() => {
+      moveTimer = setTimeout(() => {
         setAnimatingMove(scene.moveAnimation);
       }, 1500);
       
-      const completeMoveTimer = setTimeout(() => {
+      completeMoveTimer = setTimeout(() => {
         setAnimatingMove(null);
-        // Update FEN after move animation
-        if (scene.moveAnimation.to) {
-          // Simple FEN update for visualization
-        }
       }, 3000);
     }
     
@@ -1043,6 +1105,8 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(textTimer);
+      clearTimeout(moveTimer);
+      clearTimeout(completeMoveTimer);
     };
   }, [sceneIndex, isPlaying, phase]);
 
@@ -1394,6 +1458,9 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
 const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => {
   const [game, setGame] = useState(new Chess(puzzle.fen));
   const [showHint, setShowHint] = useState(false);
+  
+  // Determine board orientation from FEN (who moves)
+  const boardOrientation = puzzle.fen.includes(' b ') ? 'black' : 'white';
 
   const onDrop = (sourceSquare, targetSquare) => {
     const move = sourceSquare + targetSquare;
@@ -1422,6 +1489,7 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           position={game.fen()}
           onPieceDrop={onDrop}
           boardWidth={Math.min(400, window.innerWidth - 40)}
+          boardOrientation={boardOrientation}
           customDarkSquareStyle={{ backgroundColor: currentTheme?.darkSquare || '#769656' }}
           customLightSquareStyle={{ backgroundColor: currentTheme?.lightSquare || '#eeeed2' }}
           customPieces={customPieces}
@@ -1586,4 +1654,10 @@ const PracticeBoard = ({ customPieces, currentTheme, onExit }) => {
   );
 };
 
-export default Learn;
+const LearnWrapped = () => (
+  <LearnErrorBoundary>
+    <Learn />
+  </LearnErrorBoundary>
+);
+
+export default LearnWrapped;
