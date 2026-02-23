@@ -1764,12 +1764,14 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .nav-link {
-  color: var(--text-secondary) !important;
+  color: #2c3e36 !important;
+  font-weight: 600;
 }
 
 :root[data-theme="light"] .nav-link.active,
 :root[data-theme="light"] .nav-link:hover {
-  color: var(--accent-primary) !important;
+  color: #1b5e20 !important;
+  background: rgba(46, 125, 50, 0.1) !important;
 }
 
 :root[data-theme="light"] .navbar-brand span {
