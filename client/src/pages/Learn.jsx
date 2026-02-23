@@ -411,6 +411,12 @@ const LESSONS = [
           animate: 'warning'
         }
       ],
+      puzzle: {
+        instruction: "Capture the undefended Rook with your Queen!",
+        fen: '8/8/8/3r4/8/8/8/3QK3 w - - 0 1',
+        solution: 'd1d5',
+        hint: "The Queen can move like a Rook — straight up the file!"
+      },
       quiz: {
         question: "The Queen combines which two pieces?",
         options: ["Knight + Bishop", "Rook + Knight", "Rook + Bishop", "Pawn + King"],
@@ -788,11 +794,12 @@ const Learn = () => {
       setTotalXP(prev => prev + xp);
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
+    window.scrollTo(0, 0);
   };
 
   if (selectedLesson) {
     if (selectedLesson.isPractice) {
-      return <PracticeBoard customPieces={customPieces} currentTheme={currentTheme} onExit={() => setSelectedLesson(null)} />;
+      return <PracticeBoard customPieces={customPieces} currentTheme={currentTheme} onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }} />;
     }
     return (
       <LessonPlayer 
@@ -803,7 +810,7 @@ const Learn = () => {
           completeLesson(selectedLesson.id, selectedLesson.xp);
           setSelectedLesson(null);
         }}
-        onExit={() => setSelectedLesson(null)}
+        onExit={() => { setSelectedLesson(null); window.scrollTo(0, 0); }}
       />
     );
   }
@@ -1268,11 +1275,11 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           font-size: 1rem;
         }
         .board-container {
-          display: flex;
-          justify-content: center;
+          display: inline-block;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          margin: 0 auto;
         }
         .board-container.pulse {
           animation: boardPulse 2s infinite;
