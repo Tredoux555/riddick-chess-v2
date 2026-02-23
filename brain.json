@@ -1,0 +1,36 @@
+{
+  "project": "riddick-chess-v2",
+  "url": "riddickchess.site",
+  "repo": "~/Desktop/riddick-chess-v2",
+  "lastUpdated": "2026-02-23T09:30:00Z",
+  "owner": "Riddick (age 10)",
+  
+  "currentPriority": "KILLER OPENINGS TRAINER — promotional feature",
+  
+  "status": {
+    "learn_page": "22 lessons, puzzles, quizzes, XP system, error boundary",
+    "killer_openings": "HANDOFF WRITTEN — docs/HANDOFF_KILLER_OPENINGS.md — NOT YET BUILT",
+    "pieces": "Chess.com piece sets working (Neo, Classic, Wood, Glass, Gothic, Metal)",
+    "themes": "Board themes working (Green, Brown, Blue)",
+    "centering": "Fixed with flexbox column + align-items center",
+    "ip_banning": "Working — banned_ips table in Railway PostgreSQL",
+    "light_dark_theme": "Working — warm off-white + green accents"
+  },
+
+  "nextSteps": [
+    "BUILD killer openings page with guided bot system",
+    "10 openings ranked by lethality with pre-programmed move trees",
+    "Bot plays opponent moves, arrows guide user through trap",
+    "3 modes: Victim (always falls for trap), Smart (50/50), Realistic",
+    "Create demo GIF/screenshots for YouTuber outreach",
+    "Contact chess YouTubers starting with Tier 3-4 (smaller, faster response)"
+  ],
+
+  "recentFixes": [
+    "Error boundary on Learn page to catch blank screen crashes",
+    "Timer leak fix (moveTimer/completeMoveTimer cleanup)",
+    "Board centering: flexbox column + align-items center",
+    "Queen puzzle added",
+    "scrollTo(0,0) on lesson complete"
+  ]
+}
