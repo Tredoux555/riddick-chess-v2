@@ -1700,3 +1700,189 @@ h4 { font-size: 1.125rem; }
 .challenge-actions button:hover {
   opacity: 0.85;
 }
+
+
+/* ============================================
+   LIGHT THEME OVERRIDES
+   ============================================ */
+
+:root[data-theme="light"] {
+  /* Backgrounds */
+  --bg-primary: #f5f5fa;
+  --bg-secondary: #eeeef5;
+  --bg-tertiary: #e4e4ef;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-solid: #ffffff;
+  --bg-hover: #dcdce8;
+
+  /* Text */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a65;
+  --text-muted: #8888a0;
+  --text-bright: #0a0a12;
+
+  /* Borders */
+  --border-color: rgba(99, 102, 241, 0.2);
+  --border-light: rgba(139, 92, 246, 0.2);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  /* Shadows - lighter */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+  --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.15);
+  --shadow-glow-warning: 0 0 30px rgba(245, 158, 11, 0.15);
+
+  /* Gradient overrides */
+  --gradient-dark: linear-gradient(135deg, #e4e4ef 0%, #dcdce8 100%);
+  --gradient-glow: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+}
+
+/* Light theme specific element overrides */
+:root[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+:root[data-theme="light"] .navbar {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+:root[data-theme="light"] .nav-link {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="light"] .nav-link.active,
+:root[data-theme="light"] .nav-link:hover {
+  color: var(--accent-primary) !important;
+}
+
+:root[data-theme="light"] .navbar-brand span {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] .user-dropdown {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+:root[data-theme="light"] .dropdown-item {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="light"] .dropdown-item:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--accent-primary) !important;
+}
+
+:root[data-theme="light"] .user-button {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] table {
+  background: var(--bg-card-solid);
+}
+
+:root[data-theme="light"] th {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] td {
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] tr:hover td {
+  background: var(--bg-secondary) !important;
+}
+
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .glass-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root[data-theme="light"] .modal {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+:root[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] .form-input {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] .form-input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+:root[data-theme="light"] .sidebar,
+:root[data-theme="light"] .admin-sidebar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root[data-theme="light"] .sidebar a,
+:root[data-theme="light"] .admin-sidebar a {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="light"] .sidebar a.active,
+:root[data-theme="light"] .admin-sidebar a.active {
+  color: var(--accent-primary) !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+
+:root[data-theme="light"] .btn-secondary {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root[data-theme="light"] code {
+  background: var(--bg-secondary) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  transition: var(--transition-fast);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-hover);
+  transform: scale(1.1);
+}

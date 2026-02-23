@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine, 
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
@@ -11,6 +12,7 @@ import {
 const Navbar = () => {
   const { user, isAdmin, isClubMember, logout } = useAuth();
   const { connected } = useSocket();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -61,6 +63,13 @@ const Navbar = () => {
         </ul>
 
         <div className="navbar-user">
+          <button 
+            className="theme-toggle" 
+            onClick={toggleTheme} 
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           {user ? (
             <>
               <div 

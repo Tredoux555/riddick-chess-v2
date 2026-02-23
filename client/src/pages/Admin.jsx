@@ -397,6 +397,30 @@ const Users = () => {
                       <FaStar /> Make Admin
                     </button>
                   )}
+                  {selectedUser.is_club_member ? (
+                    <button className="btn btn-sm btn-warning" onClick={async () => {
+                      if (!window.confirm(`Remove ${selectedUser.username} from club?`)) return;
+                      try {
+                        await axios.post(`/api/club/members/${selectedUser.id}/revoke`);
+                        toast.success(`${selectedUser.username} removed from club`);
+                        loadUsers();
+                        setSelectedUser({ ...selectedUser, is_club_member: false });
+                      } catch (e) { toast.error('Failed to remove from club'); }
+                    }}>
+                      <FaCrown /> Remove from Club
+                    </button>
+                  ) : (
+                    <button className="btn btn-sm btn-success" onClick={async () => {
+                      try {
+                        await axios.post(`/api/club/members/${selectedUser.id}/verify`);
+                        toast.success(`${selectedUser.username} added to club!`);
+                        loadUsers();
+                        setSelectedUser({ ...selectedUser, is_club_member: true });
+                      } catch (e) { toast.error('Failed to add to club'); }
+                    }}>
+                      <FaCrown /> Add to Club
+                    </button>
+                  )}
                 </div>
               </div>
               
@@ -580,6 +604,9 @@ const Users = () => {
 const ClubMembers = () => {
   const [members, setMembers] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [addSearch, setAddSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   
   useEffect(() => { loadData(); }, []);
   
@@ -592,6 +619,28 @@ const ClubMembers = () => {
       setMembers(m.data);
       setRequests(r.data);
     } catch (e) { console.error(e); }
+  };
+
+  const searchUsers = async (query) => {
+    setAddSearch(query);
+    if (query.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const res = await axios.get(`/api/admin/users?search=${encodeURIComponent(query)}`);
+      const nonMembers = (res.data || []).filter(u => !u.is_club_member);
+      setSearchResults(nonMembers.slice(0, 8));
+    } catch (e) { console.error(e); }
+    setSearching(false);
+  };
+
+  const addToClub = async (user) => {
+    try {
+      await axios.post(`/api/club/members/${user.id}/verify`);
+      toast.success(`${user.username} added to club!`);
+      setAddSearch('');
+      setSearchResults([]);
+      loadData();
+    } catch (e) { toast.error('Failed to add member'); }
   };
   
   const handleApprove = async (id) => {
@@ -615,7 +664,52 @@ const ClubMembers = () => {
   
   return (
     <div>
-      <h1>Club Members</h1>
+      <h1><FaCrown /> Club Members</h1>
+
+      {/* Add Member Section */}
+      <div className="section" style={{ marginBottom: '24px' }}>
+        <h3>➕ Add Member</h3>
+        <div style={{ position: 'relative', maxWidth: '400px' }}>
+          <input
+            className="form-input"
+            placeholder="Search username to add..."
+            value={addSearch}
+            onChange={e => searchUsers(e.target.value)}
+            style={{ width: '100%', marginBottom: '4px' }}
+          />
+          {searchResults.length > 0 && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+              background: 'var(--bg-card-solid)', border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-lg)'
+            }}>
+              {searchResults.map(u => (
+                <div key={u.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)',
+                  cursor: 'pointer'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{u.username}</span>
+                  <button
+                    className="btn btn-sm btn-success"
+                    onClick={() => addToClub(u)}
+                    style={{ padding: '4px 12px', fontSize: '12px' }}
+                  >
+                    <FaCrown /> Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {searching && <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Searching...</p>}
+          {addSearch.length >= 2 && !searching && searchResults.length === 0 && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No non-member users found</p>
+          )}
+        </div>
+      </div>
       
       {requests.length > 0 && (
         <div className="section">
