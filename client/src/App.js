@@ -134,8 +134,13 @@ function App() {
           <Route path="/learn-test" element={<LearnTest />} />
           <Route path="/killer-openings" element={<KillerOpenings />} />
           <Route path="/killer-openings/:openingId" element={<KillerOpeningPlayer />} />
-          <Route path="/defense-openings" element={<DefenseOpenings />} />
-          <Route path="/defense-openings/:defenseId" element={<DefenseOpeningPlayer />} />
+          {/* Killer Defenses - Club members only */}
+          <Route path="/killer-defenses" element={
+            <ProtectedRoute requireClub><DefenseOpenings /></ProtectedRoute>
+          } />
+          <Route path="/killer-defenses/:defenseId" element={
+            <ProtectedRoute requireClub><DefenseOpeningPlayer /></ProtectedRoute>
+          } />
 
           {/* OUPA'S CHESS PAGE - Simple grandpa-proof chess! 😂 */}
           <Route path="/oupa" element={<OupaChess />} />

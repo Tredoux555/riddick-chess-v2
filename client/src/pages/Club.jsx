@@ -3,7 +3,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
-import { FaCrown, FaUsers, FaComments, FaPaperPlane, FaCheck, FaTimes, FaCog } from 'react-icons/fa';
+import { FaCrown, FaUsers, FaComments, FaPaperPlane, FaCheck, FaTimes, FaCog, FaShieldAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const Club = () => {
   const { user, isAdmin } = useAuth();
@@ -262,6 +263,24 @@ const Club = () => {
           ))}
         </div>
       )}
+
+      {/* Club Exclusive Features */}
+      <div className="club-features" style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+        <Link to="/killer-openings" style={{ flex: 1, minWidth: 200, padding: '16px 20px', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', borderRadius: 16, textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.3s ease' }}>
+          <span style={{ fontSize: '2rem' }}>💀</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Killer Openings</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Learn deadly opening traps</div>
+          </div>
+        </Link>
+        <Link to="/killer-defenses" style={{ flex: 1, minWidth: 200, padding: '16px 20px', background: 'rgba(77,166,255,0.1)', border: '2px solid rgba(77,166,255,0.3)', borderRadius: 16, textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.3s ease' }}>
+          <FaShieldAlt style={{ fontSize: '2rem', color: '#4da6ff' }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Killer Defenses</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Survive & punish deadly openings</div>
+          </div>
+        </Link>
+      </div>
 
       <div className="tabs">
         <button className={`tab ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>

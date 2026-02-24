@@ -82,6 +82,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
           max-width: 600px;
           margin: 0 auto;
           padding: 2rem;
+          text-align: center;
           animation: fadeInUp 0.6s ease-out;
         }
         .exercise-header {

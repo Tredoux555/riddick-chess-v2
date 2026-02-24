@@ -371,9 +371,9 @@ const LESSONS = [
         },
         {
           duration: 5000,
-          fen: '8/8/8/1q6/8/8/3N4/1r6 w - - 0 1',
+          fen: '8/8/8/q7/8/8/1r1N4/8 w - - 0 1',
           text: "Knight FORK! ⚔️⚔️",
-          subtext: "Attack TWO pieces at once!",
+          subtext: "Nc4 attacks the Queen on a5 AND the Rook on b2!",
           highlight: ['c4'],
           arrows: [['d2', 'c4']],
           animate: 'fork'
@@ -381,9 +381,9 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Find the knight fork! Attack both pieces!",
-        fen: '4k3/8/8/1q6/8/8/3N4/1r2K3 w - - 0 1',
+        fen: '4k3/8/8/q7/8/8/1r1N4/4K3 w - - 0 1',
         solution: 'd2c4',
-        hint: "Find the square that attacks both!"
+        hint: "Which square lets the Knight attack BOTH the Queen and the Rook?"
       },
       quiz: {
         question: "What makes the knight unique?",

@@ -8,8 +8,14 @@ const Home = () => {
   const { user, isClubMember } = useAuth();
   const [stats, setStats] = useState(null);
   const [upcomingTournaments, setUpcomingTournaments] = useState([]);
+  const [bots, setBots] = useState([]);
 
   useEffect(() => {
+    // Fetch bots for homepage showcase
+    fetch('/api/bots/list')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setBots(data); })
+      .catch(() => {});
     if (user) {
       loadDashboardData();
     }
@@ -156,25 +162,23 @@ const Home = () => {
         </div>
 
 
-        {/* Bots Showcase */}
+        {/* Bots Showcase — fetched from API */}
         <div className="bots-showcase">
           <h2 className="section-title">Meet Your Opponents</h2>
-          <p className="section-subtitle">6 unique AI personalities waiting to challenge you</p>
+          <p className="section-subtitle">{bots.length} unique AI personalities waiting to challenge you</p>
           <div className="bots-grid">
-            {[
-              { name: 'Buddy', emoji: '🐶', level: 'Beginner', desc: 'Your friendly starter bot' },
-              { name: 'Charlie', emoji: '🎭', level: 'Easy', desc: 'Unpredictable and fun' },
-              { name: 'Diana', emoji: '👸', level: 'Medium', desc: 'Elegant and calculated' },
-              { name: 'Magnus', emoji: '🧙', level: 'Hard', desc: 'The wise strategist' },
-              { name: 'Titan', emoji: '🤖', level: 'Expert', desc: 'Cold, calculating machine' },
-              { name: 'Riddick', emoji: '😎', level: 'Master', desc: 'The ultimate challenge' },
-            ].map((bot, i) => (
-              <div key={i} className="bot-card">
-                <div className="bot-emoji">{bot.emoji}</div>
-                <div className="bot-name">{bot.name}</div>
-                <div className="bot-level">{bot.level}</div>
-              </div>
-            ))}
+            {(bots.length > 0 ? bots : [
+              { name: 'Loading...', emoji: '🤖', elo: 0 },
+            ]).map((bot, i) => {
+              const level = bot.elo < 600 ? 'Beginner' : bot.elo < 1000 ? 'Easy' : bot.elo < 1400 ? 'Medium' : bot.elo < 1800 ? 'Hard' : bot.elo < 2200 ? 'Expert' : 'Master';
+              return (
+                <div key={bot.id || i} className="bot-card">
+                  <div className="bot-emoji">{bot.emoji}</div>
+                  <div className="bot-name">{bot.name}</div>
+                  <div className="bot-level">{level}</div>
+                </div>
+              );
+            })}
           </div>
           <Link to="/bots" className="btn-hero btn-secondary-hero" style={{ marginTop: '32px' }}>
             Challenge a Bot →

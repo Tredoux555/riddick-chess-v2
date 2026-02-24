@@ -64,7 +64,7 @@ const DefenseOpenings = () => {
   const completedCount = Object.values(progress).filter(p => p?.guided || p?.unguided || p?.mastered).length;
 
   const handleCardClick = (defenseId) => {
-    navigate(`/defense-openings/${defenseId}`);
+    navigate(`/killer-defenses/${defenseId}`);
   };
 
   return (
@@ -73,13 +73,13 @@ const DefenseOpenings = () => {
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.headerTop}>
-            <Link to="/learn" style={styles.backLink}>
-              <FaArrowLeft /> Back to Learn
+            <Link to="/club" style={styles.backLink}>
+              <FaArrowLeft /> Back to Club
             </Link>
           </div>
           <div style={styles.titleRow}>
             <FaShieldAlt style={{ fontSize: 36, color: '#4da6ff' }} />
-            <h1 style={styles.title}>Defence Master</h1>
+            <h1 style={styles.title}>Killer Defenses</h1>
             <FaShieldAlt style={{ fontSize: 36, color: '#4da6ff' }} />
           </div>
           <p style={styles.subtitle}>

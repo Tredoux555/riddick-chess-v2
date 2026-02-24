@@ -195,6 +195,15 @@ const Navbar = () => {
         }
         .username {
           font-weight: 500;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        @media (max-width: 1080px) {
+          .username {
+            max-width: 80px;
+          }
         }
         .auth-buttons {
           display: flex;
