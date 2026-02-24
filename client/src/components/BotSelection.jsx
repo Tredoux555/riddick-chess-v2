@@ -193,7 +193,7 @@ const BotSelection = () => {
 
         .bots-title {
           font-size: 3rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           font-weight: 700;
           margin-bottom: 16px;
           display: flex;
@@ -229,7 +229,7 @@ const BotSelection = () => {
 
         .step-title {
           font-size: 1.5rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           margin-bottom: 24px;
         }
 
@@ -347,7 +347,7 @@ const BotSelection = () => {
         .bot-name {
           text-align: center;
           font-size: 1.4rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
           margin-bottom: 12px;
         }

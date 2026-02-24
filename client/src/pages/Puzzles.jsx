@@ -238,7 +238,7 @@ const Puzzles = () => {
         }
         .puzzle-title {
           font-size: 2.5rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           font-weight: 700;
           display: flex;
           align-items: center;
@@ -375,7 +375,7 @@ const Puzzles = () => {
         .rating-display {
           font-size: 3rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           background: linear-gradient(135deg, #a78bfa 0%, #818cf8 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -424,7 +424,7 @@ const Puzzles = () => {
         .rush-title {
           font-size: 1.25rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           position: relative;
           z-index: 1;
         }

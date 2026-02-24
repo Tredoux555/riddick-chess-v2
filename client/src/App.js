@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -38,6 +39,8 @@ import GuitarLearning from './pages/GuitarLearning';
 import OupaChess from './pages/Oupa/OupaChess';
 import KillerOpenings from './pages/KillerOpenings';
 import KillerOpeningPlayer from './pages/KillerOpeningPlayer';
+import DefenseOpenings from './pages/DefenseOpenings';
+import DefenseOpeningPlayer from './pages/DefenseOpeningPlayer';
 
 
 // Bot and Analysis components
@@ -88,6 +91,7 @@ function App() {
     <div className="app">
       <Navbar />
       <main className="main-content">
+        <ErrorBoundary>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
@@ -130,6 +134,8 @@ function App() {
           <Route path="/learn-test" element={<LearnTest />} />
           <Route path="/killer-openings" element={<KillerOpenings />} />
           <Route path="/killer-openings/:openingId" element={<KillerOpeningPlayer />} />
+          <Route path="/defense-openings" element={<DefenseOpenings />} />
+          <Route path="/defense-openings/:defenseId" element={<DefenseOpeningPlayer />} />
 
           {/* OUPA'S CHESS PAGE - Simple grandpa-proof chess! 😂 */}
           <Route path="/oupa" element={<OupaChess />} />
@@ -166,6 +172,7 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        </ErrorBoundary>
       </main>
       <ShareButton />
     </div>

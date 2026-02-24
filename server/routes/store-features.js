@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../utils/db');
 
-const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
+const ADMIN_PASS = process.env.ADMIN_PASS;
+if (!ADMIN_PASS) {
+  console.error('⚠️  WARNING: ADMIN_PASS environment variable is not set! Store feature admin routes will be inaccessible.');
+}
 
 // Initialize all new tables
 async function initFeatureTables() {

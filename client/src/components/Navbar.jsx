@@ -15,6 +15,7 @@ const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -36,12 +37,19 @@ const Navbar = () => {
           <span>Riddick Chess</span>
         </Link>
 
-        <ul className="navbar-nav">
+        <div className="nav-toggle" onClick={() => setNavOpen(!navOpen)}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <ul className={`navbar-nav ${navOpen ? 'open' : ''}`}>
           {visibleLinks.map(link => (
             <li key={link.path}>
-              <Link 
-                to={link.path} 
+              <Link
+                to={link.path}
                 className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
+                onClick={() => setNavOpen(false)}
               >
                 <span className="icon">{link.icon}</span>
                 <span>{link.label}</span>

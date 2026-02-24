@@ -51,9 +51,14 @@ router.post('/request', authenticateToken, async (req, res) => {
     );
     const analysisId = analysisResult.rows[0].id;
     
-    // Process analysis in background
-    processAnalysis(analysisId, gamePgn, pool).catch(err => {
+    // Process analysis in background — errors are caught and persisted to DB
+    processAnalysis(analysisId, gamePgn, pool).catch(async (err) => {
       console.error(`Analysis ${analysisId} background error:`, err);
+      try {
+        await pool.query(`UPDATE game_analyses SET status = 'failed' WHERE id = $1`, [analysisId]);
+      } catch (dbErr) {
+        console.error(`Failed to mark analysis ${analysisId} as failed:`, dbErr);
+      }
     });
     
     res.json({ analysisId, status: 'pending', message: 'Analysis started!' });

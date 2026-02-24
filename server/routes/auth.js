@@ -5,11 +5,12 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const pool = require('../utils/db');
 const { authenticateToken } = require('../middleware/auth');
+const { authLimiter, registerLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
 
-const googleClient = new OAuth2Client("438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com");
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { email, username, password } = req.body;
 
@@ -51,7 +52,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -71,7 +72,13 @@ router.post('/login', async (req, res) => {
     const user = result.rows[0];
 
     if (user.is_banned) {
-      return res.status(403).json({ error: 'Account is banned', reason: user.ban_reason });
+      // Check if ban has expired
+      if (user.ban_expires && new Date(user.ban_expires) < new Date()) {
+        // Ban expired — unban the user
+        await pool.query('UPDATE users SET is_banned = FALSE, ban_reason = NULL, ban_expires = NULL WHERE id = $1', [user.id]);
+      } else {
+        return res.status(403).json({ error: 'Account is banned', reason: user.ban_reason, expires: user.ban_expires });
+      }
     }
 
     if (!user.password_hash) {
@@ -103,55 +110,82 @@ router.post('/login', async (req, res) => {
 });
 
 // Google OAuth
-router.post('/google', async (req, res) => {
+router.post('/google', authLimiter, async (req, res) => {
   try {
     const { credential } = req.body;
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: "438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com"
+      audience: process.env.GOOGLE_CLIENT_ID || "438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com"
     });
 
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    // Check if user exists
+    // First: check if user exists by google_id (trusted link)
     let result = await pool.query(
-      'SELECT * FROM users WHERE google_id = $1 OR email = $2',
-      [googleId, email.toLowerCase()]
+      'SELECT * FROM users WHERE google_id = $1',
+      [googleId]
     );
 
     let user;
 
     if (result.rows.length > 0) {
+      // User already linked to this Google account
       user = result.rows[0];
 
       if (user.is_banned) {
         return res.status(403).json({ error: 'Account is banned', reason: user.ban_reason });
       }
-
-      // Update google_id and avatar if needed
-      if (!user.google_id) {
-        await pool.query(
-          'UPDATE users SET google_id = $1, avatar = COALESCE(avatar, $2) WHERE id = $3',
-          [googleId, picture, user.id]
-        );
-      }
     } else {
+      // Check if email matches an existing account
+      result = await pool.query(
+        'SELECT * FROM users WHERE email = $1',
+        [email.toLowerCase()]
+      );
+
+      if (result.rows.length > 0) {
+        user = result.rows[0];
+
+        if (user.is_banned) {
+          return res.status(403).json({ error: 'Account is banned', reason: user.ban_reason });
+        }
+
+        // Only link Google ID if the Google email is verified AND
+        // the existing account doesn't already have a different google_id
+        if (payload.email_verified && !user.google_id) {
+          await pool.query(
+            'UPDATE users SET google_id = $1, avatar = COALESCE(avatar, $2) WHERE id = $3',
+            [googleId, picture, user.id]
+          );
+        } else if (user.google_id && user.google_id !== googleId) {
+          // This account is already linked to a different Google account
+          return res.status(400).json({ error: 'This email is already linked to a different Google account' });
+        }
+      }
+    }
+
+    if (!user) {
       // Create new user - clean username from Google name
       const cleanName = name
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ');
-      const username = cleanName;
-      
+      let username = cleanName;
+
+      // Ensure username uniqueness by appending random digits if needed
+      const usernameCheck = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+      if (usernameCheck.rows.length > 0) {
+        username = cleanName + Math.floor(Math.random() * 9999);
+      }
+
       result = await pool.query(
         `INSERT INTO users (email, username, google_id, avatar)
          VALUES ($1, $2, $3, $4)
          RETURNING id, email, username, avatar, is_admin, is_club_member`,
         [email.toLowerCase(), username, googleId, picture]
       );
-      
+
       user = result.rows[0];
     }
 
@@ -282,7 +316,7 @@ router.put('/password', authenticateToken, async (req, res) => {
 // ============================================
 
 // Request password reset (generates token - normally would send email)
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     
@@ -342,7 +376,7 @@ router.get('/verify-reset-token', async (req, res) => {
 });
 
 // Reset password with token
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', passwordResetLimiter, async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     

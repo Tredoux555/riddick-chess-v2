@@ -358,7 +358,7 @@ const PuzzleRush = () => {
           .score-value {
             font-size: 5rem;
             font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Outfit', sans-serif;
             color: var(--accent-primary);
           }
           .new-best {
@@ -449,7 +449,7 @@ const PuzzleRush = () => {
         .timer {
           font-size: 2rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', monospace;
+          font-family: 'Outfit', monospace;
         }
         .timer.low {
           color: var(--accent-danger);

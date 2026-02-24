@@ -121,7 +121,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           margin-bottom: 0.5rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
         .instruction {
           color: var(--text-secondary);

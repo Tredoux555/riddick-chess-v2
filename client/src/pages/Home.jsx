@@ -261,7 +261,7 @@ const Home = () => {
 
           .hero-title {
             font-size: clamp(3rem, 8vw, 5rem);
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Outfit', sans-serif;
             font-weight: 700;
             margin-bottom: 16px;
             display: flex;
@@ -369,7 +369,7 @@ const Home = () => {
             display: block;
             font-size: 2rem;
             font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Outfit', sans-serif;
             color: var(--accent-primary);
           }
 
@@ -405,7 +405,7 @@ const Home = () => {
 
           .section-title {
             font-size: 2.5rem;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Outfit', sans-serif;
             text-align: center;
             margin-bottom: 16px;
           }
@@ -584,7 +584,7 @@ const Home = () => {
 
           .cta-section h2 {
             font-size: 2.5rem;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Outfit', sans-serif;
             margin-bottom: 16px;
           }
 
@@ -817,7 +817,7 @@ const Home = () => {
 
         .welcome-section h1 {
           font-size: 2rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           margin-bottom: 8px;
         }
 
@@ -989,7 +989,7 @@ const Home = () => {
         }
 
         .rating-number {
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           font-weight: 700;
           font-size: 1.25rem;
           color: #a78bfa;
@@ -1014,7 +1014,7 @@ const Home = () => {
           display: block;
           font-size: 1.75rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;

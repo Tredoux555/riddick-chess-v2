@@ -252,7 +252,7 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
 
         .text-bubble p {
@@ -358,7 +358,7 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
 
         .xp-earned {

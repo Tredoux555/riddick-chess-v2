@@ -132,65 +132,77 @@ class GameState {
     this.stopClock();
     this.status = 'completed';
 
-    // Save to database
-    await pool.query(`
-      UPDATE games SET
-        status = 'completed',
-        result = $1,
-        result_reason = $2,
-        pgn = $3,
-        fen = $4,
-        white_time_remaining = $5,
-        black_time_remaining = $6,
-        completed_at = NOW()
-      WHERE id = $7
-    `, [result, reason, this.chess.pgn(), this.chess.fen(), 
-        Math.floor(this.whiteTime / 1000), Math.floor(this.blackTime / 1000), this.id]);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Update tournament FIRST (before rating changes)
-    if (this.tournamentId) {
-      try {
-        await tournamentService.recordResult(this.tournamentId, this.id, result);
-        console.log(`Tournament ${this.tournamentId} result recorded: ${result}`);
-      } catch (err) {
-        console.error('Failed to record tournament result:', err);
-      }
-    }
-
-    // Update ratings if rated game
-    if (this.rated && result !== '*') {
-      const ratingChanges = await ratingService.updateRatings(
-        this.whiteId, 
-        this.blackId, 
-        result, 
-        this.timeControl / 1000
-      );
-
-      // Update game with rating info
-      await pool.query(`
+      // Save game result
+      await client.query(`
         UPDATE games SET
-          white_rating_before = $1,
-          white_rating_after = $2,
-          black_rating_before = $3,
-          black_rating_after = $4
-        WHERE id = $5
-      `, [ratingChanges.white.before, ratingChanges.white.after,
-          ratingChanges.black.before, ratingChanges.black.after, this.id]);
+          status = 'completed',
+          result = $1,
+          result_reason = $2,
+          pgn = $3,
+          fen = $4,
+          white_time_remaining = $5,
+          black_time_remaining = $6,
+          completed_at = NOW()
+        WHERE id = $7
+      `, [result, reason, this.chess.pgn(), this.chess.fen(),
+          Math.floor(this.whiteTime / 1000), Math.floor(this.blackTime / 1000), this.id]);
 
-      // Check achievements
-      const winnerId = result === '1-0' ? this.whiteId : result === '0-1' ? this.blackId : null;
-      if (winnerId) {
-        await achievementService.checkGameAchievements(winnerId, result, {
-          checkmate: reason === 'checkmate',
-          moveCount: this.chess.history().length,
-          isBackRankMate: this.isBackRankMate()
-        });
+      // Update tournament FIRST (before rating changes)
+      if (this.tournamentId) {
+        try {
+          await tournamentService.recordResult(this.tournamentId, this.id, result);
+          console.log(`Tournament ${this.tournamentId} result recorded: ${result}`);
+        } catch (err) {
+          console.error('Failed to record tournament result:', err);
+        }
       }
 
-      return ratingChanges;
-    }
+      // Update ratings if rated game
+      let ratingChanges = null;
+      if (this.rated && result !== '*') {
+        ratingChanges = await ratingService.updateRatings(
+          this.whiteId,
+          this.blackId,
+          result,
+          this.timeControl / 1000
+        );
 
-    return null;
+        // Update game with rating info
+        await client.query(`
+          UPDATE games SET
+            white_rating_before = $1,
+            white_rating_after = $2,
+            black_rating_before = $3,
+            black_rating_after = $4
+          WHERE id = $5
+        `, [ratingChanges.white.before, ratingChanges.white.after,
+            ratingChanges.black.before, ratingChanges.black.after, this.id]);
+
+        // Check achievements (non-critical, outside transaction)
+        const winnerId = result === '1-0' ? this.whiteId : result === '0-1' ? this.blackId : null;
+        if (winnerId) {
+          // Fire-and-forget — achievement failures shouldn't break the game
+          achievementService.checkGameAchievements(winnerId, result, {
+            checkmate: reason === 'checkmate',
+            moveCount: this.chess.history().length,
+            isBackRankMate: this.isBackRankMate()
+          }).catch(err => console.error('Achievement check failed:', err));
+        }
+      }
+
+      await client.query('COMMIT');
+      return ratingChanges;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error(`Failed to end game ${this.id}:`, err);
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   isBackRankMate() {
@@ -403,35 +415,38 @@ function initializeSocket(io) {
       // Handle game over
       if (result.gameOver) {
         const ratingChanges = await game.endGame(result.result, result.reason);
-        
+
         io.to(`game:${gameId}`).emit('game:over', {
           result: result.result,
           reason: result.reason,
           ratingChanges
         });
-        
-        activeGames.delete(gameId);
+
+        activeGames.delete(Number(gameId));
+        gameSpectators.delete(Number(gameId));
       }
     });
 
     socket.on('game:resign', async ({ gameId }) => {
       if (!userId) return;
 
-      const game = activeGames.get(gameId);
+      const gId = Number(gameId);
+      const game = activeGames.get(gId);
       if (!game) return;
 
       const isWhite = userId === game.whiteId;
       const result = isWhite ? '0-1' : '1-0';
-      
+
       const ratingChanges = await game.endGame(result, 'resignation');
-      
+
       io.to(`game:${gameId}`).emit('game:over', {
         result,
         reason: 'resignation',
         ratingChanges
       });
-      
-      activeGames.delete(gameId);
+
+      activeGames.delete(gId);
+      gameSpectators.delete(gId);
     });
 
     socket.on('game:draw:offer', ({ gameId }) => {
@@ -449,7 +464,8 @@ function initializeSocket(io) {
     socket.on('game:draw:accept', async ({ gameId }) => {
       if (!userId) return;
 
-      const game = activeGames.get(gameId);
+      const gId = Number(gameId);
+      const game = activeGames.get(gId);
       if (!game || !game.drawOffer) return;
 
       // Verify opponent is accepting
@@ -457,14 +473,15 @@ function initializeSocket(io) {
       if (game.drawOffer === myColor) return; // Can't accept own offer
 
       const ratingChanges = await game.endGame('1/2-1/2', 'draw_agreement');
-      
+
       io.to(`game:${gameId}`).emit('game:over', {
         result: '1/2-1/2',
         reason: 'draw_agreement',
         ratingChanges
       });
-      
-      activeGames.delete(gameId);
+
+      activeGames.delete(gId);
+      gameSpectators.delete(gId);
     });
 
     socket.on('game:draw:decline', ({ gameId }) => {
@@ -835,17 +852,22 @@ function initializeSocket(io) {
             game.disconnectTimeout = setTimeout(async () => {
               // Make sure they're still disconnected
               if (game.disconnectedPlayer !== userId) return;
-              
+
               const result = userId === game.whiteId ? '0-1' : '1-0';
-              const ratingChanges = await game.endGame(result, 'abandonment');
-              
-              io.to(`game:${gameId}`).emit('game:over', {
-                result,
-                reason: 'abandonment',
-                ratingChanges
-              });
-              
+              try {
+                const ratingChanges = await game.endGame(result, 'abandonment');
+
+                io.to(`game:${gameId}`).emit('game:over', {
+                  result,
+                  reason: 'abandonment',
+                  ratingChanges
+                });
+              } catch (err) {
+                console.error(`Failed to end game ${gameId} on abandonment:`, err);
+              }
+
               activeGames.delete(gameId);
+              gameSpectators.delete(gameId);
             }, 60000);
           }
         }

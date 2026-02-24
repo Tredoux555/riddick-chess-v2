@@ -63,7 +63,8 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (u.username ILIKE $${params.length} OR u.email ILIKE $${params.length})`;
+      params.push(`%${search}%`);
+      query += ` AND (u.username ILIKE $${params.length - 1} OR u.email ILIKE $${params.length})`;
     }
     if (banned === 'true') query += ` AND u.is_banned = TRUE`;
     if (banned === 'false') query += ` AND u.is_banned = FALSE`;

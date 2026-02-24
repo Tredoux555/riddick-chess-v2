@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, Component } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Component } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
@@ -61,8 +61,52 @@ const KillerOpeningPlayer = () => {
   const [highlightSquares, setHighlightSquares] = useState({});
   const [arrows, setArrows] = useState([]);
 
+  // Ref to track all active timers so we can clean them up on reset/unmount
+  const timersRef = useRef([]);
+  // Ref to track if game is still "alive" (not reset/navigated away)
+  const gameSessionRef = useRef(0);
+
+  // Helper: schedule a timeout that auto-cancels on reset/unmount
+  const safeTimeout = useCallback((fn, delay) => {
+    const session = gameSessionRef.current;
+    const timer = setTimeout(() => {
+      // Only run if we haven't reset since this timer was scheduled
+      if (gameSessionRef.current === session) {
+        fn();
+      }
+    }, delay);
+    timersRef.current.push(timer);
+    return timer;
+  }, []);
+
+  // Clear all pending timers
+  const clearAllTimers = useCallback(() => {
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current = [];
+  }, []);
+
+  // Make opponent move on the board (stable ref — no deps needed)
+  const makeOpponentMove = useCallback((moveStr) => {
+    setGame(prev => {
+      const newGame = new Chess(prev.fen());
+      const from = moveStr.substring(0, 2);
+      const to = moveStr.substring(2, 4);
+      try {
+        newGame.move({ from, to, promotion: 'q' });
+      } catch (e) {
+        console.warn('Opponent move failed:', moveStr, e);
+      }
+      return newGame;
+    });
+    setMoveHistory(prev => [...prev, moveStr]);
+  }, []);
+
   // Initialize or reset the game
   const resetGame = useCallback(() => {
+    // Invalidate any in-flight timers
+    clearAllTimers();
+    gameSessionRef.current += 1;
+
     const newGame = new Chess();
     setGame(newGame);
     setCurrentStep(0);
@@ -75,14 +119,20 @@ const KillerOpeningPlayer = () => {
     setWrongMove(false);
     setHighlightSquares({});
     setArrows([]);
-  }, [opening]);
+  }, [opening, clearAllTimers]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearAllTimers();
+  }, [clearAllTimers]);
+
+  // Reset when opening changes
   useEffect(() => {
     window.scrollTo(0, 0);
     resetGame();
   }, [openingId, resetGame]);
 
-  // Determine if we need opponent to move first (playing as black)
+  // Handle opponent-first moves (Black openings) and show hint arrows
   useEffect(() => {
     if (!opening || gameComplete || defenseTriggered) return;
     const step = opening.steps[currentStep];
@@ -90,7 +140,7 @@ const KillerOpeningPlayer = () => {
 
     // If this step's playerMove is null, the opponent moves first
     if (step.playerMove === null && step.opponentResponses?.main?.isOpponentFirst) {
-      const timer = setTimeout(() => {
+      const timer = safeTimeout(() => {
         makeOpponentMove(step.opponentResponses.main.move);
         setExplanation(step.opponentResponses.main.explanation);
         setCurrentStep(prev => prev + 1);
@@ -108,23 +158,7 @@ const KillerOpeningPlayer = () => {
         [to]: { backgroundColor: 'rgba(34, 197, 94, 0.35)' },
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, opening, gameComplete, defenseTriggered, makeOpponentMove]);
-
-  const makeOpponentMove = useCallback((moveStr) => {
-    setGame(prev => {
-      const newGame = new Chess(prev.fen());
-      const from = moveStr.substring(0, 2);
-      const to = moveStr.substring(2, 4);
-      try {
-        newGame.move({ from, to, promotion: 'q' });
-      } catch (e) {
-        console.warn('Opponent move failed:', moveStr, e);
-      }
-      return newGame;
-    });
-    setMoveHistory(prev => [...prev, moveStr]);
-  }, []);
+  }, [currentStep, opening, gameComplete, defenseTriggered, makeOpponentMove, safeTimeout]);
 
   const triggerVictory = useCallback(() => {
     setGameComplete(true);
@@ -170,7 +204,7 @@ const KillerOpeningPlayer = () => {
     if (sourceSquare !== expectedFrom || targetSquare !== expectedTo) {
       setWrongMove(true);
       toast.error('Not quite! Follow the green arrow.', { icon: '❌', duration: 2000 });
-      setTimeout(() => setWrongMove(false), 800);
+      safeTimeout(() => setWrongMove(false), 800);
       return false;
     }
 
@@ -199,7 +233,8 @@ const KillerOpeningPlayer = () => {
     setIsThinking(true);
     setExplanation('Opponent is thinking...');
 
-    setTimeout(() => {
+    // Use safeTimeout so these auto-cancel on reset/navigation
+    safeTimeout(() => {
       // Decide if opponent plays defense
       let playsDefense = false;
       const responses = step.opponentResponses;
@@ -217,6 +252,7 @@ const KillerOpeningPlayer = () => {
       if (playsDefense && responses.defense) {
         makeOpponentMove(responses.defense.move);
         triggerDefense(responses.defense);
+        setIsThinking(false);
       } else {
         // Main line
         const mainResp = responses?.main;
@@ -224,17 +260,21 @@ const KillerOpeningPlayer = () => {
           makeOpponentMove(mainResp.move);
           setExplanation(mainResp.explanation);
         }
+        setIsThinking(false);
+
+        // Use the nextStepIndex we captured in this closure (not stale state)
         setCurrentStep(nextStepIndex);
 
         // Set up next step explanation after a brief pause
+        // We read from opening.steps directly (not from state) to avoid stale reads
         const nextStep = opening.steps[nextStepIndex];
         if (nextStep) {
-          setTimeout(() => {
+          safeTimeout(() => {
             setExplanation(nextStep.explanation);
 
             // Handle opponent-first steps (black openings)
             if (nextStep.playerMove === null && nextStep.opponentResponses?.main?.isOpponentFirst) {
-              setTimeout(() => {
+              safeTimeout(() => {
                 makeOpponentMove(nextStep.opponentResponses.main.move);
                 setExplanation(nextStep.opponentResponses.main.explanation);
                 setCurrentStep(prev => prev + 1);
@@ -243,12 +283,10 @@ const KillerOpeningPlayer = () => {
           }, 500);
         }
       }
-
-      setIsThinking(false);
     }, 600 + Math.random() * 400);
 
     return true;
-  }, [game, opening, currentStep, mode, gameComplete, defenseTriggered, isThinking, makeOpponentMove, triggerVictory, triggerDefense]);
+  }, [game, opening, currentStep, mode, gameComplete, defenseTriggered, isThinking, makeOpponentMove, triggerVictory, triggerDefense, safeTimeout]);
 
   // Next opening
   const nextOpening = useMemo(() => {

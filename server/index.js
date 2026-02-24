@@ -85,9 +85,18 @@ app.use('/api/analysis', require('./routes/analysis'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/lessons', require('./routes/lessons'));
 
-// TEMPORARY - Delete after use!
+// Rating fix endpoint — admin only
 app.get('/api/fix-missing-ratings', async (req, res) => {
+  // Require admin auth to prevent abuse
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).json({ error: 'Auth required' });
   try {
+    const jwt = require('jsonwebtoken');
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userCheck = await pool.query('SELECT is_admin FROM users WHERE id = $1', [decoded.id]);
+    if (!userCheck.rows[0]?.is_admin) return res.status(403).json({ error: 'Admin only' });
+
     const result = await pool.query(`
       INSERT INTO ratings (user_id, bullet, blitz, rapid, classical, bullet_rd, blitz_rd, rapid_rd, classical_rd, bullet_vol, blitz_vol, rapid_vol, classical_vol)
       SELECT u.id, 1200, 1200, 1200, 1200, 350, 350, 350, 350, 0.06, 0.06, 0.06, 0.06
@@ -202,7 +211,17 @@ const PORT = process.env.PORT || 5000;
 
 // Initialize database then start server
 initDatabase()
-  .then(() => {
+  .then(async () => {
+    // Create performance indexes (safe to re-run)
+    try {
+      const indexSQL = require('fs').readFileSync(require('path').join(__dirname, 'migrations', 'add_indexes.sql'), 'utf8');
+      await pool.query(indexSQL);
+      console.log('✅ Database indexes verified');
+    } catch (err) {
+      // Non-fatal — indexes are optional performance boost
+      console.log('ℹ️  Could not apply indexes (tables may not exist yet):', err.message);
+    }
+
     server.listen(PORT, () => {
       console.log(`
   ♔ ═══════════════════════════════════════════ ♔
@@ -227,6 +246,18 @@ initDatabase()
     console.error('Failed to initialize database:', err);
     process.exit(1);
   });
+
+// Graceful shutdown — clean up Stockfish worker threads
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down...');
+  try { require('./services/stockfishAnalysis').destroy(); } catch (e) {}
+  server.close(() => process.exit(0));
+});
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down...');
+  try { require('./services/stockfishAnalysis').destroy(); } catch (e) {}
+  server.close(() => process.exit(0));
+});
 
 module.exports = { app, server, io };
 // Deploy 1766735582

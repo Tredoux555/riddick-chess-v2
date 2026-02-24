@@ -8,7 +8,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const ADMIN_PASS = process.env.ADMIN_PASS || 'riddick123';
+const ADMIN_PASS = process.env.ADMIN_PASS;
+if (!ADMIN_PASS) {
+  console.error('⚠️  WARNING: ADMIN_PASS environment variable is not set! Secret Store admin routes will be inaccessible.');
+}
 
 // Configure multer for memory storage (no disk needed)
 const upload = multer({ 

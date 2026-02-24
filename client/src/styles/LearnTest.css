@@ -40,7 +40,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
   margin-bottom: 1rem;
   letter-spacing: -2px;
   line-height: 1.1;
@@ -151,7 +151,7 @@
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 0.5rem;
-  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
   letter-spacing: -0.5px;
   line-height: 1.2;
 }
@@ -183,7 +183,7 @@
 .stat-value {
   color: #10b981;
   font-weight: 700;
-  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  font-family: 'Outfit', -apple-system, sans-serif;
 }
 
 .features-section {
@@ -200,7 +200,7 @@
   font-weight: 700;
   color: #34d399;
   margin-bottom: 1.5rem;
-  font-family: 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
   letter-spacing: -0.5px;
 }
 

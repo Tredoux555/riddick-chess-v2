@@ -179,7 +179,7 @@ const Achievements = () => {
           display: block;
           font-size: 2rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
           color: var(--accent-primary);
         }
         .progress-stat .stat-label {

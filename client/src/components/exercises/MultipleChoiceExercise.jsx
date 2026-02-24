@@ -81,7 +81,7 @@ const MultipleChoiceExercise = ({ exercise, onComplete, attempts }) => {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           margin-bottom: 1rem;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
         .question {
           font-size: 1.3rem;

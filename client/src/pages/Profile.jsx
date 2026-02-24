@@ -337,7 +337,7 @@ const Profile = () => {
         .stat-value {
           font-size: 1.75rem;
           font-weight: 700;
-          font-family: 'Space Grotesk', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
         .stat-label {
           color: var(--text-muted);
