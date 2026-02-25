@@ -741,7 +741,7 @@ const LESSONS = [
         { duration: 5000, fen: '6rk/5Npp/8/8/8/8/8/6K1 w - - 0 1', text: "Nf7# — SMOTHERED MATE! 💥", subtext: "King can't move — blocked by its own pieces!", highlight: ['f7','h8','g8','g7','h7'], animate: 'bounce' },
         { duration: 3500, fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', text: "Look for this when the King is in the corner! 👀", subtext: "Knight + Queen sacrifice = perfection!", highlight: ['f7','a1'], animate: 'bounce' }
       ],
-      puzzle: { fen: '6rk/5Npp/8/8/8/8/8/Q5K1 w - - 0 1', instruction: 'Set up smothered mate! Sacrifice the Queen!', solution: 'a1g7', hint: 'The Queen needs to go where the Rook must capture...' },
+      puzzle: { fen: '6rk/6pp/7N/8/8/8/8/6K1 w - - 0 1', instruction: 'Deliver the smothered mate! The King is trapped!', solution: 'h6f7', hint: 'The Knight jumps to f7 — the King is smothered by its own pieces!' },
       quiz: { question: "Why can only a Knight deliver smothered mate?", options: ["It's the strongest piece", "It can jump over blocking pieces", "It moves in an L-shape", "It's the smallest piece"], correct: 1, explanation: "Only the Knight can jump over the pieces surrounding the King!" }
     }
   },
