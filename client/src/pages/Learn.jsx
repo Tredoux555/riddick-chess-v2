@@ -371,7 +371,7 @@ const LESSONS = [
         },
         {
           duration: 5000,
-          fen: '8/8/8/q7/8/8/1r1N4/8 w - - 0 1',
+          fen: '8/8/8/q7/8/8/1r1N4/7K w - - 0 1',
           text: "Knight FORK! ⚔️⚔️",
           subtext: "Nc4 attacks the Queen on a5 AND the Rook on b2!",
           highlight: ['c4'],
@@ -381,7 +381,7 @@ const LESSONS = [
       ],
       puzzle: {
         instruction: "Find the knight fork! Attack both pieces!",
-        fen: '4k3/8/8/q7/8/8/1r1N4/4K3 w - - 0 1',
+        fen: '4k3/8/8/q7/8/8/1r1N4/7K w - - 0 1',
         solution: 'd2c4',
         hint: "Which square lets the Knight attack BOTH the Queen and the Rook?"
       },
@@ -654,7 +654,7 @@ const LESSONS = [
         { duration: 4000, fen: '4Q3/8/8/8/8/8/8/4K3 w - - 0 1', text: "99% of the time: promote to QUEEN! ♛", subtext: "The Queen is the most powerful piece!", highlight: ['e8'], animate: 'pulse' },
         { duration: 3500, fen: '8/4P3/8/8/8/8/8/4K3 w - - 0 1', text: "Now you know all the special rules! 🎉", subtext: "En passant catches players off guard — use it!", highlight: ['e7'], arrows: [['e7','e8']], animate: 'bounce' }
       ],
-      puzzle: { fen: '4k3/4P3/8/8/8/8/8/4K3 w - - 0 1', instruction: 'Promote your pawn! Push it to the last rank!', solution: 'e7e8q', hint: 'Move the pawn to e8 — it becomes a Queen!' },
+      puzzle: { fen: '3k4/4P3/8/8/8/8/8/4K3 w - - 0 1', instruction: 'Promote your pawn! Push it to the last rank!', solution: 'e7e8q', hint: 'Move the pawn to e8 — it becomes a Queen!' },
       quiz: { question: "When can you do en passant?", options: ["Any time", "Only when the enemy pawn just moved 2 squares", "When your pawn reaches the end", "Never in real games"], correct: 1, explanation: "En passant only works immediately after a pawn's 2-square advance!" }
     }
   },
