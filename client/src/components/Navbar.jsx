@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import {
   FaPlay, FaTrophy, FaPuzzlePiece, FaChartLine,
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
-  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaSkull
+  FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -24,7 +24,6 @@ const Navbar = () => {
     { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
     { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: false },
     { path: '/learn', label: 'Learn', icon: <FaGraduationCap />, requiresAuth: false },
-    { path: '/killer-openings', label: 'Killer Openings', icon: <FaSkull />, requiresAuth: false },
   ];
 
   const visibleLinks = navLinks.filter(link => !link.requiresAuth || user);
