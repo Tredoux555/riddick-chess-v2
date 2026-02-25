@@ -129,7 +129,7 @@ const LESSONS = [
         },
         {
           duration: 4000,
-          fen: '8/8/8/8/8/4P3/8/8 w - - 0 1',
+          fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
           text: "Pawns move FORWARD ⬆️",
           subtext: "One square at a time, never backward!",
           highlight: ['e3'],
@@ -138,7 +138,7 @@ const LESSONS = [
         },
         {
           duration: 4500,
-          fen: '8/8/8/8/4P3/8/8/8 w - - 0 1',
+          fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
           text: "FIRST move = 2 squares! 🚀",
           subtext: "Only on their very first move",
           highlight: ['e4'],
@@ -156,7 +156,7 @@ const LESSONS = [
         },
         {
           duration: 5000,
-          fen: '8/8/8/8/4P3/8/8/8 w - - 0 1',
+          fen: '8/8/8/3p4/4P3/8/8/8 w - - 0 1',
           text: "Watch the pawn capture!",
           subtext: "",
           moveAnimation: { from: 'e4', to: 'd5', capture: true },
@@ -164,7 +164,7 @@ const LESSONS = [
         },
         {
           duration: 5000,
-          fen: '3Q4/4P3/8/8/8/8/8/8 w - - 0 1',
+          fen: '8/4P3/8/8/8/8/8/8 w - - 0 1',
           text: "PROMOTION! 👑",
           subtext: "Reach the end → become a QUEEN!",
           highlight: ['e8'],
@@ -607,12 +607,12 @@ const LESSONS = [
       scenes: [
         { duration: 3500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "Tactics: PINS & SKEWERS! 📌", subtext: "Use lines to trap enemy pieces!", highlight: [], animate: 'fadeIn' },
         { duration: 5000, fen: 'rnb1kbnr/pppp1ppp/8/4p3/7q/5NP1/PPPPPP1P/RNBQKB1R w KQkq - 0 1', text: "A PIN freezes a piece in place!", subtext: "The pinned piece can't move — something bigger is behind it!", highlight: [], animate: 'pulse' },
-        { duration: 5000, fen: '4k3/8/4r3/8/4B3/8/8/4K3 w - - 0 1', text: "Bishop PINS the Rook to the King!", subtext: "The Rook can't move — King would be in check!", highlight: ['e4','e6','e8'], arrows: [['e4','e8']], animate: 'slideUp' },
-        { duration: 4500, fen: '4k3/4q3/8/8/4R3/8/8/4K3 w - - 0 1', text: "A SKEWER is a reverse pin!", subtext: "Attack the valuable piece FIRST — when it moves, take what's behind!", highlight: ['e4','e7','e8'], arrows: [['e4','e8']], animate: 'pulse' },
-        { duration: 4000, fen: 'r3k3/8/8/8/8/8/8/R3K3 w Qq - 0 1', text: "Rook skewers King through Queen!", subtext: "King MUST move → Rook takes the Queen! 🎉", highlight: ['a1','a8'], arrows: [['a1','a8']], animate: 'slideRight' },
+        { duration: 5000, fen: '2k5/8/8/8/B3r3/8/8/4K3 w - - 0 1', text: "Bishop PINS the Rook to the King!", subtext: "The Rook can't move — King would be in check!", highlight: ['a4','e4','c8'], arrows: [['a4','c8']], animate: 'slideUp' },
+        { duration: 4500, fen: '8/8/8/8/8/8/8/8 w - - 0 1', text: "A SKEWER is a reverse pin!", subtext: "Attack the valuable piece FIRST — when it moves, take what's behind!", highlight: [], animate: 'pulse' },
+        { duration: 4000, fen: '4k3/8/4q3/8/8/8/8/4R2K w - - 0 1', text: "Rook skewers King then Queen!", subtext: "Re8+ checks the King — King MUST move → Rook takes Queen!", highlight: ['e1','e7','e8'], arrows: [['e1','e8']], animate: 'slideRight' },
         { duration: 3500, fen: '4k3/4q3/8/8/4R3/8/8/4K3 w - - 0 1', text: "Remember: Pins & Skewers use LINES 📏", subtext: "Bishops, Rooks, Queens — all sliding pieces!", highlight: ['e4','e7','e8'], animate: 'bounce' }
       ],
-      puzzle: { fen: 'r3k3/8/8/8/8/8/8/4K2R w Kq - 0 1', instruction: 'Pin the Rook! Attack along the back rank!', solution: 'h1h8', hint: 'Slide the Rook to h8 — the enemy Rook on a8 cant move because the King would be exposed!' },
+      puzzle: { fen: '8/8/5k2/8/3r4/8/8/B3K3 w - - 0 1', instruction: 'Pin the Rook to the King with your Bishop!', solution: 'a1b2', hint: 'Move the Bishop to b2 — it pins the Rook on d4 to the King on f6 along the diagonal!' },
       quiz: { question: "What's the difference between a pin and a skewer?", options: ["They're the same", "Pin: less valuable in front. Skewer: more valuable in front", "Pins use Bishops, Skewers use Rooks", "There is no difference"], correct: 1, explanation: "Pin = less valuable protects more valuable. Skewer = more valuable is attacked first!" }
     }
   },
@@ -631,7 +631,7 @@ const LESSONS = [
         { duration: 4500, fen: '8/8/8/4k3/8/8/4P3/4K3 w - - 0 1', text: "The King must LEAD the pawn!", subtext: "Put your King IN FRONT of the pawn, not behind!", highlight: ['e1','e2'], arrows: [['e1','d2']], animate: 'pulse' },
         { duration: 5000, fen: '8/8/4K3/8/4k3/8/8/4R3 w - - 0 1', text: "Rook + King vs King = Checkmate!", subtext: "Push the enemy King to the edge of the board", highlight: ['e6','e1'], animate: 'pulse' },
         { duration: 4500, fen: 'k7/8/1K6/8/8/8/8/R7 w - - 0 1', text: "Box them in! Then checkmate! ♚", subtext: "Ra8# — Rook delivers checkmate on the back rank!", highlight: ['a1','a8'], arrows: [['a1','a8']], animate: 'slideRight' },
-        { duration: 4000, fen: '8/8/8/3kp3/3p4/3K4/8/8 w - - 0 1', text: "Stalemate = DRAW! ⚠️", subtext: "If it's their turn but NO legal moves — it's a DRAW, not a win!", highlight: [], animate: 'bounce' }
+        { duration: 4000, fen: '5k2/5P2/5K2/8/8/8/8/8 b - - 0 1', text: "Stalemate = DRAW! ⚠️", subtext: "Black's turn but NO legal moves — it's a DRAW, not a win!", highlight: ['f8'], animate: 'bounce' }
       ],
       puzzle: { fen: 'k7/8/1K6/8/8/8/8/R7 w - - 0 1', instruction: 'Deliver checkmate!', solution: 'a1a8', hint: 'The Rook can checkmate on the back rank!' },
       quiz: { question: "What happens in stalemate?", options: ["The player in stalemate loses", "The game is a DRAW", "The player in stalemate wins", "Nothing"], correct: 1, explanation: "Stalemate = DRAW! Be careful not to stalemate when you're winning!" }

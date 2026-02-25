@@ -225,6 +225,9 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
           max-width: 600px;
           margin: 0 auto;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         .text-bubble {
