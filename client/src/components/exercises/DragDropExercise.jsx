@@ -210,7 +210,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
           background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%);
           border: 1px solid rgba(16, 185, 129, 0.3);
           border-radius: 16px;
-          color: #34d399;
+          color: var(--accent-success, #10b981);
           font-size: 1rem;
           line-height: 1.6;
           backdrop-filter: blur(12px);

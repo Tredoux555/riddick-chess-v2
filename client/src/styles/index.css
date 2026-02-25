@@ -1740,6 +1740,8 @@ h4 { font-size: 1.125rem; }
   --accent-primary: #1b5e20;
   --accent-secondary: #2e7d32;
   --accent-tertiary: #388e3c;
+  --accent-success: #0d7a3e;
+  --accent-success-light: #15803d;
 
   /* Borders - subtle green tint */
   --border-color: rgba(46, 125, 50, 0.18);
