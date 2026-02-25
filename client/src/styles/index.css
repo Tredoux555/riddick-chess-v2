@@ -120,7 +120,7 @@ html {
 }
 
 body {
-  font-family: var(--font-sans), var(--font-emoji);
+  font-family: var(--font-display), var(--font-emoji);
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;

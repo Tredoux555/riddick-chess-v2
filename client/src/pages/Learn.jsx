@@ -1272,6 +1272,9 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           background: var(--bg-primary);
           padding: 20px;
         }
+        .lesson-player > * {
+          width: 100%;
+        }
         .player-header {
           display: flex;
           align-items: center;
@@ -1343,11 +1346,11 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           font-size: 1rem;
         }
         .board-container {
-          display: inline-block;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
           margin: 0 auto;
+          align-self: center;
         }
         .board-container.pulse {
           animation: boardPulse 2s infinite;

@@ -265,10 +265,10 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
         }
 
         .board-container {
-          display: inline-block;
           border-radius: 20px;
           overflow: hidden;
-          box-shadow: 
+          align-self: center;
+          box-shadow:
             0 20px 60px rgba(0, 0, 0, 0.6),
             0 0 80px rgba(99, 102, 241, 0.2);
           background: linear-gradient(135deg, rgba(26, 26, 46, 0.6) 0%, rgba(37, 37, 66, 0.6) 100%);
