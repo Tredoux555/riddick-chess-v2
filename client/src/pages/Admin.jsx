@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   FaUsers, FaTrophy, FaShieldAlt, FaChartBar, FaCrown, FaBan, FaCheck, 
   FaHeartbeat, FaDownload, FaSync, FaCheckCircle, FaTimesCircle, 
@@ -1057,6 +1058,8 @@ const HealthCheck = () => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#10b981';
 
   const runHealthCheck = async () => {
     setLoading(true);
@@ -1125,10 +1128,10 @@ const HealthCheck = () => {
               <div key={cat} style={{ marginBottom: '20px' }}>
                 <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>{cat}</h3>
                 {tests.map((t, i) => (
-                  <div key={i} style={{ padding: '10px', background: 'var(--bg-card)', marginBottom: '4px', borderRadius: '4px', borderLeft: `4px solid ${t.status === 'pass' ? '#10b981' : t.status === 'fail' ? '#ef4444' : '#f59e0b'}` }}>
+                  <div key={i} style={{ padding: '10px', background: 'var(--bg-card)', marginBottom: '4px', borderRadius: '4px', borderLeft: `4px solid ${t.status === 'pass' ? successGreen : t.status === 'fail' ? '#ef4444' : '#f59e0b'}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{t.status === 'pass' ? <FaCheckCircle style={{color:'#10b981'}}/> : t.status === 'fail' ? <FaTimesCircle style={{color:'#ef4444'}}/> : <FaExclamationTriangle style={{color:'#f59e0b'}}/>} {t.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: t.status === 'pass' ? '#10b981' : t.status === 'fail' ? '#ef4444' : '#f59e0b' }}>{t.status.toUpperCase()}</span>
+                      <span>{t.status === 'pass' ? <FaCheckCircle style={{color: successGreen}}/> : t.status === 'fail' ? <FaTimesCircle style={{color:'#ef4444'}}/> : <FaExclamationTriangle style={{color:'#f59e0b'}}/>} {t.name}</span>
+                      <span style={{ fontSize: '0.75rem', color: t.status === 'pass' ? successGreen : t.status === 'fail' ? '#ef4444' : '#f59e0b' }}>{t.status.toUpperCase()}</span>
                     </div>
                     {t.details && <div style={{ fontSize: '0.8rem', color: '#c8c8dc', marginTop: '4px' }}>{JSON.stringify(t.details)}</div>}
                     {t.error && <div style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '4px' }}>Error: {t.error}</div>}

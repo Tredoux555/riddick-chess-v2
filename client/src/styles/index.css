@@ -1736,21 +1736,21 @@ h4 { font-size: 1.125rem; }
   --text-muted: #5c6e64;
   --text-bright: #0d1512;
 
-  /* Green accents for light mode — darkened for readability on white */
-  --accent-primary: #1b5e20;
-  --accent-secondary: #2e7d32;
-  --accent-tertiary: #388e3c;
-  --accent-success: #0d7a3e;
-  --accent-success-light: #15803d;
+  /* Green accents for light mode — darkened for strong contrast on white */
+  --accent-primary: #14532d;
+  --accent-secondary: #166534;
+  --accent-tertiary: #1a6b25;
+  --accent-success: #0a6e2e;
+  --accent-success-light: #0d6b30;
 
   /* Borders - subtle green tint */
-  --border-color: rgba(46, 125, 50, 0.18);
-  --border-light: rgba(56, 142, 60, 0.22);
+  --border-color: rgba(20, 83, 45, 0.18);
+  --border-light: rgba(22, 101, 52, 0.22);
   --border-subtle: rgba(0, 0, 0, 0.06);
 
   /* Glass */
   --glass-bg: rgba(255, 255, 252, 0.75);
-  --glass-border: rgba(46, 125, 50, 0.1);
+  --glass-border: rgba(20, 83, 45, 0.1);
 
   /* Shadows - lighter */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -1758,14 +1758,14 @@ h4 { font-size: 1.125rem; }
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
-  --shadow-glow: 0 0 30px rgba(46, 125, 50, 0.15);
+  --shadow-glow: 0 0 30px rgba(20, 83, 45, 0.15);
   --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.15);
   --shadow-glow-warning: 0 0 30px rgba(245, 158, 11, 0.15);
 
-  /* Gradients - green tinted */
-  --gradient-primary: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #388e3c 100%);
+  /* Gradients - green tinted, darkened for readability */
+  --gradient-primary: linear-gradient(135deg, #14532d 0%, #166534 50%, #1a6b25 100%);
   --gradient-dark: linear-gradient(135deg, #e6e8e0 0%, #e0e2d8 100%);
-  --gradient-glow: radial-gradient(circle, rgba(46, 125, 50, 0.08) 0%, transparent 70%);
+  --gradient-glow: radial-gradient(circle, rgba(20, 83, 45, 0.08) 0%, transparent 70%);
 }
 
 /* Light theme specific element overrides */
@@ -1777,7 +1777,7 @@ h4 { font-size: 1.125rem; }
 :root[data-theme="light"] .navbar {
   background: rgba(255, 255, 252, 0.92) !important;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(46, 125, 50, 0.12);
+  border-bottom: 1px solid rgba(20, 83, 45, 0.12);
 }
 
 :root[data-theme="light"] .nav-link {
@@ -1787,8 +1787,8 @@ h4 { font-size: 1.125rem; }
 
 :root[data-theme="light"] .nav-link.active,
 :root[data-theme="light"] .nav-link:hover {
-  color: #1b5e20 !important;
-  background: rgba(46, 125, 50, 0.1) !important;
+  color: #14532d !important;
+  background: rgba(20, 83, 45, 0.1) !important;
 }
 
 :root[data-theme="light"] .navbar-brand span {
@@ -1822,7 +1822,7 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .auth-page::before {
-  background: radial-gradient(ellipse, rgba(46, 125, 50, 0.1) 0%, rgba(76, 175, 80, 0.04) 40%, transparent 70%) !important;
+  background: radial-gradient(ellipse, rgba(20, 83, 45, 0.1) 0%, rgba(22, 101, 52, 0.04) 40%, transparent 70%) !important;
 }
 
 :root[data-theme="light"] .auth-page::after {
@@ -1836,7 +1836,7 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .auth-card:hover {
-  border-color: rgba(46, 125, 50, 0.3) !important;
+  border-color: rgba(20, 83, 45, 0.3) !important;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12) !important;
 }
 
@@ -1926,7 +1926,7 @@ h4 { font-size: 1.125rem; }
 :root[data-theme="light"] .sidebar a.active,
 :root[data-theme="light"] .admin-sidebar a.active {
   color: var(--accent-primary) !important;
-  background: rgba(46, 125, 50, 0.1) !important;
+  background: rgba(20, 83, 45, 0.1) !important;
 }
 
 :root[data-theme="light"] .btn-secondary {
@@ -2009,7 +2009,7 @@ html[data-theme="light"] .card {
 html[data-theme="light"] .feature-card:hover,
 html[data-theme="light"] .bot-card:hover,
 html[data-theme="light"] .action-card:hover {
-  border-color: #2e7d32 !important;
+  border-color: #166534 !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -2040,28 +2040,28 @@ html[data-theme="light"] .landing-footer {
 html[data-theme="light"] .feature-link,
 html[data-theme="light"] .card-link,
 html[data-theme="light"] .auth-link {
-  color: #1b5e20 !important;
+  color: #14532d !important;
 }
 
 html[data-theme="light"] .hero-badge {
-  background: rgba(46, 125, 50, 0.1) !important;
-  border-color: rgba(46, 125, 50, 0.3) !important;
-  color: #1b5e20 !important;
+  background: rgba(20, 83, 45, 0.1) !important;
+  border-color: rgba(20, 83, 45, 0.3) !important;
+  color: #14532d !important;
 }
 
 html[data-theme="light"] .hero-subtitle,
 html[data-theme="light"] .hero-stat-number {
-  color: #1b5e20 !important;
+  color: #14532d !important;
 }
 
 html[data-theme="light"] .hero-glow,
 html[data-theme="light"] .cta-glow,
 html[data-theme="light"] .welcome-glow {
-  background: radial-gradient(circle, rgba(46, 125, 50, 0.08) 0%, transparent 70%) !important;
+  background: radial-gradient(circle, rgba(20, 83, 45, 0.08) 0%, transparent 70%) !important;
 }
 
 html[data-theme="light"] .btn-primary-hero {
-  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important;
   color: #ffffff !important;
 }
 
@@ -2073,7 +2073,7 @@ html[data-theme="light"] .btn-secondary-hero {
 
 /* STEP 6: Section backgrounds */
 html[data-theme="light"] .cta-section {
-  background: linear-gradient(135deg, rgba(46, 125, 50, 0.06) 0%, rgba(76, 175, 80, 0.04) 100%) !important;
+  background: linear-gradient(135deg, rgba(20, 83, 45, 0.06) 0%, rgba(22, 101, 52, 0.04) 100%) !important;
   border-color: #d4d8d0 !important;
 }
 
@@ -2086,7 +2086,7 @@ html[data-theme="light"] .bots-showcase {
 
 /* STEP 7: Icon wraps keep their color */
 html[data-theme="light"] .feature-icon-wrap {
-  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important;
   color: #ffffff !important;
 }
 
@@ -2095,13 +2095,13 @@ html[data-theme="light"] .feature-icon-purple { background: linear-gradient(135d
 html[data-theme="light"] .feature-icon-yellow { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important; color: #fff !important; }
 html[data-theme="light"] .feature-icon-cyan { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important; color: #fff !important; }
 html[data-theme="light"] .feature-icon-pink { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important; color: #fff !important; }
-html[data-theme="light"] .action-icon-wrap { background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important; color: #fff !important; }
+html[data-theme="light"] .action-icon-wrap { background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important; color: #fff !important; }
 html[data-theme="light"] .action-icon-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important; color: #fff !important; }
 html[data-theme="light"] .action-icon-purple { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important; color: #fff !important; }
 html[data-theme="light"] .action-icon-yellow { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important; color: #fff !important; }
 
 html[data-theme="light"] .feature-card::before {
-  background: linear-gradient(90deg, #1b5e20, #2e7d32) !important;
+  background: linear-gradient(90deg, #14532d, #166534) !important;
 }
 
 /* STEP 8: Dashboard inner elements */
@@ -2113,23 +2113,23 @@ html[data-theme="light"] .quick-link {
 }
 
 html[data-theme="light"] .rating-number {
-  color: #1b5e20 !important;
+  color: #14532d !important;
 }
 
 html[data-theme="light"] .stat-number {
-  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
 
 html[data-theme="light"] .username-highlight {
-  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
 
 html[data-theme="light"] .page-title {
-  background: linear-gradient(135deg, #1b5e20, #2e7d32) !important;
+  background: linear-gradient(135deg, #14532d, #166534) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -2147,8 +2147,8 @@ html[data-theme="light"] .nav-link {
 
 html[data-theme="light"] .nav-link.active,
 html[data-theme="light"] .nav-link:hover {
-  color: #1b5e20 !important;
-  background: rgba(46, 125, 50, 0.1) !important;
+  color: #14532d !important;
+  background: rgba(20, 83, 45, 0.1) !important;
 }
 
 html[data-theme="light"] .navbar-brand span {
@@ -2177,7 +2177,7 @@ html[data-theme="light"] .auth-card {
 }
 
 html[data-theme="light"] .auth-title {
-  background: linear-gradient(135deg, #1b5e20, #2e7d32) !important;
+  background: linear-gradient(135deg, #14532d, #166534) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -2198,7 +2198,7 @@ html[data-theme="light"] .dropdown-item {
 
 html[data-theme="light"] .dropdown-item:hover {
   background: #f0f1ec !important;
-  color: #1b5e20 !important;
+  color: #14532d !important;
 }
 
 html[data-theme="light"] .modal {
@@ -2221,7 +2221,7 @@ html[data-theme="light"] .dash-card-header {
 
 /* STEP 14: Floating pieces */
 html[data-theme="light"] .floating-piece {
-  color: #2e7d32 !important;
+  color: #166534 !important;
 }
 
 /* STEP 15: Buttons */
@@ -2250,8 +2250,8 @@ html[data-theme="light"] .admin-sidebar a {
 
 html[data-theme="light"] .sidebar a.active,
 html[data-theme="light"] .admin-sidebar a.active {
-  color: #1b5e20 !important;
-  background: rgba(46, 125, 50, 0.1) !important;
+  color: #14532d !important;
+  background: rgba(20, 83, 45, 0.1) !important;
 }
 
 /* STEP 17: Tables */
@@ -2269,4 +2269,117 @@ html[data-theme="light"] td {
 
 html[data-theme="light"] tr:hover td {
   background: #f0f1ec !important;
+}
+
+/* ============================================
+   LIGHT MODE: GREEN TEXT READABILITY FIX
+   Override ALL light-green-on-white text to
+   darker greens with proper contrast.
+   ============================================ */
+
+/* --- Global: any element using light green inline styles --- */
+html[data-theme="light"] [style*="color: #10b981"],
+html[data-theme="light"] [style*="color: '#10b981'"],
+html[data-theme="light"] [style*="color:#10b981"],
+html[data-theme="light"] [style*="color: #22c55e"],
+html[data-theme="light"] [style*="color: '#22c55e'"],
+html[data-theme="light"] [style*="color:#22c55e"],
+html[data-theme="light"] [style*="color: #34d399"],
+html[data-theme="light"] [style*="color: '#34d399'"],
+html[data-theme="light"] [style*="color:#34d399"],
+html[data-theme="light"] [style*="color: #4ade80"],
+html[data-theme="light"] [style*="color: '#4ade80'"],
+html[data-theme="light"] [style*="color:#4ade80"],
+html[data-theme="light"] [style*="color: #6ee7b7"],
+html[data-theme="light"] [style*="color:#6ee7b7"],
+html[data-theme="light"] [style*="color: #a7f3d0"],
+html[data-theme="light"] [style*="color:#a7f3d0"],
+html[data-theme="light"] [style*="color: #86efac"],
+html[data-theme="light"] [style*="color:#86efac"] {
+  color: #0a6e2e !important;
+}
+
+/* --- CSS-class-based green text overrides --- */
+
+/* Success text utility */
+html[data-theme="light"] .text-success {
+  color: #0a6e2e !important;
+}
+
+/* Puzzles: success result card */
+html[data-theme="light"] .result-card.success {
+  color: #0a6e2e !important;
+}
+
+/* LessonPlayer: XP value text */
+html[data-theme="light"] .xp-value {
+  color: #0a6e2e !important;
+}
+
+/* LessonPlayer: complete title gradient text → solid dark green */
+html[data-theme="light"] .complete-title {
+  background: #0a6e2e !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* LearnTest.css stat-value, features-title, check */
+html[data-theme="light"] .stat-value {
+  color: #0a6e2e !important;
+}
+
+html[data-theme="light"] .features-title {
+  color: #0a6e2e !important;
+}
+
+html[data-theme="light"] .check {
+  color: #0a6e2e !important;
+}
+
+/* SecretStore success message */
+html[data-theme="light"] .message.success {
+  color: #0a6e2e !important;
+}
+
+/* Admin: active status */
+html[data-theme="light"] .status.active {
+  color: #0a6e2e !important;
+}
+
+/* ResetPassword: success icon */
+html[data-theme="light"] .success-icon {
+  color: #0a6e2e !important;
+}
+
+/* Learn page: XP icon and text */
+html[data-theme="light"] .icon.xp,
+html[data-theme="light"] .xp {
+  color: #0a6e2e !important;
+}
+
+/* Rating changes positive */
+html[data-theme="light"] .rating-changes .positive {
+  color: #0a6e2e !important;
+}
+
+/* Accent success color variable override for light theme */
+html[data-theme="light"] .accent-success,
+html[data-theme="light"] [class*="success"] {
+  --accent-success: #0a6e2e;
+  --accent-success-light: #0d7a3e;
+}
+
+/* Ensure green gradient text (used in titles) is dark enough */
+html[data-theme="light"] [style*="background: linear-gradient"][style*="10b981"][style*="-webkit-background-clip"],
+html[data-theme="light"] [style*="background: linear-gradient"][style*="34d399"][style*="-webkit-background-clip"] {
+  background: linear-gradient(135deg, #0a6e2e 0%, #15803d 100%) !important;
+}
+
+/* FaCheckCircle and similar icon spans with green color */
+html[data-theme="light"] svg[style*="color: #10b981"],
+html[data-theme="light"] svg[style*="color:#10b981"],
+html[data-theme="light"] svg[style*="color: #22c55e"],
+html[data-theme="light"] svg[style*="color:#22c55e"] {
+  color: #0a6e2e !important;
 }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { FaUndo, FaTrash, FaSyncAlt, FaChessBoard, FaTimes, FaVideo, FaArrowLeft, FaStop, FaDownload, FaCircle, FaCamera } from 'react-icons/fa';
 
@@ -52,6 +53,8 @@ const customPieces = () => {
 
 const TestBoard = () => {
   const { isAdmin } = useAuth();
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#22c55e';
   const navigate = useNavigate();
   const [position, setPosition] = useState(STARTING_POSITION);
   const [boardOrientation, setBoardOrientation] = useState('white');
@@ -326,7 +329,7 @@ const TestBoard = () => {
 
           {recordedVideoUrl && (
             <>
-              <span style={{ color: '#22c55e' }}>✓ Recording complete!</span>
+              <span style={{ color: successGreen }}>✓ Recording complete!</span>
               <button onClick={downloadRecording}
                 style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold' }}>
                 <FaDownload /> Download Video

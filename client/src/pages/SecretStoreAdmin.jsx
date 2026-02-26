@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 import '../styles/SecretStore.css';
 
 const SecretStoreAdmin = () => {
@@ -32,6 +33,9 @@ const SecretStoreAdmin = () => {
   const [loyaltyUsers, setLoyaltyUsers] = useState([]);
   const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', type: 'info' });
   const [flashSaleForm, setFlashSaleForm] = useState({ product_name: '', original_price: '', sale_price: '', ends_at: '' });
+
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#22c55e';
 
   const currencies = ['CNY', 'USD', 'EUR', 'GBP', 'ZAR', 'JPY', 'KRW', 'INR', 'AUD', 'CAD'];
   const currencyNames = {
@@ -441,7 +445,7 @@ const SecretStoreAdmin = () => {
                 <p style={{ color: '#fff', margin: 0 }}>Pending</p>
               </div>
               <div style={{ background: 'rgba(34,197,94,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
-                <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{orders.filter(o => o.status === 'delivered').length}</h3>
+                <h3 style={{ fontSize: '36px', color: successGreen, margin: '0 0 5px' }}>{orders.filter(o => o.status === 'delivered').length}</h3>
                 <p style={{ color: '#fff', margin: 0 }}>Delivered</p>
               </div>
               <div style={{ background: 'rgba(139,92,246,0.1)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
@@ -538,7 +542,7 @@ const SecretStoreAdmin = () => {
                 <div key={d.id} style={{ background: d.active ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '18px' }}>{d.code}</span>
-                    <span style={{ color: '#22c55e', marginLeft: '15px' }}>{d.percent_off}% OFF</span>
+                    <span style={{ color: successGreen, marginLeft: '15px' }}>{d.percent_off}% OFF</span>
                     <span style={{ color: 'rgba(255,255,255,0.7)', marginLeft: '15px' }}>Uses left: {d.uses_left === -1 ? '∞' : d.uses_left}</span>
                     {!d.active && <span style={{ color: '#ef4444', marginLeft: '15px' }}>(Disabled)</span>}
                   </div>
@@ -559,7 +563,7 @@ const SecretStoreAdmin = () => {
                 <h3 style={{ fontSize: '36px', color: '#fbbf24', margin: '0 0 5px' }}>{stats.pending}</h3><p style={{ color: '#fff', margin: 0 }}>Pending</p>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
-                <h3 style={{ fontSize: '36px', color: '#22c55e', margin: '0 0 5px' }}>{stats.approved}</h3><p style={{ color: '#fff', margin: 0 }}>Approved</p>
+                <h3 style={{ fontSize: '36px', color: successGreen, margin: '0 0 5px' }}>{stats.approved}</h3><p style={{ color: '#fff', margin: 0 }}>Approved</p>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px', textAlign: 'center' }}>
                 <h3 style={{ fontSize: '36px', color: '#ef4444', margin: '0 0 5px' }}>{stats.rejected}</h3><p style={{ color: '#fff', margin: 0 }}>Rejected</p>
@@ -625,7 +629,7 @@ const SecretStoreAdmin = () => {
                       📷 Upload Image
                       <input type="file" accept="image/*" onChange={uploadImage} style={{ display: 'none' }} />
                     </label>
-                    {productForm.image && <span style={{ color: '#22c55e' }}>✓ Image uploaded</span>}
+                    {productForm.image && <span style={{ color: successGreen }}>✓ Image uploaded</span>}
                   </div>
                   {productForm.image && (
                     <div style={{ marginTop: '10px' }}>
@@ -661,11 +665,11 @@ const SecretStoreAdmin = () => {
                   <div style={{ padding: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 8px', borderRadius: '4px' }}>{p.category}</span>
-                      <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? '#22c55e' : '#ef4444', padding: '4px 8px', borderRadius: '4px' }}>📦 {p.stock || 0} in stock</span>
+                      <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? successGreen : '#ef4444', padding: '4px 8px', borderRadius: '4px' }}>📦 {p.stock || 0} in stock</span>
                     </div>
                     <h3 style={{ color: '#fff', margin: '10px 0 5px' }}>{p.name}</h3>
                     <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
-                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>CNY</span></p>
+                    <p style={{ color: successGreen, fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>CNY</span></p>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => startEditProduct(p)} style={{ ...btnStyle, flex: 1, background: '#8b5cf6', color: '#fff' }}>✏️ Edit</button>
                       <button onClick={() => deleteProduct(p.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>

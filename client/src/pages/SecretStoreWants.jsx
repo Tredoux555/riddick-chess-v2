@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 import '../styles/SecretStore.css';
 
 const SecretStoreWants = () => {
@@ -14,6 +15,8 @@ const SecretStoreWants = () => {
   const [form, setForm] = useState({ title: '', description: '', image_url: '', category: 'General' });
   const [selectedWant, setSelectedWant] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#22c55e';
   const navigate = useNavigate();
 
   const categories = ['All', 'General', 'Toys', 'Games', 'Food', 'School Supplies', 'Electronics', 'Clothing', 'Other'];
@@ -350,7 +353,7 @@ const SecretStoreWants = () => {
               
               {selectedWant.status === 'fulfilled' && (
                 <div style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '10px', marginBottom: '20px', border: '1px solid rgba(34,197,94,0.3)' }}>
-                  <p style={{ color: '#22c55e', margin: 0, fontWeight: 'bold' }}>✅ This want has been fulfilled!</p>
+                  <p style={{ color: successGreen, margin: 0, fontWeight: 'bold' }}>✅ This want has been fulfilled!</p>
                   {selectedWant.admin_notes && <p style={{ color: 'rgba(255,255,255,0.6)', margin: '10px 0 0', fontSize: '14px' }}>{selectedWant.admin_notes}</p>}
                 </div>
               )}

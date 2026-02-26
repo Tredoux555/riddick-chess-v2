@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { FaSkull, FaArrowLeft, FaRedo, FaArrowRight, FaChessKnight } from 'react-icons/fa';
 import { useBoardSettings } from '../contexts/BoardSettingsContext';
+import { useTheme } from '../contexts/ThemeContext';
 import killerOpenings from '../data/killerOpenings';
 
 // Error boundary
@@ -44,6 +45,8 @@ const KillerOpeningPlayer = () => {
   const { openingId } = useParams();
   const navigate = useNavigate();
   const { currentTheme, customPieces } = useBoardSettings();
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#10b981';
 
   const opening = useMemo(() => killerOpenings.find(o => o.id === openingId), [openingId]);
   const openingIndex = useMemo(() => killerOpenings.findIndex(o => o.id === openingId), [openingId]);
@@ -415,7 +418,7 @@ const KillerOpeningPlayer = () => {
                 </>
               ) : gameComplete ? (
                 <>
-                  <div style={{ ...styles.defenseHeader, color: '#10b981' }}>
+                  <div style={{ ...styles.defenseHeader, color: successGreen }}>
                     <span>👑 TRAP COMPLETE!</span>
                   </div>
                   <p style={styles.explanationText}>{explanation}</p>

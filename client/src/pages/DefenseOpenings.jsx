@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Component } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaArrowLeft, FaChessKnight, FaTrophy, FaLock } from 'react-icons/fa';
+import { useTheme } from '../contexts/ThemeContext';
 import defenseOpenings from '../data/defenseOpenings';
 
 // Error boundary
@@ -39,6 +40,8 @@ const DefenseOpenings = () => {
   const navigate = useNavigate();
   const [progress, setProgress] = useState({});
   const [hoveredId, setHoveredId] = useState(null);
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#10b981';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -54,7 +57,7 @@ const DefenseOpenings = () => {
     if (!p || (!p.guided && !p.unguided && !p.mastered)) {
       return { label: 'Not Started', color: '#c8c8dc', icon: null };
     }
-    if (p.mastered) return { label: 'Mastered', color: '#10b981', icon: <FaTrophy /> };
+    if (p.mastered) return { label: 'Mastered', color: successGreen, icon: <FaTrophy /> };
     if (p.unguided) return { label: 'Unguided ✓', color: '#4da6ff', icon: <FaShieldAlt /> };
     if (p.guided) return { label: 'Guided ✓', color: '#4da6ff', icon: <FaLock /> };
     return { label: 'In Progress', color: '#3b82f6', icon: <FaChessKnight /> };

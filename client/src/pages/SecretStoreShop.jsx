@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 import '../styles/SecretStore.css';
 import ChatWidget from '../components/ChatWidget';
 
@@ -18,6 +19,8 @@ const SecretStoreShop = () => {
   const [activeDiscount, setActiveDiscount] = useState(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#22c55e';
 
   useEffect(() => {
     const stored = localStorage.getItem('storeUser');
@@ -238,7 +241,7 @@ const SecretStoreShop = () => {
           />
           <button onClick={applyDiscount} style={{ padding: '10px 20px', background: '#f59e0b', border: 'none', borderRadius: '10px', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>Apply</button>
           {activeDiscount && (
-            <span style={{ color: '#22c55e', fontWeight: 'bold' }}>✅ {activeDiscount.percent_off}% OFF applied!</span>
+            <span style={{ color: successGreen, fontWeight: 'bold' }}>✅ {activeDiscount.percent_off}% OFF applied!</span>
           )}
           <button 
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
@@ -321,7 +324,7 @@ const SecretStoreShop = () => {
                 <div style={{ padding: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 10px', borderRadius: '20px' }}>{p.category}</span>
-                    <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? '#22c55e' : '#ef4444', padding: '4px 10px', borderRadius: '20px' }}>
+                    <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? successGreen : '#ef4444', padding: '4px 10px', borderRadius: '20px' }}>
                       {p.stock > 0 ? `📦 ${p.stock} left` : '❌ SOLD OUT'}
                     </span>
                   </div>
@@ -332,7 +335,7 @@ const SecretStoreShop = () => {
                       {p.onSale && (
                         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', textDecoration: 'line-through', marginRight: '8px' }}>{symbol}{p.regularPrice.toFixed(2)}</span>
                       )}
-                      <span style={{ color: activeDiscount ? '#f59e0b' : '#22c55e', fontSize: '24px', fontWeight: 'bold' }}>
+                      <span style={{ color: activeDiscount ? '#f59e0b' : successGreen, fontSize: '24px', fontWeight: 'bold' }}>
                         {symbol}{getDiscountedPrice(p.price).toFixed(2)}
                       </span>
                       {activeDiscount && (
@@ -367,7 +370,7 @@ const SecretStoreShop = () => {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
             <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)', borderRadius: '20px', padding: '40px', maxWidth: '500px', width: '100%', textAlign: 'center', border: '1px solid rgba(139,92,246,0.3)' }}>
               <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
-              <h2 style={{ color: '#22c55e', marginBottom: '15px' }}>Order Placed!</h2>
+              <h2 style={{ color: successGreen, marginBottom: '15px' }}>Order Placed!</h2>
               <h3 style={{ color: '#fff', marginBottom: '20px' }}>{buyMessage.productName}</h3>
               <p style={{ color: '#fbbf24', fontSize: '18px', lineHeight: '1.6', marginBottom: '30px' }}>{buyMessage.message}</p>
               <button onClick={closeBuyMessage} style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', padding: '15px 40px', borderRadius: '10px', color: '#fff', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>Got it! 👍</button>

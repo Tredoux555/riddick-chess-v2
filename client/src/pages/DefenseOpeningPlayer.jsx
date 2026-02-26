@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { FaShieldAlt, FaArrowLeft, FaRedo, FaArrowRight, FaChessKnight } from 'react-icons/fa';
 import { useBoardSettings } from '../contexts/BoardSettingsContext';
+import { useTheme } from '../contexts/ThemeContext';
 import defenseOpenings from '../data/defenseOpenings';
 
 // Error boundary
@@ -43,6 +44,8 @@ const DefenseOpeningPlayer = () => {
   const { defenseId } = useParams();
   const navigate = useNavigate();
   const { currentTheme, customPieces } = useBoardSettings();
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#10b981';
 
   const defense = useMemo(() => defenseOpenings.find(d => d.id === defenseId), [defenseId]);
   const defenseIndex = useMemo(() => defenseOpenings.findIndex(d => d.id === defenseId), [defenseId]);
@@ -519,7 +522,7 @@ const DefenseOpeningPlayer = () => {
                 </>
               ) : gameComplete ? (
                 <>
-                  <div style={{ ...styles.trapHeader, color: '#10b981' }}>
+                  <div style={{ ...styles.trapHeader, color: successGreen }}>
                     <span>🛡️ DEFENCE COMPLETE!</span>
                   </div>
                   <p style={styles.explanationText}>{explanation}</p>
@@ -734,7 +737,7 @@ const styles = {
     background: '#10b98118',
     borderRadius: 8,
     fontSize: 14,
-    color: '#10b981',
+    color: successGreen,
   },
   thinkingDots: {
     display: 'flex',

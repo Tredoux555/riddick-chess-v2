@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Component } from 'react';
 import { Link } from 'react-router-dom';
 import { FaSkull, FaArrowLeft, FaChessKnight, FaTrophy, FaFire } from 'react-icons/fa';
+import { useTheme } from '../contexts/ThemeContext';
 import killerOpenings from '../data/killerOpenings';
 
 // Error boundary
@@ -38,6 +39,8 @@ const DIFFICULTY_COLORS = {
 const KillerOpenings = () => {
   const [progress, setProgress] = useState({});
   const [hoveredId, setHoveredId] = useState(null);
+  const { theme } = useTheme();
+  const successGreen = theme === 'light' ? '#0a6e2e' : '#10b981';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -51,7 +54,7 @@ const KillerOpenings = () => {
   const getProgressLabel = (id) => {
     const p = progress[id];
     if (!p) return { label: 'Not Started', color: '#c8c8dc', icon: null };
-    if (p.mastered) return { label: 'Mastered!', color: '#10b981', icon: <FaTrophy /> };
+    if (p.mastered) return { label: 'Mastered!', color: successGreen, icon: <FaTrophy /> };
     if (p.completed) return { label: 'Completed', color: '#f59e0b', icon: <FaFire /> };
     return { label: 'In Progress', color: '#3b82f6', icon: <FaChessKnight /> };
   };
