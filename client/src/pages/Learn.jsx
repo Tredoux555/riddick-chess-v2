@@ -800,6 +800,58 @@ const LESSONS = [
   }
 ];
 
+// Helper: manually move a piece in FEN (for educational boards without kings)
+function manualMoveFen(fen, from, to) {
+  try {
+    const parts = fen.split(' ');
+    const rows = parts[0].split('/');
+
+    const fileToIdx = (f) => f.charCodeAt(0) - 97;
+    const rankToRow = (r) => 8 - parseInt(r);
+
+    // Expand FEN rows to 8-char arrays
+    const board = rows.map(row => {
+      let expanded = '';
+      for (const ch of row) {
+        if (ch >= '1' && ch <= '8') expanded += '.'.repeat(parseInt(ch));
+        else expanded += ch;
+      }
+      return expanded.split('');
+    });
+
+    const fromRow = rankToRow(from[1]);
+    const fromCol = fileToIdx(from[0]);
+    const toRow = rankToRow(to[1]);
+    const toCol = fileToIdx(to[0]);
+
+    const piece = board[fromRow][fromCol];
+    if (piece === '.') return null;
+
+    board[fromRow][fromCol] = '.';
+    board[toRow][toCol] = piece;
+
+    // Compress back to FEN
+    const newRows = board.map(row => {
+      let fenRow = '';
+      let emptyCount = 0;
+      for (const cell of row) {
+        if (cell === '.') { emptyCount++; }
+        else {
+          if (emptyCount > 0) { fenRow += emptyCount; emptyCount = 0; }
+          fenRow += cell;
+        }
+      }
+      if (emptyCount > 0) fenRow += emptyCount;
+      return fenRow;
+    });
+
+    parts[0] = newRows.join('/');
+    return parts.join(' ');
+  } catch (e) {
+    return null;
+  }
+}
+
 // ============ MAIN LEARN COMPONENT ============
 const Learn = () => {
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -1059,35 +1111,47 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
   const [sceneIndex, setSceneIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showText, setShowText] = useState(false);
-  const [animatingMove, setAnimatingMove] = useState(null);
   const [hearts, setHearts] = useState(3);
   const [currentFen, setCurrentFen] = useState(lesson.video.scenes[0].fen);
   const timerRef = useRef(null);
-  
+
   const scene = lesson.video.scenes[sceneIndex];
 
   // Auto-advance scenes
   useEffect(() => {
     if (phase !== 'video' || !isPlaying) return;
-    
+
     setShowText(false);
     setCurrentFen(scene.fen);
-    
+
     // Show text after brief delay
     const textTimer = setTimeout(() => setShowText(true), 300);
-    
-    // Handle move animation if present
-    let moveTimer, completeMoveTimer;
+
+    // Handle move animation — actually execute the move on the board
+    let moveTimer;
     if (scene.moveAnimation) {
       moveTimer = setTimeout(() => {
-        setAnimatingMove(scene.moveAnimation);
+        try {
+          const { from, to, promotion, capture, castle } = scene.moveAnimation;
+          // Try to make the move with chess.js
+          const tempGame = new Chess(scene.fen);
+          const moveResult = tempGame.move({ from, to, promotion: promotion ? 'q' : undefined });
+          if (moveResult) {
+            setCurrentFen(tempGame.fen());
+          } else {
+            // If chess.js rejects (educational FEN without kings), manually update
+            // by reconstructing FEN with piece moved
+            const newFen = manualMoveFen(scene.fen, from, to);
+            if (newFen) setCurrentFen(newFen);
+          }
+        } catch (e) {
+          // For educational FENs without kings, do manual move
+          const newFen = manualMoveFen(scene.fen, scene.moveAnimation.from, scene.moveAnimation.to);
+          if (newFen) setCurrentFen(newFen);
+        }
       }, 1500);
-      
-      completeMoveTimer = setTimeout(() => {
-        setAnimatingMove(null);
-      }, 3000);
     }
-    
+
     // Auto-advance to next scene
     timerRef.current = setTimeout(() => {
       if (sceneIndex < lesson.video.scenes.length - 1) {
@@ -1101,12 +1165,11 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
         }
       }
     }, scene.duration);
-    
+
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(textTimer);
       clearTimeout(moveTimer);
-      clearTimeout(completeMoveTimer);
     };
   }, [sceneIndex, isPlaying, phase]);
 
@@ -1273,7 +1336,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           padding: 20px;
         }
         .lesson-player > * {
-          width: 100%;
+          max-width: 100%;
         }
         .player-header {
           display: flex;
@@ -1350,7 +1413,9 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
           margin: 0 auto;
-          align-self: center;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
         .board-container.pulse {
           animation: boardPulse 2s infinite;
@@ -1497,6 +1562,7 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           onPieceDrop={onDrop}
           boardWidth={Math.min(400, window.innerWidth - 40)}
           boardOrientation={boardOrientation}
+          snapToCursor={true}
           customDarkSquareStyle={{ backgroundColor: currentTheme?.darkSquare || '#769656' }}
           customLightSquareStyle={{ backgroundColor: currentTheme?.lightSquare || '#eeeed2' }}
           customPieces={customPieces}
@@ -1530,7 +1596,8 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           font-size: 1.1rem;
         }
         .puzzle-board {
-          display: inline-block;
+          display: flex;
+          justify-content: center;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
