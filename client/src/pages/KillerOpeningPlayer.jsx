@@ -371,6 +371,7 @@ const KillerOpeningPlayer = () => {
                 id="killer-opening-board"
                 position={game.fen()}
                 onPieceDrop={onDrop}
+                snapToCursor={true}
                 boardWidth={boardWidth}
                 boardOrientation={opening.playerColor}
                 customBoardStyle={{

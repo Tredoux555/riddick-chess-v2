@@ -356,6 +356,7 @@ const BotGame = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               boardOrientation={gameData.userColor || 'white'}
+              snapToCursor={true}
               customBoardStyle={{
                 borderRadius: '4px',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'

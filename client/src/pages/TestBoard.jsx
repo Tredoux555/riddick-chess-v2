@@ -365,6 +365,7 @@ const TestBoard = () => {
             onSquareRightClick={onSquareRightClick}
             boardOrientation={boardOrientation}
             arePiecesDraggable={true}
+            snapToCursor={true}
             customPieces={customPieces()}
             customDarkSquareStyle={{ backgroundColor: '#779556' }}
             customLightSquareStyle={{ backgroundColor: '#ebecd0' }}
@@ -436,6 +437,7 @@ const TestBoard = () => {
             onSquareRightClick={onSquareRightClick}
             boardOrientation={boardOrientation}
             arePiecesDraggable={true}
+            snapToCursor={true}
             customPieces={customPieces()}
             customDarkSquareStyle={{ backgroundColor: '#779556' }}
             customLightSquareStyle={{ backgroundColor: '#ebecd0' }}

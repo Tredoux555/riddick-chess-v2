@@ -414,6 +414,7 @@ const Game = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               boardOrientation={boardOrientation}
+              snapToCursor={true}
               boardWidth={560}
               customPieces={customPieces}
               customBoardStyle={{

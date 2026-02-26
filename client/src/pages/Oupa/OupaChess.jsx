@@ -275,6 +275,7 @@ export default function OupaChess() {
           <Chessboard
             position={position}
             onPieceDrop={onDrop}
+            snapToCursor={true}
             boardWidth={Math.min(600, window.innerWidth - 40)}
             customBoardStyle={{
               borderRadius: '12px',

@@ -241,6 +241,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
         <Chessboard
           position={game.fen()}
           onPieceDrop={onDrop}
+          snapToCursor={true}
           boardWidth={Math.min(480, window.innerWidth - 80)}
           customSquareStyles={customSquareStyles}
           customBoardStyle={{

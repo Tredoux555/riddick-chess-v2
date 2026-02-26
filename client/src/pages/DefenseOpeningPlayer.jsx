@@ -474,6 +474,7 @@ const DefenseOpeningPlayer = () => {
                 id="defense-opening-board"
                 position={game.fen()}
                 onPieceDrop={onDrop}
+                snapToCursor={true}
                 boardWidth={boardWidth}
                 boardOrientation={defense.playerColor}
                 customBoardStyle={{ borderRadius: '4px' }}
