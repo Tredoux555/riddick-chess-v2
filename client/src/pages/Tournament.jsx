@@ -153,7 +153,7 @@ const Tournament = () => {
       <div style={{ padding: '40px', textAlign: 'center', color: 'white' }}>
         <h3>Error loading tournament</h3>
         <p>{error}</p>
-        <Link to="/tournaments" style={{ color: '#769656' }}>Back to Tournaments</Link>
+        <Link to="/tournaments" style={{ color: '#95cc75' }}>Back to Tournaments</Link>
       </div>
     );
   }
@@ -162,7 +162,7 @@ const Tournament = () => {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'white' }}>
         <h3>Tournament not found</h3>
-        <Link to="/tournaments" style={{ color: '#769656' }}>Back to Tournaments</Link>
+        <Link to="/tournaments" style={{ color: '#95cc75' }}>Back to Tournaments</Link>
       </div>
     );
   }
@@ -196,7 +196,7 @@ const Tournament = () => {
           border: '2px solid #769656'
         }}>
           <p style={{ fontSize: '18px', marginBottom: '10px' }}>🔄 Processing payment...</p>
-          <p style={{ color: '#aaa', fontSize: '14px' }}>Please wait while we verify your payment and register you.</p>
+          <p style={{ color: '#d0d0e0', fontSize: '14px' }}>Please wait while we verify your payment and register you.</p>
         </div>
       )}
 
@@ -243,7 +243,7 @@ const Tournament = () => {
         )}
         {isRegistered && (
           <>
-            <span style={{ color: '#769656' }}><FaCheck /> Registered</span>
+            <span style={{ color: '#95cc75' }}><FaCheck /> Registered</span>
             {tournament.status === 'upcoming' && (
               <button 
                 onClick={handleWithdraw}
@@ -287,9 +287,9 @@ const Tournament = () => {
                 >
                   <div>
                     <span style={{ fontWeight: 'bold' }}>{game.white_username}</span>
-                    <span style={{ color: '#888', margin: '0 10px' }}>vs</span>
+                    <span style={{ color: '#c0c0d0', margin: '0 10px' }}>vs</span>
                     <span style={{ fontWeight: 'bold' }}>{game.black_username}</span>
-                    <span style={{ color: '#666', marginLeft: '15px', fontSize: '14px' }}>
+                    <span style={{ color: '#b0b0c4', marginLeft: '15px', fontSize: '14px' }}>
                       Round {game.round}
                     </span>
                   </div>
@@ -313,7 +313,7 @@ const Tournament = () => {
               ))}
             </div>
           ) : (
-            <p style={{ color: '#888', marginTop: '10px' }}>No games in progress right now.</p>
+            <p style={{ color: '#c0c0d0', marginTop: '10px' }}>No games in progress right now.</p>
           )}
         </div>
       )}
@@ -341,11 +341,11 @@ const Tournament = () => {
           </tbody>
         </table>
       ) : (
-        <p style={{ color: '#aaa' }}>No participants yet. Be the first to register!</p>
+        <p style={{ color: '#d0d0e0' }}>No participants yet. Be the first to register!</p>
       )}
 
       <div style={{ marginTop: '30px' }}>
-        <Link to="/tournaments" style={{ color: '#769656' }}>← Back to Tournaments</Link>
+        <Link to="/tournaments" style={{ color: '#95cc75' }}>← Back to Tournaments</Link>
       </div>
     </div>
   );

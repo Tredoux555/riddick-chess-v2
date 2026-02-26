@@ -62,7 +62,7 @@ const ShareSection = () => {
         />
       </div>
 
-      <p style={{ color: '#94a3b8', marginBottom: '20px', fontSize: '14px' }}>
+      <p style={{ color: '#c8d0e0', marginBottom: '20px', fontSize: '14px' }}>
         👆 Scan with your phone camera
       </p>
 

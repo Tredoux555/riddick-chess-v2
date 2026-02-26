@@ -189,7 +189,7 @@ const ShareModal = ({ isOpen, onClose, url, title, text }) => {
           .close-btn {
             background: none;
             border: none;
-            color: #888;
+            color: #c0c0d0;
             cursor: pointer;
             font-size: 1.2rem;
             padding: 0.5rem;
@@ -269,7 +269,7 @@ const ShareModal = ({ isOpen, onClose, url, title, text }) => {
           }
           .share-app-btn:hover .app-icon { color: #fff; }
           .share-app-btn span {
-            color: #aaa;
+            color: #d0d0e0;
             font-size: 0.8rem;
           }
           .share-app-btn:hover span { color: #fff; }

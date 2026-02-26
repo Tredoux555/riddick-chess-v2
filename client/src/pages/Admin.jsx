@@ -157,14 +157,14 @@ const Dashboard = () => {
         {/* Banned IPs list */}
         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
           {bannedIPs.length === 0 ? (
-            <p style={{ color: '#94a3b8' }}>No banned IPs</p>
+            <p style={{ color: '#c8d0e0' }}>No banned IPs</p>
           ) : (
             bannedIPs.map((ban) => (
               <div key={ban.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '8px' }}>
                 <div>
                   <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{ban.ip_address}</span>
-                  <span style={{ color: '#94a3b8', marginLeft: '10px', fontSize: '12px' }}>{ban.reason}</span>
-                  <span style={{ color: '#666', marginLeft: '10px', fontSize: '12px' }}>{new Date(ban.banned_at).toLocaleDateString()}</span>
+                  <span style={{ color: '#c8d0e0', marginLeft: '10px', fontSize: '12px' }}>{ban.reason}</span>
+                  <span style={{ color: '#b0b0c4', marginLeft: '10px', fontSize: '12px' }}>{new Date(ban.banned_at).toLocaleDateString()}</span>
                 </div>
                 <button onClick={() => handleUnbanIP(ban.ip_address)} style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
                   Unban

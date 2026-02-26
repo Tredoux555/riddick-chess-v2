@@ -490,11 +490,11 @@ const styles = {
     fontSize: '1.1rem'
   },
   elo: {
-    color: '#888',
+    color: '#c0c0d0',
     fontSize: '0.9rem'
   },
   colorBadge: {
-    color: '#888',
+    color: '#c0c0d0',
     fontSize: '0.9rem'
   },
   thinkingIndicator: {
@@ -566,16 +566,16 @@ const styles = {
     fontSize: '0.95rem'
   },
   moveNumber: {
-    color: '#888'
+    color: '#c0c0d0'
   },
   moveWhite: {
     color: '#fff'
   },
   moveBlack: {
-    color: '#aaa'
+    color: '#d0d0e0'
   },
   noMoves: {
-    color: '#666',
+    color: '#b0b0c4',
     fontStyle: 'italic',
     margin: 0
   },

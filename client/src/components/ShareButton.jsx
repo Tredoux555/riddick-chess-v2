@@ -86,7 +86,7 @@ const ShareButton = () => {
               <QRCodeSVG value={websiteUrl} size={180} level="H" includeMargin={true} />
             </div>
             
-            <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Scan the QR code or share the link!</p>
+            <p style={{ color: '#c8d0e0', marginBottom: '20px' }}>Scan the QR code or share the link!</p>
 
             <div style={{ background: '#0a0a0f', padding: '12px', borderRadius: '10px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ color: '#8b5cf6', flex: 1, fontSize: '14px' }}>{websiteUrl}</span>
@@ -100,7 +100,7 @@ const ShareButton = () => {
               <a href={`https://www.xiaohongshu.com`} onClick={(e) => { e.preventDefault(); alert('Screenshot the QR code and share on RedNote!'); }} style={{ background: '#fe2c55', color: 'white', padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', cursor: 'pointer' }}>RedNote</a>
             </div>
 
-            <button onClick={() => setShowModal(false)} style={{ marginTop: '20px', background: 'transparent', color: '#94a3b8', border: '1px solid #94a3b8', borderRadius: '10px', padding: '10px 30px', cursor: 'pointer' }}>Close</button>
+            <button onClick={() => setShowModal(false)} style={{ marginTop: '20px', background: 'transparent', color: '#c8d0e0', border: '1px solid #94a3b8', borderRadius: '10px', padding: '10px 30px', cursor: 'pointer' }}>Close</button>
           </div>
         </div>
       )}

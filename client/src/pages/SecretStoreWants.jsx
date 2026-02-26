@@ -165,7 +165,7 @@ const SecretStoreWants = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', flexWrap: 'wrap', gap: '15px' }}>
           <div>
             <h1 style={{ color: '#fff', margin: 0, fontSize: '28px' }}>🌟 I Want This!</h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', margin: '5px 0 0' }}>Request products & vote for what you want!</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', margin: '5px 0 0' }}>Request products & vote for what you want!</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
             <Link to="/hehe/store" style={{ ...btnStyle, background: '#8b5cf6', color: '#fff', textDecoration: 'none' }}>🛒 Back to Store</Link>
@@ -250,9 +250,9 @@ const SecretStoreWants = () => {
 
         {/* Wants Grid */}
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '60px' }}>Loading wants...</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', padding: '60px' }}>Loading wants...</p>
         ) : wants.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.5)' }}>
+          <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.7)' }}>
             <h2 style={{ marginBottom: '10px' }}>🤷 No wants yet!</h2>
             <p>Be the first to request something!</p>
           </div>
@@ -283,10 +283,10 @@ const SecretStoreWants = () => {
                 <div style={{ padding: '20px' }}>
                   <span style={{ fontSize: '12px', background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '4px 10px', borderRadius: '20px' }}>{want.category}</span>
                   <h3 style={{ color: '#fff', margin: '12px 0 8px', fontSize: '18px' }}>{want.title}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 10px', minHeight: '40px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 10px', minHeight: '40px' }}>
                     {want.description ? (want.description.length > 100 ? want.description.substring(0, 100) + '...' : want.description) : 'No description'}
                   </p>
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 15px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', margin: '0 0 15px' }}>
                     Requested by <strong style={{ color: '#f59e0b' }}>{want.requested_by_name}</strong>
                   </p>
                   
@@ -345,7 +345,7 @@ const SecretStoreWants = () => {
               <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <span style={{ background: 'rgba(139,92,246,0.2)', color: '#8b5cf6', padding: '5px 12px', borderRadius: '20px', fontSize: '12px' }}>{selectedWant.category}</span>
                 <span style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b', padding: '5px 12px', borderRadius: '20px', fontSize: '12px' }}>🔥 {selectedWant.votes} votes</span>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>by {selectedWant.requested_by_name}</span>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>by {selectedWant.requested_by_name}</span>
               </div>
               
               {selectedWant.status === 'fulfilled' && (
@@ -370,13 +370,13 @@ const SecretStoreWants = () => {
               </div>
               
               {selectedWant.comments?.length === 0 ? (
-                <p style={{ color: 'rgba(255,255,255,0.4)' }}>No comments yet. Be the first!</p>
+                <p style={{ color: 'rgba(255,255,255,0.7)' }}>No comments yet. Be the first!</p>
               ) : (
                 selectedWant.comments?.map(c => (
                   <div key={c.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
                     <p style={{ color: '#f59e0b', margin: '0 0 5px', fontWeight: 'bold', fontSize: '14px' }}>{c.user_name}</p>
                     <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>{c.comment}</p>
-                    <small style={{ color: 'rgba(255,255,255,0.4)' }}>{new Date(c.created_at).toLocaleString()}</small>
+                    <small style={{ color: 'rgba(255,255,255,0.7)' }}>{new Date(c.created_at).toLocaleString()}</small>
                   </div>
                 ))
               )}

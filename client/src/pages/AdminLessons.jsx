@@ -189,7 +189,7 @@ const AdminLessons = () => {
             
             <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>Title *</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>Title *</label>
                 <input
                   type="text"
                   value={form.title}
@@ -207,7 +207,7 @@ const AdminLessons = () => {
               </div>
 
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>Description</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>Description</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
@@ -226,7 +226,7 @@ const AdminLessons = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>Category</label>
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>Category</label>
                   <select
                     value={form.category}
                     onChange={e => setForm({ ...form, category: e.target.value })}
@@ -247,7 +247,7 @@ const AdminLessons = () => {
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>Difficulty</label>
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>Difficulty</label>
                   <select
                     value={form.difficulty}
                     onChange={e => setForm({ ...form, difficulty: e.target.value })}
@@ -267,7 +267,7 @@ const AdminLessons = () => {
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>Order</label>
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>Order</label>
                   <input
                     type="number"
                     value={form.order_index}
@@ -285,12 +285,12 @@ const AdminLessons = () => {
               </div>
 
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>
                   <FaUpload style={{ marginRight: '8px' }} />
                   Upload Video
                 </label>
                 {editingLesson?.video_url && (
-                  <div style={{ marginBottom: '10px', padding: '10px', background: 'rgba(118,150,86,0.2)', borderRadius: '8px', color: '#769656', fontSize: '14px' }}>
+                  <div style={{ marginBottom: '10px', padding: '10px', background: 'rgba(118,150,86,0.2)', borderRadius: '8px', color: '#95cc75', fontSize: '14px' }}>
                     ✓ This lesson already has a video. Upload a new one to replace it.
                   </div>
                 )}
@@ -308,14 +308,14 @@ const AdminLessons = () => {
                   }}
                 />
                 {form.video_file && (
-                  <p style={{ color: '#769656', marginTop: '5px', fontSize: '14px' }}>
+                  <p style={{ color: '#95cc75', marginTop: '5px', fontSize: '14px' }}>
                     Selected: {form.video_file.name}
                   </p>
                 )}
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: '#aaa' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#d0d0e0' }}>
                   Or paste video URL (YouTube, etc.)
                 </label>
                 <input
@@ -350,7 +350,7 @@ const AdminLessons = () => {
                       transition: 'width 0.3s'
                     }} />
                   </div>
-                  <p style={{ color: '#888', marginTop: '5px', fontSize: '14px' }}>
+                  <p style={{ color: '#c0c0d0', marginTop: '5px', fontSize: '14px' }}>
                     Uploading... {uploadProgress}%
                   </p>
                 </div>
@@ -396,7 +396,7 @@ const AdminLessons = () => {
       {/* Lessons Table */}
       <div style={{ marginTop: '30px' }}>
         {lessons.length === 0 ? (
-          <p style={{ color: '#888', textAlign: 'center' }}>No lessons yet. Add your first one!</p>
+          <p style={{ color: '#c0c0d0', textAlign: 'center' }}>No lessons yet. Add your first one!</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -429,7 +429,7 @@ const AdminLessons = () => {
                   <td style={{ padding: '12px', textAlign: 'right' }}>
                     <button
                       onClick={() => togglePublish(lesson)}
-                      style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', marginRight: '10px' }}
+                      style={{ background: 'none', border: 'none', color: '#c0c0d0', cursor: 'pointer', marginRight: '10px' }}
                       title={lesson.is_published ? 'Hide' : 'Publish'}
                     >
                       {lesson.is_published ? <FaEyeSlash /> : <FaEye />}

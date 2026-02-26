@@ -625,7 +625,7 @@ const HomeView = ({ userData, onStart, setView }) => {
         <div style={{...styles.card, background: '#0af2', border: '2px solid #0af', textAlign: 'center'}}>
           <h2>⏱️ Ready to practice?</h2>
           <p>Keep your {userData.streak}-day streak alive!</p>
-          <p style={{color: '#888', fontSize: '14px'}}>Research shows: 15-20 min daily sessions are perfect for beginners!</p>
+          <p style={{color: '#c0c0d0', fontSize: '14px'}}>Research shows: 15-20 min daily sessions are perfect for beginners!</p>
         </div>
       )}
       
@@ -633,7 +633,7 @@ const HomeView = ({ userData, onStart, setView }) => {
         <div style={{...styles.card, background: '#0f82', border: '2px solid #0f8', textAlign: 'center'}}>
           <h2>✅ Great work today!</h2>
           <p>You've practiced {Object.values(userData.practiceHistory).reduce((a,b)=>a+b,0)} minutes total</p>
-          <p style={{color: '#888', fontSize: '14px'}}>Keep it up! You're building real guitar skills!</p>
+          <p style={{color: '#c0c0d0', fontSize: '14px'}}>Keep it up! You're building real guitar skills!</p>
         </div>
       )}
       
@@ -667,11 +667,11 @@ const HomeView = ({ userData, onStart, setView }) => {
       {!todayPracticed && (
         <div style={{...styles.card, marginTop: '30px'}}>
           <h3>💪 Don't Forget to Warm Up!</h3>
-          <p style={{color: '#888'}}>Research shows warm-ups prevent injuries and improve learning:</p>
+          <p style={{color: '#c0c0d0'}}>Research shows warm-ups prevent injuries and improve learning:</p>
           {WARMUPS.slice(0,2).map(warmup => (
             <div key={warmup.name} style={{padding: '10px', background: '#222', borderRadius: '8px', marginTop: '10px'}}>
               <strong>{warmup.name}</strong> ({warmup.duration}s)
-              <p style={{color: '#aaa', fontSize: '14px', marginTop: '5px'}}>{warmup.description}</p>
+              <p style={{color: '#d0d0e0', fontSize: '14px', marginTop: '5px'}}>{warmup.description}</p>
             </div>
           ))}
         </div>
@@ -703,7 +703,7 @@ const LessonsView = ({ userData, setActiveLesson }) => {
   return (
     <div style={styles.section}>
       <h2>🎵 Song Library</h2>
-      <p style={{color: '#888', marginBottom: '20px'}}>
+      <p style={{color: '#c0c0d0', marginBottom: '20px'}}>
         Learn by playing songs! Videos pause so you can practice each chord.
       </p>
       
@@ -726,8 +726,8 @@ const LessonsView = ({ userData, setActiveLesson }) => {
               
               <div style={{padding: '10px'}}>
                 <strong>{lesson.title}</strong>
-                <div style={{color: '#888', fontSize: '12px'}}>{lesson.artist}</div>
-                <div style={{color: '#aaa', fontSize: '11px', marginTop: '3px'}}>{lesson.description}</div>
+                <div style={{color: '#c0c0d0', fontSize: '12px'}}>{lesson.artist}</div>
+                <div style={{color: '#d0d0e0', fontSize: '11px', marginTop: '3px'}}>{lesson.description}</div>
                 
                 <div style={{marginTop: '5px'}}>
                   {lesson.chords.map(c => <span key={c} style={styles.chordTag}>{c}</span>)}
@@ -762,7 +762,7 @@ const RiffsView = ({ userData, setActiveRiff }) => {
   return (
     <div style={styles.section}>
       <h2>⚡ Iconic Riffs</h2>
-      <p style={{color: '#888', marginBottom: '20px'}}>
+      <p style={{color: '#c0c0d0', marginBottom: '20px'}}>
         Learn legendary guitar riffs! These are research-backed perfect for beginners.
       </p>
       
@@ -779,8 +779,8 @@ const RiffsView = ({ userData, setActiveRiff }) => {
               </div>
               
               <h3>{riff.name}</h3>
-              <div style={{color: '#888', fontSize: '14px', marginBottom: '5px'}}>{riff.artist}</div>
-              <p style={{color: '#aaa', fontSize: '13px'}}>{riff.description}</p>
+              <div style={{color: '#c0c0d0', fontSize: '14px', marginBottom: '5px'}}>{riff.artist}</div>
+              <p style={{color: '#d0d0e0', fontSize: '13px'}}>{riff.description}</p>
               
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px'}}>
                 <div style={{...styles.difficultyBadge, background: riff.difficulty === 'Beginner' ? '#0f8' : '#4af'}}>
@@ -795,7 +795,7 @@ const RiffsView = ({ userData, setActiveRiff }) => {
       
       <div style={{...styles.card, marginTop: '30px'}}>
         <h3>💡 How to Read Tabs</h3>
-        <p style={{color: '#888'}}>
+        <p style={{color: '#c0c0d0'}}>
           Each line represents a guitar string (E is thinnest on top, E is thickest on bottom).
           Numbers show which fret to press. 0 means play the string open (no frets pressed).
         </p>
@@ -807,7 +807,7 @@ D|----------
 A|----------
 E|----------  (thickest string)`}
         </pre>
-        <p style={{color: '#888', marginTop: '10px'}}>
+        <p style={{color: '#c0c0d0', marginTop: '10px'}}>
           Read left to right. Play each note in order!
         </p>
       </div>
@@ -820,7 +820,7 @@ const ChordsView = () => {
   return (
     <div style={styles.section}>
       <h2>🎸 Essential Chords</h2>
-      <p style={{color: '#888', marginBottom: '20px'}}>
+      <p style={{color: '#c0c0d0', marginBottom: '20px'}}>
         Master these 8 chords and you can play 90% of popular songs!
       </p>
       
@@ -828,7 +828,7 @@ const ChordsView = () => {
         {Object.entries(CHORDS).map(([key, chord]) => (
           <div key={key} style={styles.chordCard}>
             <ChordDiagram chord={chord} name={key}/>
-            <small style={{color: '#888', display: 'block', marginTop: '5px'}}>{chord.name}</small>
+            <small style={{color: '#c0c0d0', display: 'block', marginTop: '5px'}}>{chord.name}</small>
           </div>
         ))}
       </div>
@@ -873,7 +873,7 @@ const ProgressView = ({ userData }) => {
         <div style={{height: '30px', background: '#222', borderRadius: '15px', overflow: 'hidden'}}>
           <div style={{height: '100%', width: `${levelProgress}%`, background: 'linear-gradient(90deg, #0af, #0f8)', transition: '0.5s'}}/>
         </div>
-        <small style={{color: '#888', marginTop: '5px'}}>{xpToNextLevel} XP to Level {userData.level + 1}</small>
+        <small style={{color: '#c0c0d0', marginTop: '5px'}}>{xpToNextLevel} XP to Level {userData.level + 1}</small>
       </div>
       
       {/* Stats Grid */}
@@ -906,7 +906,7 @@ const ProgressView = ({ userData }) => {
       {/* Practice Heat Map */}
       <div style={{...styles.card, marginTop: '20px'}}>
         <h3>📅 Practice Heat Map (Last 60 Days)</h3>
-        <small style={{color: '#888'}}>Keep your streak alive! Research shows daily practice = 3.6x better results!</small>
+        <small style={{color: '#c0c0d0'}}>Keep your streak alive! Research shows daily practice = 3.6x better results!</small>
         
         <div style={{marginTop: '15px', display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '4px'}}>
           {heatmapDays.map((day, i) => (
@@ -923,7 +923,7 @@ const ProgressView = ({ userData }) => {
           ))}
         </div>
         
-        <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px', fontSize: '12px', color: '#888'}}>
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px', fontSize: '12px', color: '#c0c0d0'}}>
           <span>Less</span>
           <div style={{width: '15px', height: '15px', background: '#1a1a2a', borderRadius: '3px'}}/>
           <div style={{width: '15px', height: '15px', background: '#0f84', borderRadius: '3px'}}/>
@@ -949,7 +949,7 @@ const ProgressView = ({ userData }) => {
               }}>
                 <div style={{fontSize: '32px'}}>{ach.icon}</div>
                 <strong style={{fontSize: '12px'}}>{ach.name}</strong>
-                <small style={{color: '#888', fontSize: '10px'}}>{ach.desc}</small>
+                <small style={{color: '#c0c0d0', fontSize: '10px'}}>{ach.desc}</small>
                 {unlocked && <div style={{color: '#0f8', fontSize: '11px', fontWeight: 'bold', marginTop: '5px'}}>+{ach.xp} XP</div>}
               </div>
             );
@@ -983,7 +983,7 @@ const RiffLesson = ({ riff, onExit, onComplete }) => {
         <button onClick={onExit} style={styles.backBtn}>← Back</button>
         <div style={{flex: 1, textAlign: 'center'}}>
           <h2>{riff.name}</h2>
-          <small style={{color: '#888'}}>{riff.artist}</small>
+          <small style={{color: '#c0c0d0'}}>{riff.artist}</small>
         </div>
         <div style={{width: '80px'}}/>
       </div>
@@ -1160,14 +1160,14 @@ const ChordDetector = ({ expectedChord, onChordDetected }) => {
       
       {expectedChord && (
         <div style={{marginBottom: '15px'}}>
-          <div style={{color: '#888'}}>Target Chord:</div>
+          <div style={{color: '#c0c0d0'}}>Target Chord:</div>
           <div style={{fontSize: '32px', fontWeight: 'bold', color: '#0af'}}>{expectedChord}</div>
         </div>
       )}
       
       {isListening && (
         <div>
-          <div style={{color: '#888'}}>Detected:</div>
+          <div style={{color: '#c0c0d0'}}>Detected:</div>
           <div style={{
             fontSize: '48px',
             fontWeight: 'bold',
@@ -1178,7 +1178,7 @@ const ChordDetector = ({ expectedChord, onChordDetected }) => {
           
           {detectedChord && (
             <div>
-              <div style={{color: '#888', fontSize: '14px'}}>Confidence: {confidencePercent}%</div>
+              <div style={{color: '#c0c0d0', fontSize: '14px'}}>Confidence: {confidencePercent}%</div>
               <div style={styles.progressBar}>
                 <div style={{
                   width: `${confidencePercent}%`,
@@ -1207,7 +1207,7 @@ const ChordDetector = ({ expectedChord, onChordDetected }) => {
       )}
       
       {!isListening && (
-        <div style={{color: '#888', textAlign: 'center', padding: '20px'}}>
+        <div style={{color: '#c0c0d0', textAlign: 'center', padding: '20px'}}>
           Click "Start Listening" to detect your chord
         </div>
       )}
@@ -1335,7 +1335,7 @@ const InteractiveLesson = ({ lesson, onExit, onComplete }) => {
           </div>
           
           <div style={{color: '#0af', fontSize: '24px', fontWeight: 'bold', marginBottom: '10px'}}>+{lesson.xpReward} XP</div>
-          <div style={{color: '#888'}}>Average Accuracy: {Math.round(avgAccuracy)}%</div>
+          <div style={{color: '#c0c0d0'}}>Average Accuracy: {Math.round(avgAccuracy)}%</div>
           
           <button onClick={onExit} style={{...styles.primaryBtn, marginTop: '30px', padding: '15px 40px', fontSize: '18px'}}>
             Continue
@@ -1353,11 +1353,11 @@ const InteractiveLesson = ({ lesson, onExit, onComplete }) => {
         
         <div style={{flex: 1, textAlign: 'center'}}>
           <h3>{lesson.title}</h3>
-          <small style={{color: '#888'}}>{lesson.artist}</small>
+          <small style={{color: '#c0c0d0'}}>{lesson.artist}</small>
         </div>
         
         <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <div style={{color: '#888', fontSize: '14px'}}>
+          <div style={{color: '#c0c0d0', fontSize: '14px'}}>
             ⏱️ {formatTime(sessionTime)}
           </div>
           
@@ -1371,7 +1371,7 @@ const InteractiveLesson = ({ lesson, onExit, onComplete }) => {
       {/* LOOP & SPEED CONTROLS */}
       <div style={styles.controlsBar}>
         <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-          <strong style={{color: '#888', fontSize: '14px'}}>Speed:</strong>
+          <strong style={{color: '#c0c0d0', fontSize: '14px'}}>Speed:</strong>
           <button onClick={() => setPlaybackSpeed(prev => Math.max(prev - 0.1, 0.5))} style={styles.smallBtn}>-</button>
           <span style={{color: '#0af', fontWeight: 'bold', minWidth: '50px', textAlign: 'center'}}>{Math.round(playbackSpeed * 100)}%</span>
           <button onClick={() => setPlaybackSpeed(prev => Math.min(prev + 0.1, 1.5))} style={styles.smallBtn}>+</button>
@@ -1389,7 +1389,7 @@ const InteractiveLesson = ({ lesson, onExit, onComplete }) => {
         </div>
         
         {accuracyHistory.length > 0 && (
-          <div style={{color: '#888', fontSize: '14px'}}>
+          <div style={{color: '#c0c0d0', fontSize: '14px'}}>
             Accuracy: <span style={{color: '#0af', fontWeight: 'bold'}}>
               {Math.round(accuracyHistory.slice(-5).reduce((a, b) => a + b, 0) / Math.min(accuracyHistory.length, 5))}%
             </span>
@@ -1539,7 +1539,7 @@ const VideoPlayer = ({ lesson, currentEventIndex, setCurrentEventIndex, mode, pl
           {currentEvent.chord && (
             <div style={{marginTop: '10px'}}>
               <span style={{fontSize: '32px', fontWeight: 'bold', color: '#0af'}}>{currentEvent.chord}</span>
-              <div style={{color: '#888', fontSize: '14px', marginTop: '5px'}}>
+              <div style={{color: '#c0c0d0', fontSize: '14px', marginTop: '5px'}}>
                 {mode === 'practice' ? 'Play this chord to continue →' : 'Play along!'}
               </div>
             </div>
@@ -1903,7 +1903,7 @@ const GuitarTuner = () => {
   return (
     <div style={styles.section}>
       <h2>🎸 Guitar Tuner</h2>
-      <p style={{color: '#888', marginBottom: '20px'}}>
+      <p style={{color: '#c0c0d0', marginBottom: '20px'}}>
         Select a string, then play it and tune until the needle is centered!
       </p>
       
@@ -1923,9 +1923,9 @@ const GuitarTuner = () => {
             border: '2px solid ' + (selected?.note === s.note ? s.color : 'transparent'),
             position: 'relative'
           }}>
-            <div style={{fontSize: '10px', color: selected?.note === s.note ? '#000' : '#888'}}>String {s.string}</div>
+            <div style={{fontSize: '10px', color: selected?.note === s.note ? '#000' : '#c0c0d0'}}>String {s.string}</div>
             <div style={{fontSize: '28px', fontWeight: 'bold', margin: '5px 0'}}>{s.name}</div>
-            <div style={{fontSize: '11px', color: selected?.note === s.note ? '#000' : '#888'}}>{Math.round(s.freq)}Hz</div>
+            <div style={{fontSize: '11px', color: selected?.note === s.note ? '#000' : '#c0c0d0'}}>{Math.round(s.freq)}Hz</div>
             <button onClick={e => { e.stopPropagation(); playTone(s.freq); }} style={{
               marginTop: '8px',
               padding: '5px 10px',
@@ -1952,14 +1952,14 @@ const GuitarTuner = () => {
           {listening ? (
             <>
               <div style={{height: '30px', background: '#222', borderRadius: '15px', overflow: 'hidden', marginBottom: '10px'}}>
-                <div style={{height: '100%', width: `${volume}%`, background: volume > 10 ? '#0f8' : '#666', transition: '0.1s'}}/>
+                <div style={{height: '100%', width: `${volume}%`, background: volume > 10 ? '#0f8' : '#b0b0c4', transition: '0.1s'}}/>
               </div>
-              <div style={{textAlign: 'center', fontSize: '12px', color: volume > 10 ? '#0f8' : '#666', marginBottom: '20px'}}>
+              <div style={{textAlign: 'center', fontSize: '12px', color: volume > 10 ? '#0f8' : '#b0b0c4', marginBottom: '20px'}}>
                 {volume > 10 ? '🎤 Sound detected!' : '🎤 Play the string...'}
               </div>
               
               <div style={{marginBottom: '15px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888', marginBottom: '5px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#c0c0d0', marginBottom: '5px'}}>
                   <span>♭ TOO LOW</span>
                   <span>✓ PERFECT</span>
                   <span>TOO HIGH ♯</span>
@@ -1987,11 +1987,11 @@ const GuitarTuner = () => {
                 <div style={{fontSize: '32px', fontWeight: 'bold', color: getColor(), marginBottom: '5px'}}>
                   {Math.abs(cents) <= 5 ? '✅ IN TUNE!' : Math.abs(cents) <= 15 ? '👍 Almost!' : cents > 0 ? '⬇️ Too HIGH' : '⬆️ Too LOW'}
                 </div>
-                <div style={{fontSize: '18px', color: '#888'}}>{cents > 0 ? '+' : ''}{cents} cents</div>
+                <div style={{fontSize: '18px', color: '#c0c0d0'}}>{cents > 0 ? '+' : ''}{cents} cents</div>
               </div>
             </>
           ) : (
-            <p style={{textAlign: 'center', color: '#888', padding: '40px 0'}}>
+            <p style={{textAlign: 'center', color: '#c0c0d0', padding: '40px 0'}}>
               Click START and play the {selected.name} string
             </p>
           )}
@@ -2028,7 +2028,7 @@ const GuitarTuner = () => {
       )}
       
       {!selected && (
-        <p style={{textAlign: 'center', color: '#888', padding: '40px 0', fontSize: '16px'}}>
+        <p style={{textAlign: 'center', color: '#c0c0d0', padding: '40px 0', fontSize: '16px'}}>
           👆 Click a string above to start tuning
         </p>
       )}

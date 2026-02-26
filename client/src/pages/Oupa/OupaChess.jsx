@@ -377,7 +377,7 @@ const styles = {
   
   divider: {
     fontSize: '20px',
-    color: '#666',
+    color: '#b0b0c4',
     fontWeight: 'bold',
     margin: '20px 0'
   },

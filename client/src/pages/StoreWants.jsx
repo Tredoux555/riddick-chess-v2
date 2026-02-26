@@ -62,7 +62,7 @@ const StoreWants = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '15px' }}>
           <div>
             <h1 style={{ color: '#fff', margin: '0 0 5px' }}>🙏 Want Something?</h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Request products you want us to sell!</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0 }}>Request products you want us to sell!</p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={() => navigate('/hehe/store')} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>← Back to Store</button>
@@ -100,7 +100,7 @@ const StoreWants = () => {
 
         <div style={{ display: 'grid', gap: '15px' }}>
           {wants.length === 0 ? (
-            <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '40px' }}>No requests yet. Be the first!</p>
+            <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', padding: '40px' }}>No requests yet. Be the first!</p>
           ) : (
             wants.map(want => (
               <div key={want.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px', display: 'flex', gap: '20px', alignItems: 'center' }}>
@@ -117,7 +117,7 @@ const StoreWants = () => {
                     <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', background: `${statusColors[want.status]}22`, color: statusColors[want.status], textTransform: 'uppercase' }}>{want.status}</span>
                   </div>
                   {want.description && <p style={{ color: 'rgba(255,255,255,0.6)', margin: '5px 0', fontSize: '14px' }}>{want.description}</p>}
-                  <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0, fontSize: '12px' }}>Requested by {want.requested_by_name}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '12px' }}>Requested by {want.requested_by_name}</p>
                 </div>
                 {want.image_url && (
                   <img src={want.image_url} alt={want.title} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />

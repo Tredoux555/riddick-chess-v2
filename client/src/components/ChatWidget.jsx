@@ -94,7 +94,7 @@ const ChatWidget = ({ user }) => {
           {/* Messages */}
           <div style={{ flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {messages.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: '50px' }}>No messages yet. Say hi! 👋</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: '50px' }}>No messages yet. Say hi! 👋</p>
             ) : (
               messages.map(msg => (
                 <div

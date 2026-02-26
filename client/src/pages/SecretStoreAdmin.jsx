@@ -456,7 +456,7 @@ const SecretStoreAdmin = () => {
 
             <h2 style={{ color: '#fff', marginBottom: '15px' }}>📦 Pending Orders</h2>
             {orders.filter(o => o.status === 'pending').length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No pending orders</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No pending orders</p>
             ) : (
               orders.filter(o => o.status === 'pending').map(order => (
                 <div key={order.id} style={{ background: 'rgba(251,191,36,0.1)', padding: '20px', borderRadius: '12px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
@@ -464,7 +464,7 @@ const SecretStoreAdmin = () => {
                     <h3 style={{ color: '#fff', margin: '0 0 5px' }}>{order.product_name}</h3>
                     <p style={{ color: '#fbbf24', fontSize: '20px', fontWeight: 'bold', margin: '0 0 5px' }}>¥{parseFloat(order.product_price).toFixed(2)}</p>
                     <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 5px' }}>👤 {order.buyer_name} ({order.buyer_email})</p>
-                    <small style={{ color: 'rgba(255,255,255,0.4)' }}>Ordered: {new Date(order.ordered_at).toLocaleString()}</small>
+                    <small style={{ color: 'rgba(255,255,255,0.7)' }}>Ordered: {new Date(order.ordered_at).toLocaleString()}</small>
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => markDelivered(order.id)} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✅ Mark Delivered</button>
@@ -476,14 +476,14 @@ const SecretStoreAdmin = () => {
 
             <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>✅ Delivered Orders</h2>
             {orders.filter(o => o.status === 'delivered').length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No delivered orders yet</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No delivered orders yet</p>
             ) : (
               orders.filter(o => o.status === 'delivered').map(order => (
                 <div key={order.id} style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ color: '#fff' }}>{order.product_name}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>¥{parseFloat(order.product_price).toFixed(2)}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>{order.buyer_name}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', marginLeft: '15px' }}>¥{parseFloat(order.product_price).toFixed(2)}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', marginLeft: '15px' }}>{order.buyer_name}</span>
                   </div>
                   <button onClick={() => deleteOrder(order.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '5px 15px' }}>🗑</button>
                 </div>
@@ -509,7 +509,7 @@ const SecretStoreAdmin = () => {
               </select>
             </div>
             
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
               💡 Tip: Set your default currency to where you price your products. Customers can switch currencies in the store and see converted prices.
             </p>
           </div>
@@ -527,19 +527,19 @@ const SecretStoreAdmin = () => {
                 <input style={{ ...inputStyle, width: '120px' }} placeholder="Uses (-1=∞)" type="number" value={discountForm.uses_left} onChange={e => setDiscountForm({...discountForm, uses_left: e.target.value})} />
                 <button onClick={addDiscount} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>Add</button>
               </div>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '8px' }}>Uses: -1 means unlimited uses</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '8px' }}>Uses: -1 means unlimited uses</p>
             </div>
             
             <h3 style={{ color: '#fff', marginBottom: '10px' }}>Active Codes</h3>
             {discounts.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No discount codes yet</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No discount codes yet</p>
             ) : (
               discounts.map(d => (
                 <div key={d.id} style={{ background: d.active ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '18px' }}>{d.code}</span>
                     <span style={{ color: '#22c55e', marginLeft: '15px' }}>{d.percent_off}% OFF</span>
-                    <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '15px' }}>Uses left: {d.uses_left === -1 ? '∞' : d.uses_left}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', marginLeft: '15px' }}>Uses left: {d.uses_left === -1 ? '∞' : d.uses_left}</span>
                     {!d.active && <span style={{ color: '#ef4444', marginLeft: '15px' }}>(Disabled)</span>}
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -571,8 +571,8 @@ const SecretStoreAdmin = () => {
             {pending.map(u => (
               <div key={u.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span>
-                  {u.reason && <p style={{ color: 'rgba(255,255,255,0.4)', margin: '5px 0 0', fontSize: '14px' }}>"{u.reason}"</p>}
+                  <strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.7)' }}>{u.email}</span>
+                  {u.reason && <p style={{ color: 'rgba(255,255,255,0.7)', margin: '5px 0 0', fontSize: '14px' }}>"{u.reason}"</p>}
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => approve(u.id)} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓</button>
@@ -586,7 +586,7 @@ const SecretStoreAdmin = () => {
             <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>✅ Approved ({approved.length})</h2>
             {approved.map(u => (
               <div key={u.id} style={{ background: 'rgba(34,197,94,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span></div>
+                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.7)' }}>{u.email}</span></div>
                 <button onClick={() => deleteUser(u.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
               </div>
             ))}
@@ -594,7 +594,7 @@ const SecretStoreAdmin = () => {
             <h2 style={{ color: '#fff', margin: '30px 0 15px' }}>❌ Rejected ({rejected.length})</h2>
             {rejected.map(u => (
               <div key={u.id} style={{ background: 'rgba(239,68,68,0.1)', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.5)' }}>{u.email}</span></div>
+                <div><strong style={{ color: '#fff' }}>{u.name}</strong> - <span style={{ color: 'rgba(255,255,255,0.7)' }}>{u.email}</span></div>
                 <button onClick={() => deleteUser(u.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
               </div>
             ))}
@@ -664,8 +664,8 @@ const SecretStoreAdmin = () => {
                       <span style={{ fontSize: '12px', background: p.stock > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: p.stock > 0 ? '#22c55e' : '#ef4444', padding: '4px 8px', borderRadius: '4px' }}>📦 {p.stock || 0} in stock</span>
                     </div>
                     <h3 style={{ color: '#fff', margin: '10px 0 5px' }}>{p.name}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
-                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>CNY</span></p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 10px' }}>{p.description || 'No description'}</p>
+                    <p style={{ color: '#22c55e', fontSize: '20px', fontWeight: 'bold', margin: '0 0 15px' }}>¥{p.price.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>CNY</span></p>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => startEditProduct(p)} style={{ ...btnStyle, flex: 1, background: '#8b5cf6', color: '#fff' }}>✏️ Edit</button>
                       <button onClick={() => deleteProduct(p.id)} style={{ ...btnStyle, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>🗑</button>
@@ -674,7 +674,7 @@ const SecretStoreAdmin = () => {
                 </div>
               ))}
             </div>
-            {products.length === 0 && <p style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px' }}>No products yet. Add your first product!</p>}
+            {products.length === 0 && <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', padding: '40px' }}>No products yet. Add your first product!</p>}
           </>
         )}
 
@@ -682,14 +682,14 @@ const SecretStoreAdmin = () => {
           <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
             <h2 style={{ color: '#fff', marginBottom: '20px' }}>🙏 Product Requests</h2>
             {wants.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No requests yet</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No requests yet</p>
             ) : (
               wants.map(want => (
                 <div key={want.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
                     <h3 style={{ color: '#fff', margin: '0 0 5px' }}>{want.title}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '14px' }}>{want.description}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', margin: '5px 0 0', fontSize: '12px' }}>By: {want.requested_by_name} | Votes: {want.votes} | Status: {want.status}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>{want.description}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', margin: '5px 0 0', fontSize: '12px' }}>By: {want.requested_by_name} | Votes: {want.votes} | Status: {want.status}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={() => updateWantStatus(want.id, 'approved')} style={{ ...btnStyle, background: '#22c55e', color: '#fff' }}>✓ Approve</button>
@@ -757,7 +757,7 @@ const SecretStoreAdmin = () => {
           <div style={{ background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '12px' }}>
             <h2 style={{ color: '#fff', marginBottom: '20px' }}>⭐ Loyalty Leaderboard</h2>
             {loyaltyUsers.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)' }}>No loyalty data yet</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No loyalty data yet</p>
             ) : (
               loyaltyUsers.map((u, i) => (
                 <div key={u.id} style={{ background: i === 0 ? 'rgba(251,191,36,0.2)' : 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -765,12 +765,12 @@ const SecretStoreAdmin = () => {
                     <span style={{ fontSize: '24px' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '⭐'}</span>
                     <div>
                       <h3 style={{ color: '#fff', margin: 0 }}>{u.user_name || u.user_email}</h3>
-                      <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '14px' }}>{u.user_email}</p>
+                      <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '14px' }}>{u.user_email}</p>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <p style={{ color: '#fbbf24', margin: 0, fontWeight: 'bold' }}>{u.points} pts</p>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '12px' }}>Spent: ¥{parseFloat(u.total_spent).toFixed(2)}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '12px' }}>Spent: ¥{parseFloat(u.total_spent).toFixed(2)}</p>
                   </div>
                 </div>
               ))
@@ -786,7 +786,7 @@ const SecretStoreAdmin = () => {
                 {chats.map(chat => (
                   <div key={chat.user_email} onClick={() => loadChatMessages(chat.user_email)} style={{ padding: '10px', background: selectedChat === chat.user_email ? '#8b5cf6' : 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                     <p style={{ color: '#fff', margin: 0, fontWeight: 'bold' }}>{chat.user_name || 'Unknown'}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '12px' }}>{chat.user_email}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '12px' }}>{chat.user_email}</p>
                   </div>
                 ))}
               </div>
@@ -806,7 +806,7 @@ const SecretStoreAdmin = () => {
                     </div>
                   </>
                 ) : (
-                  <p style={{ color: 'rgba(255,255,255,0.4)' }}>Select a chat to view</p>
+                  <p style={{ color: 'rgba(255,255,255,0.7)' }}>Select a chat to view</p>
                 )}
               </div>
             </div>

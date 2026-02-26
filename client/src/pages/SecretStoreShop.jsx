@@ -281,9 +281,9 @@ const SecretStoreShop = () => {
 
         {/* Products Grid */}
         {loading ? (
-          <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '60px' }}>Loading products...</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', padding: '60px' }}>Loading products...</p>
         ) : filteredProducts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.5)' }}>
+          <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.7)' }}>
             {products.length === 0 ? (
               <>
                 <h2 style={{ marginBottom: '10px' }}>🚧 Coming Soon!</h2>
@@ -326,17 +326,17 @@ const SecretStoreShop = () => {
                     </span>
                   </div>
                   <h3 style={{ color: '#fff', margin: '0 0 8px', fontSize: '18px' }}>{p.name}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: '0 0 15px', minHeight: '40px' }}>{p.description || 'No description'}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: '0 0 15px', minHeight: '40px' }}>{p.description || 'No description'}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       {p.onSale && (
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textDecoration: 'line-through', marginRight: '8px' }}>{symbol}{p.regularPrice.toFixed(2)}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', textDecoration: 'line-through', marginRight: '8px' }}>{symbol}{p.regularPrice.toFixed(2)}</span>
                       )}
                       <span style={{ color: activeDiscount ? '#f59e0b' : '#22c55e', fontSize: '24px', fontWeight: 'bold' }}>
                         {symbol}{getDiscountedPrice(p.price).toFixed(2)}
                       </span>
                       {activeDiscount && (
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginLeft: '5px' }}>(-{activeDiscount.percent_off}%)</span>
+                        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginLeft: '5px' }}>(-{activeDiscount.percent_off}%)</span>
                       )}
                     </div>
                     <button 

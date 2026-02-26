@@ -31,7 +31,7 @@ const FakeAdmin = () => {
       }}>
         HA IDIOT
       </h1>
-      <p style={{ color: '#666', marginTop: '30px', fontSize: '14px' }}>
+      <p style={{ color: '#b0b0c4', marginTop: '30px', fontSize: '14px' }}>
         Nice try though 😂
       </p>
     </div>

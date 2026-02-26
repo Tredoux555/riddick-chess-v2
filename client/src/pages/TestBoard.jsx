@@ -351,7 +351,7 @@ const TestBoard = () => {
             <option value="large">Large</option>
           </select>
 
-          <div style={{ marginLeft: 'auto', color: '#666', fontSize: 12 }}>
+          <div style={{ marginLeft: 'auto', color: '#b0b0c4', fontSize: 12 }}>
             <b>1</b>=Reset <b>2</b>=♙ <b>3</b>=♖ <b>4</b>=♘ <b>5</b>=♗ <b>6</b>=♕ <b>7</b>=♔ <b>0</b>=Clear arrows
           </div>
         </div>
@@ -403,11 +403,11 @@ const TestBoard = () => {
   return (
     <div style={{ padding: 20, maxWidth: 1100, margin: '0 auto', color: 'white', position: 'relative' }}>
       <h1 style={{ display: 'flex', alignItems: 'center', gap: 12 }}><FaChessBoard /> Test Board</h1>
-      <p style={{ color: '#888', marginBottom: 20 }}>Record chess lessons with your webcam! Your face appears live in the corner.</p>
+      <p style={{ color: '#c0c0d0', marginBottom: 20 }}>Record chess lessons with your webcam! Your face appears live in the corner.</p>
 
       {/* Controls Bar */}
       <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px 20px', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 15, flexWrap: 'wrap' }}>
-        <span style={{ color: '#aaa' }}>Camera position:</span>
+        <span style={{ color: '#d0d0e0' }}>Camera position:</span>
         <select value={pipPosition} onChange={e => setPipPosition(e.target.value)} style={sel}>
           <option value="top-right">Top Right</option>
           <option value="top-left">Top Left</option>
@@ -453,7 +453,7 @@ const TestBoard = () => {
         {/* Piece Palette */}
         <div>
           <h3 style={{ marginBottom: 15 }}>Pieces</h3>
-          <p style={{ color: '#888', fontSize: 14, marginBottom: 15 }}>Click to select, then click square to place.<br/>Right-click two squares to draw arrow.</p>
+          <p style={{ color: '#c0c0d0', fontSize: 14, marginBottom: 15 }}>Click to select, then click square to place.<br/>Right-click two squares to draw arrow.</p>
           
           {selectedPiece && (
             <div style={{ marginBottom: 15, padding: 10, background: '#769656', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -464,25 +464,25 @@ const TestBoard = () => {
           )}
 
           <div style={{ marginBottom: 20 }}>
-            <h4 style={{ color: '#aaa', marginBottom: 10 }}>White</h4>
+            <h4 style={{ color: '#d0d0e0', marginBottom: 10 }}>White</h4>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{PIECES.white.map(p => <PieceBtn key={p} piece={p} />)}</div>
           </div>
           <div>
-            <h4 style={{ color: '#aaa', marginBottom: 10 }}>Black</h4>
+            <h4 style={{ color: '#d0d0e0', marginBottom: 10 }}>Black</h4>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{PIECES.black.map(p => <PieceBtn key={p} piece={p} />)}</div>
           </div>
 
           {/* FEN */}
           <div style={{ marginTop: 25 }}>
-            <h4 style={{ color: '#aaa', marginBottom: 10 }}>FEN</h4>
+            <h4 style={{ color: '#d0d0e0', marginBottom: 10 }}>FEN</h4>
             <input type="text" value={position} onChange={e => { setPosition(e.target.value); setHistory([...history, e.target.value]); }}
               style={{ width: '100%', padding: 10, background: '#2a2a2a', border: '1px solid #444', borderRadius: 6, color: 'white', fontSize: 12, fontFamily: 'monospace' }} />
           </div>
 
           {/* Hotkeys box */}
           <div style={{ marginTop: 25, padding: 15, background: 'rgba(118,150,86,0.2)', borderRadius: 8, border: '1px solid rgba(118,150,86,0.4)' }}>
-            <h4 style={{ color: '#769656', marginBottom: 8 }}>⌨️ Recording Hotkeys</h4>
-            <p style={{ color: '#aaa', fontSize: 13, lineHeight: 1.6 }}>
+            <h4 style={{ color: '#95cc75', marginBottom: 8 }}>⌨️ Recording Hotkeys</h4>
+            <p style={{ color: '#d0d0e0', fontSize: 13, lineHeight: 1.6 }}>
               <b>1</b> = Reset board<br/>
               <b>2</b> = Pawn &nbsp; <b>3</b> = Rook &nbsp; <b>4</b> = Knight<br/>
               <b>5</b> = Bishop &nbsp; <b>6</b> = Queen &nbsp; <b>7</b> = King<br/>
@@ -493,7 +493,7 @@ const TestBoard = () => {
           {/* Recording tip */}
           <div style={{ marginTop: 20, padding: 15, background: 'rgba(239,68,68,0.1)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)' }}>
             <h4 style={{ color: '#ef4444', marginBottom: 8 }}>📹 How to Record</h4>
-            <p style={{ color: '#aaa', fontSize: 13, lineHeight: 1.6 }}>
+            <p style={{ color: '#d0d0e0', fontSize: 13, lineHeight: 1.6 }}>
               1. Click "Start Recording Mode"<br/>
               2. Allow camera access<br/>
               3. Click "Start Recording" → select "This Tab"<br/>

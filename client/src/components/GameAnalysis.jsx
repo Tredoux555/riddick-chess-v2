@@ -50,7 +50,7 @@ const CLASSIFICATIONS = {
   inaccuracy: { icon: '?!', color: '#f7c631', bg: '#f7c63120', label: 'Inaccuracy' },
   mistake: { icon: '?', color: '#e6912c', bg: '#e6912c20', label: 'Mistake' },
   blunder: { icon: '??', color: '#ca3431', bg: '#ca343120', label: 'Blunder' },
-  forced: { icon: '→', color: '#888888', bg: '#88888820', label: 'Forced' },
+  forced: { icon: '→', color: '#c0c0d0', bg: '#88888820', label: 'Forced' },
   great: { icon: '!', color: '#96bc4b', bg: '#96bc4b20', label: 'Great' }
 };
 
@@ -160,7 +160,7 @@ const GameAnalysis = () => {
       <div style={styles.loadingBox}>
         <div style={styles.spinner}></div>
         <h2 style={{ color: '#fff', margin: '20px 0 10px' }}>Analyzing your game...</h2>
-        <p style={{ color: '#888' }}>This may take a minute</p>
+        <p style={{ color: '#c0c0d0' }}>This may take a minute</p>
       </div>
     </div>
   );
@@ -271,7 +271,7 @@ const GameAnalysis = () => {
                 )}
               </div>
             ) : (
-              <span style={{color: '#888'}}>Starting position</span>
+              <span style={{color: '#c0c0d0'}}>Starting position</span>
             )}
           </div>
 
@@ -325,7 +325,7 @@ const GameAnalysis = () => {
               onClick={() => setCurrentMoveIndex(0)}
               style={{...styles.moveItem, background: currentMoveIndex === 0 ? '#444' : 'transparent'}}
             >
-              <span style={{color: '#888'}}>Start</span>
+              <span style={{color: '#c0c0d0'}}>Start</span>
             </div>
             {analysis.moves.map((move, idx) => {
               const config = CLASSIFICATIONS[move.classification] || CLASSIFICATIONS.good;
@@ -346,7 +346,7 @@ const GameAnalysis = () => {
                   <span style={{...styles.moveClassIcon, color: config.color}}>{config.icon}</span>
                   <span style={styles.moveNumber}>{moveNum}.{move.color === 'black' ? '..' : ''}</span>
                   <span style={styles.moveSan}>{moveSan}</span>
-                  <span style={{...styles.moveEval, color: parseFloat(move.eval_after || move.evalAfter) > 0 ? '#fff' : '#888'}}>
+                  <span style={{...styles.moveEval, color: parseFloat(move.eval_after || move.evalAfter) > 0 ? '#fff' : '#c0c0d0'}}>
                     {formatEval(move.eval_after || move.evalAfter)}
                   </span>
                 </div>
@@ -382,7 +382,7 @@ const styles = {
   playerIcon: { fontSize: '20px' },
   playerName: { color: '#fff', fontWeight: '600' },
   accuracyValue: { fontSize: '32px', fontWeight: '700' },
-  accuracyLabel: { color: '#888', fontSize: '12px', marginTop: '4px' },
+  accuracyLabel: { color: '#c0c0d0', fontSize: '12px', marginTop: '4px' },
   moveBreakdown: { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginTop: '12px' },
   breakdownItem: { display: 'flex', alignItems: 'center', gap: '4px' },
   classIcon: { fontSize: '14px', fontWeight: '700' },
@@ -392,23 +392,23 @@ const styles = {
   classificationIcon: { fontSize: '18px', fontWeight: '700' },
   moveText: { color: '#fff', fontWeight: '600', fontSize: '16px' },
   classificationLabel: { fontSize: '14px', fontWeight: '600' },
-  bestMoveHint: { color: '#888', fontSize: '13px', marginLeft: 'auto' },
+  bestMoveHint: { color: '#c0c0d0', fontSize: '13px', marginLeft: 'auto' },
   boardWrapper: { display: 'flex', gap: '0' },
   evalBar: { width: '24px', background: '#000', borderRadius: '4px 0 0 4px', position: 'relative', overflow: 'hidden' },
   evalBarWhite: { position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', transition: 'height 0.3s ease' },
-  evalText: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', color: '#888', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' },
+  evalText: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-90deg)', color: '#c0c0d0', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' },
   boardContainer: { flex: 1 },
   controls: { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '12px' },
   controlBtn: { background: '#444', border: 'none', color: '#fff', width: '44px', height: '44px', borderRadius: '4px', fontSize: '16px', cursor: 'pointer' },
   playBtn: { width: '60px' },
   progressBar: { height: '4px', background: '#444', borderRadius: '2px', marginTop: '12px', overflow: 'hidden' },
   progressFill: { height: '100%', background: '#81b64c', transition: 'width 0.2s' },
-  moveCounter: { textAlign: 'center', color: '#888', fontSize: '12px', marginTop: '8px' },
+  moveCounter: { textAlign: 'center', color: '#c0c0d0', fontSize: '12px', marginTop: '8px' },
   movesTitle: { color: '#fff', padding: '12px 16px', margin: 0, borderBottom: '1px solid #444', fontSize: '14px' },
   movesList: { maxHeight: '500px', overflowY: 'auto' },
   moveItem: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #3a3835' },
   moveClassIcon: { width: '20px', textAlign: 'center', fontWeight: '700', fontSize: '12px' },
-  moveNumber: { color: '#888', fontSize: '12px', width: '32px' },
+  moveNumber: { color: '#c0c0d0', fontSize: '12px', width: '32px' },
   moveSan: { color: '#fff', fontSize: '14px', fontWeight: '500', flex: 1 },
   moveEval: { fontSize: '12px', fontFamily: 'monospace' },
   loadingContainer: { minHeight: '100vh', background: '#262522', display: 'flex', alignItems: 'center', justifyContent: 'center' },
