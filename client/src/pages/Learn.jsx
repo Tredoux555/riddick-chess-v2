@@ -1334,9 +1334,13 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           min-height: 100vh;
           background: var(--bg-primary);
           padding: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
         .lesson-player > * {
           max-width: 100%;
+          width: 100%;
         }
         .player-header {
           display: flex;
@@ -1380,11 +1384,12 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
         }
         .video-container {
           max-width: 500px;
-          margin: 0 auto;
+          margin: 0 auto !important;
           text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
+          width: 100%;
         }
         .text-bubble {
           background: var(--bg-card);
@@ -1412,10 +1417,11 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-          margin: 0 auto;
+          margin: 0 auto !important;
           display: flex;
           justify-content: center;
           align-items: center;
+          width: fit-content;
         }
         .board-container.pulse {
           animation: boardPulse 2s infinite;
@@ -1580,11 +1586,12 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
       <style jsx>{`
         .puzzle-challenge {
           max-width: 500px;
-          margin: 0 auto;
+          margin: 0 auto !important;
           text-align: center;
           display: flex;
           flex-direction: column;
           align-items: center;
+          width: 100%;
         }
         .puzzle-challenge h2 {
           font-size: 1.8rem;
@@ -1601,6 +1608,8 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          margin: 0 auto !important;
+          width: fit-content;
           margin-bottom: 24px;
         }
         .hint-btn {
