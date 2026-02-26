@@ -49,7 +49,10 @@ const Puzzles = () => {
   };
 
   function onDrop(sourceSquare, targetSquare) {
-    if (solved || failed || loading || !puzzle) return false;
+    if (solved || loading || !puzzle) return false;
+
+    // Reset failed state when player tries again
+    if (failed) setFailed(false);
 
     const move = sourceSquare + targetSquare;
     const expectedMove = solution[moveIndex];
@@ -161,6 +164,7 @@ const Puzzles = () => {
               customSquareStyles={squareStyles}
               arePiecesDraggable={true}
               isDraggablePiece={() => true}
+              snapToCursor={true}
               customPieces={chessComPieces()}
               customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
               customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
@@ -173,7 +177,7 @@ const Puzzles = () => {
             </div>
           )}
           
-          {failed && (
+          {failed && !solved && (
             <div className="result-card failed">
               <FaTimes /> Incorrect - Try again!
             </div>
