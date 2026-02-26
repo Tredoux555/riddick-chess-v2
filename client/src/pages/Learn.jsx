@@ -958,7 +958,7 @@ const Learn = () => {
         })}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .learn-page {
           max-width: 600px;
           margin: 0 auto;
@@ -1329,7 +1329,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .lesson-player {
           min-height: 100vh;
           background: var(--bg-primary);
@@ -1583,7 +1583,7 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
         <p className="hint-text">{puzzle.hint}</p>
       )}
 
-      <style jsx>{`
+      <style>{`
         .puzzle-challenge {
           max-width: 500px;
           margin: 0 auto !important;
@@ -1715,7 +1715,7 @@ const PracticeBoard = ({ customPieces, currentTheme, onExit }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .practice-board-page { max-width: 800px; margin: 0 auto; padding: 20px; }
         .practice-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
         .practice-header h2 { font-size: 1.5rem; }
