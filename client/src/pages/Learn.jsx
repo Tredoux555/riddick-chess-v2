@@ -1248,7 +1248,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
             {scene.subtext && <p>{scene.subtext}</p>}
           </div>
           
-          <div className={`board-container ${scene.animate || ''}`}>
+          <div className={`lesson-board-container ${scene.animate || ''}`}>
             <Chessboard
               position={currentFen}
               boardWidth={Math.min(400, window.innerWidth - 40)}
@@ -1413,7 +1413,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           color: var(--text-muted);
           font-size: 1rem;
         }
-        .board-container {
+        .lesson-board-container {
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
@@ -1423,13 +1423,13 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           align-items: center;
           width: fit-content;
         }
-        .board-container.pulse {
+        .lesson-board-container.pulse {
           animation: boardPulse 2s infinite;
         }
-        .board-container.bounce {
+        .lesson-board-container.bounce {
           animation: boardBounce 0.5s ease;
         }
-        .board-container.glow {
+        .lesson-board-container.glow {
           box-shadow: 0 0 30px rgba(255,215,0,0.5), 0 10px 40px rgba(0,0,0,0.3);
         }
         @keyframes boardPulse {
