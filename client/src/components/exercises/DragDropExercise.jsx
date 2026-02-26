@@ -128,7 +128,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
           font-family: 'Outfit', sans-serif;
         }
         .instruction {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 1.15rem;
           line-height: 1.6;
         }
@@ -161,7 +161,7 @@ const DragDropExercise = ({ exercise, onComplete, attempts }) => {
           background: rgba(99, 102, 241, 0.1);
           border: 1px solid rgba(99, 102, 241, 0.2);
           border-radius: 12px;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 0.95rem;
           backdrop-filter: blur(12px);
         }

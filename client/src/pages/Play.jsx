@@ -273,7 +273,7 @@ const Play = () => {
         .time-controls-section h2 {
           margin-bottom: 16px;
           font-size: 1.1rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
         }
         .play-actions {
           display: flex;
@@ -290,7 +290,7 @@ const Play = () => {
           margin: 0 auto 16px;
         }
         .search-info {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.9rem;
         }
         .online-section {
@@ -330,7 +330,7 @@ const Play = () => {
           font-weight: 600;
         }
         .no-users, .no-friends {
-          color: var(--text-muted);
+          color: #c8c8dc;
           text-align: center;
           padding: 24px;
         }
@@ -367,7 +367,7 @@ const Play = () => {
         .close-btn {
           background: none;
           border: none;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           font-size: 1.25rem;
         }
@@ -378,7 +378,7 @@ const Play = () => {
         }
         .time-info {
           margin-bottom: 16px;
-          color: var(--text-secondary);
+          color: #e0e0ee;
         }
         .friends-list {
           display: flex;

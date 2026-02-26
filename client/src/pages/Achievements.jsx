@@ -44,12 +44,12 @@ const Achievements = () => {
 
   const getRarityColor = (rarity) => {
     switch (rarity) {
-      case 'common': return '#9ca3af';
+      case 'common': return '#c8d0e0';
       case 'uncommon': return '#22c55e';
       case 'rare': return '#3b82f6';
       case 'epic': return '#a855f7';
       case 'legendary': return '#f59e0b';
-      default: return '#9ca3af';
+      default: return '#c8d0e0';
     }
   };
 
@@ -183,7 +183,7 @@ const Achievements = () => {
           color: var(--accent-primary);
         }
         .progress-stat .stat-label {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.875rem;
         }
         .progress-divider {
@@ -214,7 +214,7 @@ const Achievements = () => {
           background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-md);
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           white-space: nowrap;
         }
@@ -260,7 +260,7 @@ const Achievements = () => {
           margin-bottom: 4px;
         }
         .achievement-desc {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 0.875rem;
           margin-bottom: 8px;
         }
@@ -274,7 +274,7 @@ const Achievements = () => {
           font-weight: 500;
         }
         .points {
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         .achievement-status {
           flex-shrink: 0;
@@ -284,14 +284,14 @@ const Achievements = () => {
           font-size: 1.25rem;
         }
         .locked-icon {
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         .earned-date {
           position: absolute;
           bottom: 8px;
           right: 12px;
           font-size: 0.7rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
       `}</style>
     </div>

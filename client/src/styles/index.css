@@ -258,7 +258,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .page-subtitle {
-  color: var(--text-secondary);
+  color: #e0e0ee;
   font-size: 1.1rem;
   max-width: 600px;
   margin: 0 auto;
@@ -341,7 +341,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .nav-link {
-  color: var(--text-secondary);
+  color: #e0e0ee;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
@@ -433,7 +433,7 @@ h4 { font-size: 1.125rem; }
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--text-secondary);
+  color: #e0e0ee;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   font-size: 0.95rem;
@@ -550,7 +550,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .card-body {
-  color: var(--text-secondary);
+  color: #e0e0ee;
 }
 
 /* Card Variants */
@@ -678,7 +678,7 @@ h4 { font-size: 1.125rem; }
 /* Ghost Button */
 .btn-ghost {
   background: transparent;
-  color: var(--text-secondary);
+  color: #e0e0ee;
 }
 
 .btn-ghost:hover {
@@ -718,7 +718,7 @@ h4 { font-size: 1.125rem; }
   display: block;
   margin-bottom: var(--spacing-xs);
   font-weight: 500;
-  color: var(--text-secondary);
+  color: #e0e0ee;
   font-size: 0.9rem;
 }
 
@@ -742,7 +742,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .form-input::placeholder {
-  color: var(--text-muted);
+  color: #c8c8dc;
 }
 
 .form-input:disabled {
@@ -856,7 +856,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .player-rating {
-  color: var(--text-muted);
+  color: #c8c8dc;
   font-size: 0.9rem;
   font-family: var(--font-mono);
 }
@@ -920,7 +920,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .move-number {
-  color: var(--text-muted);
+  color: #c8c8dc;
   width: 30px;
   font-family: var(--font-mono);
   font-size: 0.9rem;
@@ -1023,7 +1023,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .time-control-btn .label {
-  color: var(--text-muted);
+  color: #c8c8dc;
   font-size: 0.85rem;
   margin-top: var(--spacing-xs);
   text-transform: uppercase;
@@ -1179,7 +1179,7 @@ h4 { font-size: 1.125rem; }
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-lg);
-  color: var(--text-secondary);
+  color: #e0e0ee;
   font-size: 0.9rem;
 }
 
@@ -1204,7 +1204,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .standings-table th {
-  color: var(--text-muted);
+  color: #c8c8dc;
   font-weight: 500;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -1276,7 +1276,7 @@ h4 { font-size: 1.125rem; }
 }
 
 .achievement-desc {
-  color: var(--text-muted);
+  color: #c8c8dc;
   font-size: 0.85rem;
 }
 
@@ -1348,8 +1348,8 @@ h4 { font-size: 1.125rem; }
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }
-.text-muted { color: var(--text-muted); }
-.text-secondary { color: var(--text-secondary); }
+.text-muted { color: #c8c8dc; }
+.text-secondary { color: #e0e0ee; }
 .text-success { color: var(--accent-success); }
 .text-danger { color: var(--accent-danger); }
 .text-warning { color: var(--accent-warning); }
@@ -1518,7 +1518,7 @@ h4 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  color: #c8c8dc;
   transition: all var(--transition-fast);
 }
 
@@ -1639,7 +1639,7 @@ h4 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   margin: var(--spacing-lg) 0;
-  color: var(--text-muted);
+  color: #c8c8dc;
   font-size: 0.85rem;
 }
 
@@ -1668,7 +1668,7 @@ h4 { font-size: 1.125rem; }
 .auth-footer {
   text-align: center;
   margin-top: var(--spacing-lg);
-  color: var(--text-secondary);
+  color: #e0e0ee;
 }
 
 
@@ -1802,7 +1802,7 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .dropdown-item {
-  color: var(--text-secondary) !important;
+  color: #3d4f47 !important;
 }
 
 :root[data-theme="light"] .dropdown-item:hover {
@@ -1861,7 +1861,7 @@ h4 { font-size: 1.125rem; }
 }
 
 :root[data-theme="light"] .auth-divider {
-  color: var(--text-muted) !important;
+  color: #5c6e64 !important;
 }
 
 :root[data-theme="light"] table {
@@ -1909,7 +1909,7 @@ h4 { font-size: 1.125rem; }
 
 :root[data-theme="light"] input::placeholder,
 :root[data-theme="light"] .form-input::placeholder {
-  color: var(--text-muted) !important;
+  color: #5c6e64 !important;
 }
 
 :root[data-theme="light"] .sidebar,
@@ -1920,7 +1920,7 @@ h4 { font-size: 1.125rem; }
 
 :root[data-theme="light"] .sidebar a,
 :root[data-theme="light"] .admin-sidebar a {
-  color: var(--text-secondary) !important;
+  color: #3d4f47 !important;
 }
 
 :root[data-theme="light"] .sidebar a.active,
@@ -1958,4 +1958,315 @@ h4 { font-size: 1.125rem; }
 .theme-toggle:hover {
   background: var(--bg-hover);
   transform: scale(1.1);
+}
+
+/* ============================================
+   LIGHT MODE: NUCLEAR OVERRIDE
+   Force white backgrounds + dark text on EVERYTHING
+   ============================================ */
+
+/* STEP 1: Force the entire page white */
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: #f8f9f5 !important;
+  background-image: none !important;
+  color: #1b2420 !important;
+}
+
+/* STEP 2: Force ALL text dark */
+html[data-theme="light"] p,
+html[data-theme="light"] span,
+html[data-theme="light"] div,
+html[data-theme="light"] li,
+html[data-theme="light"] td,
+html[data-theme="light"] th,
+html[data-theme="light"] label,
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] h5,
+html[data-theme="light"] h6,
+html[data-theme="light"] a {
+  color: #1b2420 !important;
+}
+
+/* STEP 3: Force ALL card/container backgrounds white */
+html[data-theme="light"] .feature-card,
+html[data-theme="light"] .feature-card-primary,
+html[data-theme="light"] .bot-card,
+html[data-theme="light"] .action-card,
+html[data-theme="light"] .action-card-primary,
+html[data-theme="light"] .dash-card,
+html[data-theme="light"] .glass-card,
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .card {
+  background: #ffffff !important;
+  border: 1px solid #d4d8d0 !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="light"] .feature-card:hover,
+html[data-theme="light"] .bot-card:hover,
+html[data-theme="light"] .action-card:hover {
+  border-color: #2e7d32 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* STEP 4: Secondary/muted text slightly lighter */
+html[data-theme="light"] .feature-card p,
+html[data-theme="light"] .hero-description,
+html[data-theme="light"] .section-subtitle,
+html[data-theme="light"] .cta-section p,
+html[data-theme="light"] .welcome-section p,
+html[data-theme="light"] .action-desc,
+html[data-theme="light"] .rating-type,
+html[data-theme="light"] .quick-link,
+html[data-theme="light"] .page-subtitle {
+  color: #3d4f47 !important;
+}
+
+html[data-theme="light"] .hero-stat-label,
+html[data-theme="light"] .bot-level,
+html[data-theme="light"] .stat-label,
+html[data-theme="light"] .tournament-date,
+html[data-theme="light"] .loading-text,
+html[data-theme="light"] .empty-text,
+html[data-theme="light"] .landing-footer {
+  color: #5c6e64 !important;
+}
+
+/* STEP 5: Accent colors → green */
+html[data-theme="light"] .feature-link,
+html[data-theme="light"] .card-link,
+html[data-theme="light"] .auth-link {
+  color: #1b5e20 !important;
+}
+
+html[data-theme="light"] .hero-badge {
+  background: rgba(46, 125, 50, 0.1) !important;
+  border-color: rgba(46, 125, 50, 0.3) !important;
+  color: #1b5e20 !important;
+}
+
+html[data-theme="light"] .hero-subtitle,
+html[data-theme="light"] .hero-stat-number {
+  color: #1b5e20 !important;
+}
+
+html[data-theme="light"] .hero-glow,
+html[data-theme="light"] .cta-glow,
+html[data-theme="light"] .welcome-glow {
+  background: radial-gradient(circle, rgba(46, 125, 50, 0.08) 0%, transparent 70%) !important;
+}
+
+html[data-theme="light"] .btn-primary-hero {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .btn-secondary-hero {
+  background: #ffffff !important;
+  color: #1b2420 !important;
+  border: 1px solid #d4d8d0 !important;
+}
+
+/* STEP 6: Section backgrounds */
+html[data-theme="light"] .cta-section {
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.06) 0%, rgba(76, 175, 80, 0.04) 100%) !important;
+  border-color: #d4d8d0 !important;
+}
+
+html[data-theme="light"] .landing-page,
+html[data-theme="light"] .dashboard,
+html[data-theme="light"] .features-section,
+html[data-theme="light"] .bots-showcase {
+  background: transparent !important;
+}
+
+/* STEP 7: Icon wraps keep their color */
+html[data-theme="light"] .feature-icon-wrap {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .feature-icon-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important; color: #fff !important; }
+html[data-theme="light"] .feature-icon-purple { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important; color: #fff !important; }
+html[data-theme="light"] .feature-icon-yellow { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important; color: #fff !important; }
+html[data-theme="light"] .feature-icon-cyan { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important; color: #fff !important; }
+html[data-theme="light"] .feature-icon-pink { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important; color: #fff !important; }
+html[data-theme="light"] .action-icon-wrap { background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important; color: #fff !important; }
+html[data-theme="light"] .action-icon-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important; color: #fff !important; }
+html[data-theme="light"] .action-icon-purple { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%) !important; color: #fff !important; }
+html[data-theme="light"] .action-icon-yellow { background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important; color: #fff !important; }
+
+html[data-theme="light"] .feature-card::before {
+  background: linear-gradient(90deg, #1b5e20, #2e7d32) !important;
+}
+
+/* STEP 8: Dashboard inner elements */
+html[data-theme="light"] .rating-item,
+html[data-theme="light"] .stat-box,
+html[data-theme="light"] .tournament-item,
+html[data-theme="light"] .quick-link {
+  background: #f0f1ec !important;
+}
+
+html[data-theme="light"] .rating-number {
+  color: #1b5e20 !important;
+}
+
+html[data-theme="light"] .stat-number {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html[data-theme="light"] .username-highlight {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html[data-theme="light"] .page-title {
+  background: linear-gradient(135deg, #1b5e20, #2e7d32) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* STEP 9: Navbar */
+html[data-theme="light"] .navbar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .nav-link {
+  color: #2c3e36 !important;
+}
+
+html[data-theme="light"] .nav-link.active,
+html[data-theme="light"] .nav-link:hover {
+  color: #1b5e20 !important;
+  background: rgba(46, 125, 50, 0.1) !important;
+}
+
+html[data-theme="light"] .navbar-brand span {
+  color: #1b2420 !important;
+}
+
+/* STEP 10: Forms & inputs */
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea,
+html[data-theme="light"] .form-input {
+  background: #f0f1ec !important;
+  border: 1px solid #d4d8d0 !important;
+  color: #1b2420 !important;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] .form-input::placeholder {
+  color: #8a9a90 !important;
+}
+
+/* STEP 11: Auth pages */
+html[data-theme="light"] .auth-card {
+  background: #ffffff !important;
+  border: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .auth-title {
+  background: linear-gradient(135deg, #1b5e20, #2e7d32) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html[data-theme="light"] .auth-footer {
+  color: #5c6e64 !important;
+}
+
+/* STEP 12: Dropdowns & modals */
+html[data-theme="light"] .user-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .dropdown-item {
+  color: #1b2420 !important;
+}
+
+html[data-theme="light"] .dropdown-item:hover {
+  background: #f0f1ec !important;
+  color: #1b5e20 !important;
+}
+
+html[data-theme="light"] .modal {
+  background: #ffffff !important;
+  border: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* STEP 13: Footer border */
+html[data-theme="light"] .landing-footer {
+  border-top: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .dash-card-header {
+  border-bottom: 1px solid #d4d8d0 !important;
+}
+
+/* STEP 14: Floating pieces */
+html[data-theme="light"] .floating-piece {
+  color: #2e7d32 !important;
+}
+
+/* STEP 15: Buttons */
+html[data-theme="light"] .btn-secondary,
+html[data-theme="light"] .user-button {
+  background: #f0f1ec !important;
+  color: #1b2420 !important;
+  border: 1px solid #d4d8d0 !important;
+}
+
+html[data-theme="light"] .btn-club {
+  color: #000 !important;
+}
+
+/* STEP 16: Sidebar */
+html[data-theme="light"] .sidebar,
+html[data-theme="light"] .admin-sidebar {
+  background: #ffffff !important;
+  border-color: #d4d8d0 !important;
+}
+
+html[data-theme="light"] .sidebar a,
+html[data-theme="light"] .admin-sidebar a {
+  color: #2c3e36 !important;
+}
+
+html[data-theme="light"] .sidebar a.active,
+html[data-theme="light"] .admin-sidebar a.active {
+  color: #1b5e20 !important;
+  background: rgba(46, 125, 50, 0.1) !important;
+}
+
+/* STEP 17: Tables */
+html[data-theme="light"] table {
+  background: #ffffff !important;
+}
+
+html[data-theme="light"] th {
+  background: #f0f1ec !important;
+}
+
+html[data-theme="light"] td {
+  border-color: #e4e6de !important;
+}
+
+html[data-theme="light"] tr:hover td {
+  background: #f0f1ec !important;
 }

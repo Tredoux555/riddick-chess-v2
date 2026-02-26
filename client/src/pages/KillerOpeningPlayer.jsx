@@ -438,7 +438,7 @@ const KillerOpeningPlayer = () => {
               <h4 style={styles.moveHistoryTitle}>Move History</h4>
               <div style={styles.moveList}>
                 {moveHistory.length === 0 ? (
-                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>No moves yet...</span>
+                  <span style={{ color: '#c8c8dc', fontSize: 13 }}>No moves yet...</span>
                 ) : (
                   moveHistory.map((move, i) => (
                     <span key={i} style={{
@@ -493,7 +493,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     textDecoration: 'none',
     fontSize: 14,
     fontWeight: 500,
@@ -519,7 +519,7 @@ const styles = {
   moveCount: {
     marginLeft: 8,
     fontSize: 12,
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
     fontWeight: 500,
   },
   modeRow: {
@@ -605,7 +605,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
     fontSize: 14,
     fontStyle: 'italic',
   },
@@ -619,7 +619,7 @@ const styles = {
     fontSize: 13,
     fontWeight: 700,
     margin: '0 0 8px',
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -636,7 +636,7 @@ const styles = {
     color: 'var(--text-primary)',
   },
   moveNum: {
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
     marginRight: 3,
     fontWeight: 700,
   },
@@ -676,7 +676,7 @@ const styles = {
     borderRadius: 8,
     padding: 12,
     fontSize: 13,
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     lineHeight: 1.5,
   },
 };

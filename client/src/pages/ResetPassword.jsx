@@ -141,7 +141,7 @@ const ResetPassword = () => {
         .key-icon { font-size: 48px; color: var(--accent-primary); margin-bottom: 16px; }
         .success-icon { font-size: 48px; color: #10b981; margin-bottom: 16px; }
         h1 { margin-bottom: 8px; }
-        p { color: var(--text-muted); margin-bottom: 24px; }
+        p { color: #c8c8dc; margin-bottom: 24px; }
         form { text-align: left; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 4px; font-size: 0.875rem; }

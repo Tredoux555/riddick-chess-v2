@@ -173,7 +173,7 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
 
         .progress-label {
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
           margin-bottom: 0.5rem;
           text-align: center;
           font-weight: 600;
@@ -259,7 +259,7 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
         }
 
         .text-bubble p {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 1.1rem;
           line-height: 1.6;
         }
@@ -366,7 +366,7 @@ const LessonPlayer = ({ lesson, onComplete, onExit }) => {
 
         .xp-earned {
           font-size: 1.3rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           margin-bottom: 2rem;
         }
 

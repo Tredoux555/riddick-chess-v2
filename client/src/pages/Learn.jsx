@@ -990,7 +990,7 @@ const Learn = () => {
         }
         .page-subtitle {
           text-align: center;
-          color: var(--text-muted);
+          color: #c8c8dc;
           margin-bottom: 40px;
         }
         .lesson-path {
@@ -1064,7 +1064,7 @@ const Learn = () => {
         .lesson-desc {
           display: block;
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         .lesson-xp {
           padding: 6px 12px;
@@ -1093,7 +1093,7 @@ class LessonErrorBoundary extends React.Component {
       return (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <h2>⚠️ Something went wrong</h2>
-          <p style={{ color: 'var(--text-muted)', marginTop: 12 }}>The lesson hit an error. Click below to go back.</p>
+          <p style={{ color: '#c8c8dc', marginTop: 12 }}>The lesson hit an error. Click below to go back.</p>
           <button onClick={() => { this.setState({ hasError: false }); this.props.onReset(); }} 
             style={{ marginTop: 20, padding: '12px 24px', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: '1rem' }}>
             ← Back to Lessons
@@ -1410,7 +1410,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           margin-bottom: 8px;
         }
         .text-bubble p {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 1rem;
         }
         .lesson-board-container {
@@ -1598,7 +1598,7 @@ const PuzzleChallenge = ({ puzzle, onComplete, customPieces, currentTheme }) => 
           margin-bottom: 8px;
         }
         .instruction {
-          color: var(--text-muted);
+          color: #c8c8dc;
           margin-bottom: 24px;
           font-size: 1.1rem;
         }
@@ -1699,7 +1699,7 @@ const PracticeBoard = ({ customPieces, currentTheme, onExit }) => {
           <h3>Moves</h3>
           <div className="move-list">
             {moveHistory.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)' }}>Make a move to start!</p>
+              <p style={{ color: '#c8c8dc' }}>Make a move to start!</p>
             ) : (
               moveHistory.map((move, i) => (
                 <span key={i} className={`move ${i % 2 === 0 ? 'white' : 'black'}`}>
@@ -1733,7 +1733,7 @@ const PracticeBoard = ({ customPieces, currentTheme, onExit }) => {
         .move { padding: 4px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem; }
         .move.white { background: rgba(255,255,255,0.1); }
         .move.black { background: rgba(0,0,0,0.2); }
-        .move-num { color: var(--text-muted); margin-right: 2px; }
+        .move-num { color: #c8c8dc; margin-right: 2px; }
         .turn-indicator { margin-top: 12px; padding: 8px; text-align: center; background: var(--bg-tertiary); border-radius: 8px; font-weight: 600; }
       `}</style>
     </div>

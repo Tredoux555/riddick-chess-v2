@@ -253,7 +253,7 @@ const Puzzles = () => {
         }
         .title-icon { font-size: 2.5rem; }
         .puzzle-subtitle {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           margin-top: 8px;
           position: relative;
           z-index: 1;
@@ -281,7 +281,7 @@ const Puzzles = () => {
           gap: 10px;
           margin-bottom: 16px;
           font-size: 1.1rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
         }
         .turn-dot {
           width: 14px;
@@ -372,7 +372,7 @@ const Puzzles = () => {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           margin-bottom: 12px;
         }
         .star-icon { color: #fbbf24; }
@@ -386,7 +386,7 @@ const Puzzles = () => {
           background-clip: text;
         }
         .rating-label {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.9rem;
           margin-top: 4px;
         }
@@ -433,7 +433,7 @@ const Puzzles = () => {
           z-index: 1;
         }
         .rush-desc {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 0.9rem;
           margin-top: 4px;
           position: relative;

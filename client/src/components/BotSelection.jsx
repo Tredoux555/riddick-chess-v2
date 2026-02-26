@@ -208,7 +208,7 @@ const BotSelection = () => {
 
         .bots-subtitle {
           font-size: 1.2rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           max-width: 500px;
           margin: 0 auto;
         }
@@ -288,7 +288,7 @@ const BotSelection = () => {
 
         .color-desc {
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
 
 
@@ -370,13 +370,13 @@ const BotSelection = () => {
 
         .elo-text {
           font-size: 0.95rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
         }
 
         .bot-personality {
           text-align: center;
           font-size: 0.9rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
           line-height: 1.5;
         }
 
@@ -420,7 +420,7 @@ const BotSelection = () => {
 
         .select-prompt {
           font-size: 1.1rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
 
         @media (max-width: 768px) {

@@ -123,7 +123,7 @@ const Login = () => {
 
         .auth-subtitle {
           text-align: center;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           margin-bottom: 24px;
         }
 

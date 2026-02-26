@@ -60,7 +60,7 @@ const Admin = () => {
         .admin-sidebar { width: 220px; background: var(--bg-card); padding: 24px; border-right: 1px solid var(--border-color); }
         .admin-sidebar h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; font-size: 1.25rem; }
         .admin-sidebar nav { display: flex; flex-direction: column; gap: 8px; }
-        .admin-sidebar a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius-md); color: var(--text-secondary); }
+        .admin-sidebar a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius-md); color: #e0e0ee; }
         .admin-sidebar a:hover, .admin-sidebar a.active { background: var(--bg-tertiary); color: var(--text-primary); }
         .admin-content { flex: 1; padding: 24px; overflow-y: auto; }
       `}</style>
@@ -180,7 +180,7 @@ const Dashboard = () => {
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .stat-card { background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); text-align: center; }
         .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent-primary); }
-        .stat-label { color: var(--text-muted); }
+        .stat-label { color: #c8c8dc; }
       `}</style>
     </div>
   );
@@ -564,7 +564,7 @@ const Users = () => {
         .users-table { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { color: var(--text-muted); font-weight: 500; }
+        th { color: #c8c8dc; font-weight: 500; }
         tr.banned { opacity: 0.6; background: rgba(239, 68, 68, 0.1); }
         .user-cell { display: flex; align-items: center; gap: 8px; }
         .admin-badge { color: gold; }
@@ -579,7 +579,7 @@ const Users = () => {
         .modal.small { max-width: 400px; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
-        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #c8c8dc; }
         .modal-body { display: flex; flex-direction: column; gap: 20px; }
         .user-info { background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); }
         .user-info p { margin: 4px 0; }
@@ -589,11 +589,11 @@ const Users = () => {
         .danger-zone { border-color: #ef4444; }
         .danger-zone h4 { color: #ef4444; }
         .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; margin-bottom: 4px; font-size: 0.875rem; color: var(--text-muted); }
+        .form-group label { display: block; margin-bottom: 4px; font-size: 0.875rem; color: #c8c8dc; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
         .result-box { background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-md); margin: 12px 0; }
         .result-box code { background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; }
-        .hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+        .hint { font-size: 0.75rem; color: #c8c8dc; margin-top: 8px; }
         .btn-warning { background: #f59e0b; color: white; }
       `}</style>
     </div>
@@ -704,9 +704,9 @@ const ClubMembers = () => {
               ))}
             </div>
           )}
-          {searching && <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Searching...</p>}
+          {searching && <p style={{ color: '#c8c8dc', fontSize: '12px' }}>Searching...</p>}
           {addSearch.length >= 2 && !searching && searchResults.length === 0 && (
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No non-member users found</p>
+            <p style={{ color: '#c8c8dc', fontSize: '12px' }}>No non-member users found</p>
           )}
         </div>
       </div>
@@ -802,7 +802,7 @@ const TournamentAdmin = () => {
         </div>
       </div>
       {tournaments.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#c8c8dc' }}>
           <p>No tournaments yet. Click the green button above to create one!</p>
         </div>
       )}
@@ -810,7 +810,7 @@ const TournamentAdmin = () => {
         <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ margin: 0 }}>{t.name}</h3>
-            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+            <p style={{ color: '#c8c8dc', margin: '4px 0 0 0' }}>
               {t.status} • {t.participant_count || 0} players • ID: {t.id}
             </p>
           </div>
@@ -915,7 +915,7 @@ const ChatMonitor = () => {
   return (
     <div>
       <h1><FaComments /> Chat Monitor</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>View all chat messages and IP addresses</p>
+      <p style={{ color: '#e0e0ee', marginBottom: '16px' }}>View all chat messages and IP addresses</p>
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
         <input
@@ -970,7 +970,7 @@ const ChatMonitor = () => {
             <tbody>
               {chats.map(chat => (
                 <tr key={chat.id} style={{ borderTop: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '10px', fontSize: '12px', color: 'var(--text-secondary)' }}>{formatTime(chat.created_at)}</td>
+                  <td style={{ padding: '10px', fontSize: '12px', color: '#e0e0ee' }}>{formatTime(chat.created_at)}</td>
                   <td style={{ padding: '10px' }}>{chat.sender_username || `User #${chat.sender_id}`}</td>
                   <td style={{ padding: '10px' }}>{chat.receiver_username || `User #${chat.receiver_id}`}</td>
                   <td style={{ padding: '10px', maxWidth: '300px', wordBreak: 'break-word' }}>{chat.content}</td>
@@ -1044,7 +1044,7 @@ const Announcements = () => {
             <h4>{a.is_pinned && '📌 '}{a.title}</h4>
             <button className="btn btn-sm btn-danger" onClick={() => handleDelete(a.id)}><FaTrash /></button>
           </div>
-          <p style={{ color: 'var(--text-muted)' }}>{a.content}</p>
+          <p style={{ color: '#c8c8dc' }}>{a.content}</p>
           <small>By {a.author_username} • {new Date(a.created_at).toLocaleDateString()}</small>
         </div>
       ))}
@@ -1130,7 +1130,7 @@ const HealthCheck = () => {
                       <span>{t.status === 'pass' ? <FaCheckCircle style={{color:'#10b981'}}/> : t.status === 'fail' ? <FaTimesCircle style={{color:'#ef4444'}}/> : <FaExclamationTriangle style={{color:'#f59e0b'}}/>} {t.name}</span>
                       <span style={{ fontSize: '0.75rem', color: t.status === 'pass' ? '#10b981' : t.status === 'fail' ? '#ef4444' : '#f59e0b' }}>{t.status.toUpperCase()}</span>
                     </div>
-                    {t.details && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{JSON.stringify(t.details)}</div>}
+                    {t.details && <div style={{ fontSize: '0.8rem', color: '#c8c8dc', marginTop: '4px' }}>{JSON.stringify(t.details)}</div>}
                     {t.error && <div style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '4px' }}>Error: {t.error}</div>}
                   </div>
                 ))}
@@ -1141,7 +1141,7 @@ const HealthCheck = () => {
       )}
 
       {!results && !loading && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', padding: '60px', color: '#c8c8dc' }}>
           <FaHeartbeat style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
           <h3>No Results</h3>
           <p>Click "Run Check" to test all systems</p>
@@ -1152,7 +1152,7 @@ const HealthCheck = () => {
         .summary-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
         .sc { background: var(--bg-card); padding: 16px; border-radius: 8px; text-align: center; }
         .sc .val { font-size: 1.5rem; font-weight: 700; }
-        .sc .lbl { font-size: 0.75rem; color: var(--text-muted); }
+        .sc .lbl { font-size: 0.75rem; color: #c8c8dc; }
         .sc.pass .val { color: #10b981; }
         .sc.fail .val { color: #ef4444; }
         .sc.warn .val { color: #f59e0b; }

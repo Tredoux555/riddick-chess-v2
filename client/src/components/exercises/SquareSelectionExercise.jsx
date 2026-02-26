@@ -148,7 +148,7 @@ const SquareSelectionExercise = ({ exercise, onComplete, attempts }) => {
         }
 
         .instruction {
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 1.15rem;
           line-height: 1.6;
         }
@@ -196,7 +196,7 @@ const SquareSelectionExercise = ({ exercise, onComplete, attempts }) => {
           backdrop-filter: blur(12px);
           font-size: 0.95rem;
           font-weight: 600;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           transition: all 0.3s ease;
         }
 

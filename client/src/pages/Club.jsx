@@ -189,11 +189,11 @@ const Club = () => {
           .club-page { max-width: 600px; margin: 0 auto; }
           .club-header { text-align: center; padding: 40px 20px; background: var(--bg-card); border-radius: var(--radius-lg); margin-bottom: 24px; }
           .club-icon { font-size: 48px; color: gold; margin-bottom: 16px; }
-          .club-description { color: var(--text-secondary); margin: 12px 0; }
-          .member-count { color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px; }
+          .club-description { color: #e0e0ee; margin: 12px 0; }
+          .member-count { color: #c8c8dc; display: flex; align-items: center; justify-content: center; gap: 8px; }
           .join-section { background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); text-align: center; }
           .join-section h3 { margin-bottom: 12px; }
-          .join-section p { color: var(--text-secondary); margin-bottom: 16px; }
+          .join-section p { color: #e0e0ee; margin-bottom: 16px; }
           .join-section textarea { width: 100%; margin-bottom: 16px; }
           .pending-notice { padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: var(--radius-md); }
           .pending-notice h3 { margin-bottom: 8px; }
@@ -270,14 +270,14 @@ const Club = () => {
           <span style={{ fontSize: '2rem' }}>💀</span>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Killer Openings</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Learn deadly opening traps</div>
+            <div style={{ fontSize: '0.85rem', color: '#c8c8dc' }}>Learn deadly opening traps</div>
           </div>
         </Link>
         <Link to="/killer-defenses" style={{ flex: 1, minWidth: 200, padding: '16px 20px', background: 'rgba(77,166,255,0.1)', border: '2px solid rgba(77,166,255,0.3)', borderRadius: 16, textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.3s ease' }}>
           <FaShieldAlt style={{ fontSize: '2rem', color: '#4da6ff' }} />
           <div>
             <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>Killer Defenses</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Survive & punish deadly openings</div>
+            <div style={{ fontSize: '0.85rem', color: '#c8c8dc' }}>Survive & punish deadly openings</div>
           </div>
         </Link>
       </div>
@@ -364,20 +364,20 @@ const Club = () => {
         .header-info { display: flex; align-items: center; gap: 16px; }
         .header-info .club-icon { font-size: 32px; color: gold; }
         .header-info h1 { margin: 0; font-size: 1.5rem; }
-        .header-info p { margin: 0; color: var(--text-muted); font-size: 0.875rem; display: flex; align-items: center; gap: 6px; }
+        .header-info p { margin: 0; color: #c8c8dc; font-size: 0.875rem; display: flex; align-items: center; gap: 6px; }
         .edit-club-form { background: var(--bg-card); padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
         .form-actions { display: flex; gap: 8px; }
         .join-requests { background: var(--bg-card); padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; }
         .join-requests h3 { margin-bottom: 12px; font-size: 1rem; }
         .request-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-bottom: 8px; }
-        .request-info p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.875rem; }
+        .request-info p { margin: 4px 0 0; color: #c8c8dc; font-size: 0.875rem; }
         .request-actions { display: flex; gap: 8px; }
         .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-        .tab { padding: 10px 20px; background: var(--bg-card); border: none; border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .tab { padding: 10px 20px; background: var(--bg-card); border: none; border-radius: var(--radius-md); color: #e0e0ee; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .tab.active { background: var(--accent-primary); color: white; }
         .chat-section { background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; height: 500px; }
         .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-        .empty-chat { text-align: center; color: var(--text-muted); padding: 40px; }
+        .empty-chat { text-align: center; color: #c8c8dc; padding: 40px; }
         .empty-chat svg { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
         .chat-message { display: flex; gap: 12px; }
         .chat-message.own { flex-direction: row-reverse; }
@@ -387,7 +387,7 @@ const Club = () => {
         .message-header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
         .chat-message.own .message-header { flex-direction: row-reverse; }
         .username { font-weight: 600; font-size: 0.875rem; }
-        .time { color: var(--text-muted); font-size: 0.75rem; }
+        .time { color: #c8c8dc; font-size: 0.75rem; }
         .message-text { background: var(--bg-tertiary); padding: 10px 14px; border-radius: 12px; margin: 0; word-wrap: break-word; }
         .chat-message.own .message-text { background: var(--accent-primary); color: white; }
         .chat-input { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-color); }
@@ -397,7 +397,7 @@ const Club = () => {
         .member-avatar img, .member-card .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; }
         .member-info { display: flex; flex-direction: column; }
         .member-name { font-weight: 500; }
-        .member-joined { font-size: 0.75rem; color: var(--text-muted); }
+        .member-joined { font-size: 0.75rem; color: #c8c8dc; }
       `}</style>
     </div>
   );

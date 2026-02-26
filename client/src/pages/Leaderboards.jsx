@@ -162,7 +162,7 @@ const Leaderboards = () => {
           background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-md);
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           transition: all 0.2s;
           white-space: nowrap;
@@ -257,10 +257,10 @@ const Leaderboards = () => {
         .stat-label {
           display: block;
           font-size: 0.75rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         .games-played, .achievements-count {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.875rem;
           min-width: 80px;
           text-align: right;

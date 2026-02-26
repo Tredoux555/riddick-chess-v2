@@ -50,7 +50,7 @@ const KillerOpenings = () => {
 
   const getProgressLabel = (id) => {
     const p = progress[id];
-    if (!p) return { label: 'Not Started', color: 'var(--text-muted)', icon: null };
+    if (!p) return { label: 'Not Started', color: '#c8c8dc', icon: null };
     if (p.mastered) return { label: 'Mastered!', color: '#10b981', icon: <FaTrophy /> };
     if (p.completed) return { label: 'Completed', color: '#f59e0b', icon: <FaFire /> };
     return { label: 'In Progress', color: '#3b82f6', icon: <FaChessKnight /> };
@@ -211,7 +211,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     textDecoration: 'none',
     fontSize: 14,
     fontWeight: 500,
@@ -231,7 +231,7 @@ const styles = {
   },
   subtitle: {
     fontSize: 16,
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     margin: '8px 0 20px',
   },
   progressSection: {
@@ -253,7 +253,7 @@ const styles = {
   },
   progressText: {
     fontSize: 13,
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
   },
   grid: {
     display: 'grid',
@@ -287,7 +287,7 @@ const styles = {
     padding: '2px 10px',
     fontSize: 12,
     fontWeight: 700,
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
   },
   cardTop: {
     display: 'flex',
@@ -310,12 +310,12 @@ const styles = {
   moveCount: {
     marginLeft: 8,
     fontSize: 12,
-    color: 'var(--text-muted)',
+    color: '#c8c8dc',
     fontWeight: 600,
   },
   cardDesc: {
     fontSize: 14,
-    color: 'var(--text-secondary)',
+    color: '#e0e0ee',
     margin: 0,
     lineHeight: 1.5,
   },

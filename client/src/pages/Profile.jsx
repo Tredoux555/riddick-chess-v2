@@ -315,7 +315,7 @@ const Profile = () => {
           color: white;
         }
         .member-since {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.9rem;
         }
         .profile-actions {
@@ -340,7 +340,7 @@ const Profile = () => {
           font-family: 'Outfit', sans-serif;
         }
         .stat-label {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.875rem;
           margin-top: 4px;
         }
@@ -358,7 +358,7 @@ const Profile = () => {
           background: var(--bg-tertiary);
         }
         .win-bar .wins { background: var(--accent-success); }
-        .win-bar .draws { background: var(--text-muted); }
+        .win-bar .draws { background: #c8c8dc; }
         .win-bar .losses { background: var(--accent-danger); }
         .win-labels {
           display: flex;
@@ -367,9 +367,9 @@ const Profile = () => {
           font-size: 0.875rem;
         }
         .win-label { color: var(--accent-success); }
-        .draw-label { color: var(--text-muted); }
+        .draw-label { color: #c8c8dc; }
         .loss-label { color: var(--accent-danger); }
-        .winrate { color: var(--text-secondary); }
+        .winrate { color: #e0e0ee; }
         .tabs {
           display: flex;
           gap: 8px;
@@ -381,7 +381,7 @@ const Profile = () => {
           padding: 8px 16px;
           background: none;
           border: none;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           border-radius: var(--radius-md);
         }
@@ -414,7 +414,7 @@ const Profile = () => {
         .game-result .win { color: var(--accent-success); }
         .game-result .loss { color: var(--accent-danger); }
         .game-opponent { flex: 1; }
-        .game-info, .game-date { color: var(--text-muted); font-size: 0.875rem; }
+        .game-info, .game-date { color: #c8c8dc; font-size: 0.875rem; }
         .load-more {
           width: 100%;
           margin-top: 16px;
@@ -434,7 +434,7 @@ const Profile = () => {
         }
         .achievement-icon { font-size: 1.5rem; }
         .achievement-name { font-weight: 500; }
-        .achievement-desc { font-size: 0.8rem; color: var(--text-muted); }
+        .achievement-desc { font-size: 0.8rem; color: #c8c8dc; }
         @media (max-width: 768px) {
           .profile-stats { grid-template-columns: repeat(2, 1fr); }
         }

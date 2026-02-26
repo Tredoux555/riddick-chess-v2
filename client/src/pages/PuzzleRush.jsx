@@ -309,12 +309,12 @@ const PuzzleRush = () => {
             margin-bottom: 12px;
           }
           .mode-card p {
-            color: var(--text-secondary);
+            color: #e0e0ee;
           }
           .mode-hint {
             font-size: 0.85rem;
             margin-top: 16px;
-            color: var(--text-muted);
+            color: #c8c8dc;
           }
           .best-score {
             display: flex;
@@ -376,7 +376,7 @@ const PuzzleRush = () => {
             margin-bottom: 24px;
           }
           .score-label {
-            color: var(--text-muted);
+            color: #c8c8dc;
             font-size: 1.1rem;
           }
           .score-value {
@@ -465,7 +465,7 @@ const PuzzleRush = () => {
           font-size: 1.5rem;
         }
         .life {
-          color: var(--text-muted);
+          color: #c8c8dc;
           opacity: 0.3;
         }
         .life.active {
@@ -491,7 +491,7 @@ const PuzzleRush = () => {
         .puzzle-counter {
           text-align: center;
           margin-top: 16px;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         @keyframes pulse {
           0%, 100% { opacity: 1; }

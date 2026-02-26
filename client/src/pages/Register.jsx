@@ -136,7 +136,7 @@ const Register = () => {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '24px', color: 'var(--text-secondary)' }}>
+        <p style={{ textAlign: 'center', marginTop: '24px', color: '#e0e0ee' }}>
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>

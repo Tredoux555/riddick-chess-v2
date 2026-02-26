@@ -358,7 +358,7 @@ const Friends = () => {
           padding: 8px 16px;
           background: none;
           border: none;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           border-radius: var(--radius-md);
         }
@@ -388,7 +388,7 @@ const Friends = () => {
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background: var(--text-muted);
+          background: #c8c8dc;
         }
         .online-indicator.online {
           background: var(--accent-success);
@@ -399,7 +399,7 @@ const Friends = () => {
         }
         .friend-status {
           font-size: 0.8rem;
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
         .friend-actions {
           display: flex;
@@ -410,7 +410,7 @@ const Friends = () => {
         }
         .pending-group h3 {
           margin-bottom: 12px;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           font-size: 1rem;
         }
         .request-card {
@@ -427,7 +427,7 @@ const Friends = () => {
           gap: 8px;
         }
         .pending-label {
-          color: var(--text-muted);
+          color: #c8c8dc;
           font-size: 0.875rem;
         }
       `}</style>

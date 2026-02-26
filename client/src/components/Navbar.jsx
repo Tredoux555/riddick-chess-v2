@@ -216,7 +216,7 @@ const Navbar = () => {
           text-align: left;
           background: none;
           border: none;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           display: flex;
           align-items: center;

@@ -196,7 +196,7 @@ const Tournaments = () => {
         .my-tournaments-section h2 {
           margin-bottom: 16px;
           font-size: 1.1rem;
-          color: var(--text-secondary);
+          color: #e0e0ee;
         }
         .tournament-grid {
           display: grid;
@@ -214,7 +214,7 @@ const Tournaments = () => {
           padding: 8px 16px;
           background: none;
           border: none;
-          color: var(--text-secondary);
+          color: #e0e0ee;
           cursor: pointer;
           border-radius: var(--radius-md);
           transition: all 0.2s;
@@ -247,7 +247,7 @@ const Tournaments = () => {
         }
         .status-badge.completed {
           background: rgba(107, 114, 128, 0.2);
-          color: var(--text-muted);
+          color: #c8c8dc;
         }
       `}</style>
     </div>
@@ -315,7 +315,7 @@ const TournamentCard = ({ tournament, formatDate, formatTimeControl }) => (
         padding: 16px 20px;
       }
       .description {
-        color: var(--text-secondary);
+        color: #e0e0ee;
         font-size: 0.9rem;
         margin-bottom: 12px;
       }
@@ -328,7 +328,7 @@ const TournamentCard = ({ tournament, formatDate, formatTimeControl }) => (
         display: flex;
         align-items: center;
         gap: 6px;
-        color: var(--text-secondary);
+        color: #e0e0ee;
         font-size: 0.875rem;
       }
     `}</style>

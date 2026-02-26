@@ -297,7 +297,7 @@ const Home = () => {
           }
 
           .hero-description {
-            color: var(--text-secondary);
+            color: #e0e0ee !important;
             font-size: 1.1rem;
             max-width: 600px;
             margin: 0 auto 32px;
@@ -382,7 +382,7 @@ const Home = () => {
 
           .hero-stat-label {
             font-size: 0.9rem;
-            color: var(--text-muted);
+            color: #c8c8dc !important;
           }
 
           .hero-stat-divider {
@@ -419,7 +419,7 @@ const Home = () => {
 
           .section-subtitle {
             text-align: center;
-            color: var(--text-secondary);
+            color: #e0e0ee !important;
             margin-bottom: 48px;
           }
 
@@ -497,7 +497,7 @@ const Home = () => {
           }
 
           .feature-card p {
-            color: var(--text-secondary);
+            color: #e0e0ee !important;
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 16px;
@@ -561,7 +561,7 @@ const Home = () => {
 
           .bot-level {
             font-size: 0.8rem;
-            color: var(--text-muted);
+            color: #c8c8dc !important;
           }
 
 
@@ -596,7 +596,7 @@ const Home = () => {
           }
 
           .cta-section p {
-            color: var(--text-secondary);
+            color: #e0e0ee !important;
             margin-bottom: 32px;
             max-width: 500px;
             margin-left: auto;
@@ -607,7 +607,7 @@ const Home = () => {
           .landing-footer {
             text-align: center;
             padding: 40px 20px;
-            color: var(--text-muted);
+            color: #c8c8dc !important;
             font-size: 0.9rem;
             border-top: 1px solid var(--border-color);
             margin-top: 40px;
@@ -836,7 +836,7 @@ const Home = () => {
         }
 
         .welcome-section p {
-          color: var(--text-secondary);
+          color: #e0e0ee !important;
         }
 
 
@@ -909,7 +909,7 @@ const Home = () => {
 
         .action-desc {
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc !important;
         }
 
 
@@ -991,7 +991,7 @@ const Home = () => {
         .rating-type {
           flex: 1;
           font-size: 0.95rem;
-          color: var(--text-secondary);
+          color: #e0e0ee !important;
           min-width: 0;
         }
 
@@ -1030,7 +1030,7 @@ const Home = () => {
 
         .stat-label {
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc !important;
         }
 
 
@@ -1062,7 +1062,7 @@ const Home = () => {
 
         .tournament-date {
           font-size: 0.85rem;
-          color: var(--text-muted);
+          color: #c8c8dc !important;
         }
 
         /* Club Card */
@@ -1099,7 +1099,7 @@ const Home = () => {
           padding: 10px 16px;
           background: var(--bg-tertiary);
           border-radius: 10px;
-          color: var(--text-secondary);
+          color: #e0e0ee !important;
           font-size: 0.9rem;
           transition: all 0.2s ease;
         }
@@ -1111,7 +1111,7 @@ const Home = () => {
 
         /* Utility */
         .loading-text, .empty-text {
-          color: var(--text-muted);
+          color: #c8c8dc !important;
           font-size: 0.9rem;
         }
 
