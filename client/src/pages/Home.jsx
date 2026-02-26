@@ -65,7 +65,7 @@ const Home = () => {
           <div className="hero-glow"></div>
           <div className="hero-badge">♟️ Built by a 10-year-old chess enthusiast</div>
           <h1 className="hero-title">
-            <span className="hero-icon">♔</span>
+            <img src="/favicon.png" alt="Riddick Chess" className="hero-icon-img" />
             Riddick Chess
           </h1>
           <p className="hero-subtitle">Where Champions Are Made</p>
@@ -276,9 +276,12 @@ const Home = () => {
           }
 
 
-          .hero-icon {
-            font-size: 0.8em;
+          .hero-icon-img {
+            width: clamp(60px, 10vw, 90px);
+            height: clamp(60px, 10vw, 90px);
+            border-radius: 16px;
             animation: pulse 2s ease-in-out infinite;
+            object-fit: contain;
           }
 
           @keyframes pulse {
