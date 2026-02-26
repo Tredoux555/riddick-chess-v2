@@ -140,7 +140,7 @@ const Login = () => {
 
         .label-icon {
           margin-right: 6px;
-          opacity: 0.7;
+          opacity: 1;
         }
 
         .auth-submit-btn {

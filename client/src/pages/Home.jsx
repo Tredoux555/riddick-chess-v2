@@ -504,8 +504,8 @@ const Home = () => {
           }
 
           .feature-link {
-            color: var(--accent-primary);
-            font-weight: 500;
+            color: var(--accent-tertiary);
+            font-weight: 600;
             font-size: 0.9rem;
             transition: all 0.2s ease;
           }
