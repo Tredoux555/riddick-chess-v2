@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
@@ -9,6 +9,8 @@ import { chessComPieces, chessComBoardStyle } from '../utils/chessComPieces';
 
 const Puzzles = () => {
   if (typeof window !== 'undefined') window.PUZZLE_VERSION = 'v8-premium';
+  // Memoize pieces so they aren't recreated every render (fixes drag flying)
+  const memoizedPieces = useMemo(() => chessComPieces(), []);
   
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(new Chess());
@@ -184,7 +186,7 @@ const Puzzles = () => {
               arePiecesDraggable={!solved && !loading}
               isDraggablePiece={() => !solved && !loading}
               snapToCursor={true}
-              customPieces={chessComPieces()}
+              customPieces={memoizedPieces}
               customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
               customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
               animationDuration={200}

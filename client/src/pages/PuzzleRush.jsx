@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import axios from 'axios';
@@ -7,7 +7,8 @@ import { FaHeart, FaClock, FaTrophy } from 'react-icons/fa';
 import { chessComPieces, chessComBoardStyle } from '../utils/chessComPieces';
 
 const PuzzleRush = () => {
-  const customPieces = chessComPieces();
+  // Memoize pieces so they aren't recreated every render (fixes drag flying)
+  const customPieces = useMemo(() => chessComPieces(), []);
   const currentTheme = chessComBoardStyle;
   const [mode, setMode] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
