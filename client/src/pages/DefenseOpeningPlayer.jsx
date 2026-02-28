@@ -737,7 +737,7 @@ const styles = {
     background: '#10b98118',
     borderRadius: 8,
     fontSize: 14,
-    color: successGreen,
+    color: 'var(--accent-success, #10b981)',
   },
   thinkingDots: {
     display: 'flex',
