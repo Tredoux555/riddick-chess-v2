@@ -1772,7 +1772,7 @@ const AIChessTutor = () => {
   useEffect(() => {
     const checkTrial = async () => {
       try {
-        const res = await axios.get('/ai-tutor/trial-status');
+        const res = await axios.get('/api/ai-tutor/trial-status');
         setTrialUsed(res.data.trialUsed);
       } catch {
         // If endpoint doesn't exist yet, check localStorage
@@ -1815,7 +1815,7 @@ const AIChessTutor = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('/ai-tutor/ask', {
+      const res = await axios.post('/api/ai-tutor/ask', {
         message: userMsg,
         tutor: selectedTutor,
         history: messages.slice(-10) // Last 10 messages for context
