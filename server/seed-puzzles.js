@@ -5,7 +5,25 @@
  */
 
 require('dotenv').config();
-const pool = require('./utils/db');
+
+// Allow passing DATABASE_URL as command line arg for remote seeding
+// Usage: node seed-puzzles.js "postgresql://user:pass@host:port/db"
+const { Pool } = require('pg');
+const connString = process.argv[2] || process.env.DATABASE_URL;
+
+if (!connString) {
+  console.error('❌ No DATABASE_URL found. Either set it in .env or pass it as argument:');
+  console.error('   node seed-puzzles.js "postgresql://user:pass@host:port/db"');
+  process.exit(1);
+}
+
+const isRemote = connString.includes('railway') || connString.includes('amazonaws') || connString.includes('neon') || process.argv[2];
+const pool = new Pool({
+  connectionString: connString,
+  ssl: isRemote ? { rejectUnauthorized: false } : false
+});
+
+console.log(`🔌 Connecting to: ${connString.replace(/:[^:@]+@/, ':***@')}`);
 
 // Quality puzzles with FEN, solution moves (UCI), rating, and themes
 // Format: [fen, moves, rating, themes]
