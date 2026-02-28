@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../utils/db');
 const { Chess } = require('chess.js');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { botEngine } = require('../services/botEngine');
 
 router.get('/list', async (req, res) => {
@@ -15,16 +15,17 @@ router.get('/list', async (req, res) => {
   }
 });
 
-router.post('/start', authenticateToken, async (req, res) => {
+router.post('/start', optionalAuth, async (req, res) => {
   try {
     let { botId, userColor = 'white' } = req.body;
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: 'Must be logged in to play bots' });
+    const userId = req.user?.id || null;
     if (userColor === 'random') userColor = Math.random() < 0.5 ? 'white' : 'black';
     const botResult = await pool.query('SELECT * FROM bots WHERE id = $1', [botId]);
     if (botResult.rows.length === 0) return res.status(404).json({ error: 'Bot not found' });
     const bot = botResult.rows[0];
     const startingFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+    // For anonymous users, still create a game record (user_id can be null)
     const gameResult = await pool.query(
       `INSERT INTO bot_games (user_id, bot_id, fen, user_color, moves, status) VALUES ($1, $2, $3, $4, $5, 'ongoing') RETURNING *`,
       [userId, botId, startingFen, userColor, []]
@@ -46,47 +47,47 @@ router.post('/start', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/move', authenticateToken, async (req, res) => {
+router.post('/move', optionalAuth, async (req, res) => {
   try {
     const { gameId, move } = req.body;
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: 'Must be logged in' });
-    const gameResult = await pool.query(
-      `SELECT bg.*, b.skill_level, b.depth, b.think_time, b.name as bot_name FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2 AND bg.status = 'ongoing'`,
-      [gameId, userId]
-    );
+    const userId = req.user?.id || null;
+
+    // For anonymous: find game by ID only. For logged-in: verify ownership.
+    let gameQuery, gameParams;
+    if (userId) {
+      gameQuery = `SELECT bg.*, b.skill_level, b.depth, b.think_time, b.name as bot_name FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2 AND bg.status = 'ongoing'`;
+      gameParams = [gameId, userId];
+    } else {
+      gameQuery = `SELECT bg.*, b.skill_level, b.depth, b.think_time, b.name as bot_name FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id IS NULL AND bg.status = 'ongoing'`;
+      gameParams = [gameId];
+    }
+
+    const gameResult = await pool.query(gameQuery, gameParams);
     if (gameResult.rows.length === 0) return res.status(404).json({ error: 'Game not found or already finished' });
     const game = gameResult.rows[0];
     const chess = new Chess(game.fen);
     const userMove = chess.move(move, { sloppy: true });
     if (!userMove) return res.status(400).json({ error: 'Invalid move' });
     let result = null, botMove = null, status = 'ongoing', wasCapture = false;
-    
-    // Check if user's move ended the game
+
     if (chess.isGameOver()) {
       status = 'completed';
       if (chess.isCheckmate()) {
-        // User just moved and it's checkmate = user wins
         result = game.user_color === 'white' ? '1-0' : '0-1';
       } else {
-        // Draw (stalemate, insufficient material, etc.)
         result = '1/2-1/2';
       }
     } else {
-      // Bot's turn to move
       botMove = botEngine.getBestMove(chess.fen(), game.skill_level, game.depth);
       if (botMove) {
         const botMoveResult = chess.move(botMove, { sloppy: true });
         wasCapture = botMoveResult && botMoveResult.captured;
-        
-        // Check if bot's move ended the game
+
         if (chess.isGameOver()) {
           status = 'completed';
           if (chess.isCheckmate()) {
-            // Bot just moved and it's checkmate = bot wins
             result = game.user_color === 'white' ? '0-1' : '1-0';
           } else {
-            // Draw
             result = '1/2-1/2';
           }
         }
@@ -105,14 +106,21 @@ router.post('/move', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/game/:gameId', authenticateToken, async (req, res) => {
+router.get('/game/:gameId', optionalAuth, async (req, res) => {
   try {
     const { gameId } = req.params;
-    const userId = req.user?.id;
-    const result = await pool.query(
-      `SELECT bg.*, b.name as bot_name, b.emoji as bot_emoji, b.elo as bot_elo FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2`,
-      [gameId, userId]
-    );
+    const userId = req.user?.id || null;
+
+    let query, params;
+    if (userId) {
+      query = `SELECT bg.*, b.name as bot_name, b.emoji as bot_emoji, b.elo as bot_elo FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id = $2`;
+      params = [gameId, userId];
+    } else {
+      query = `SELECT bg.*, b.name as bot_name, b.emoji as bot_emoji, b.elo as bot_elo FROM bot_games bg JOIN bots b ON bg.bot_id = b.id WHERE bg.id = $1 AND bg.user_id IS NULL`;
+      params = [gameId];
+    }
+
+    const result = await pool.query(query, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Game not found' });
     const game = result.rows[0];
     const chess = new Chess(game.fen);
@@ -123,14 +131,21 @@ router.get('/game/:gameId', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/resign/:gameId', authenticateToken, async (req, res) => {
+router.post('/resign/:gameId', optionalAuth, async (req, res) => {
   try {
     const { gameId } = req.params;
-    const userId = req.user?.id;
-    const result = await pool.query(
-      `UPDATE bot_games SET status = 'completed', result = CASE WHEN user_color = 'white' THEN '0-1' ELSE '1-0' END, updated_at = NOW() WHERE id = $1 AND user_id = $2 AND status = 'ongoing' RETURNING *`,
-      [gameId, userId]
-    );
+    const userId = req.user?.id || null;
+
+    let query, params;
+    if (userId) {
+      query = `UPDATE bot_games SET status = 'completed', result = CASE WHEN user_color = 'white' THEN '0-1' ELSE '1-0' END, updated_at = NOW() WHERE id = $1 AND user_id = $2 AND status = 'ongoing' RETURNING *`;
+      params = [gameId, userId];
+    } else {
+      query = `UPDATE bot_games SET status = 'completed', result = CASE WHEN user_color = 'white' THEN '0-1' ELSE '1-0' END, updated_at = NOW() WHERE id = $1 AND user_id IS NULL AND status = 'ongoing' RETURNING *`;
+      params = [gameId];
+    }
+
+    const result = await pool.query(query, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Game not found or already finished' });
     res.json({ success: true, result: result.rows[0].result });
   } catch (err) {

@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const puzzleService = require('../services/puzzleService');
 
-// Get next puzzle for user
-router.get('/next', authenticateToken, async (req, res) => {
+// Get next puzzle for user (works for anonymous users too)
+router.get('/next', optionalAuth, async (req, res) => {
   try {
     const { themes, minRating, maxRating } = req.query;
-    
-    const puzzle = await puzzleService.getNextPuzzle(req.user.id, {
+
+    // Use user ID if logged in, null for anonymous
+    const userId = req.user?.id || null;
+
+    const puzzle = await puzzleService.getNextPuzzle(userId, {
       themes: themes ? themes.split(',') : null,
       minRating: minRating ? parseInt(minRating) : null,
       maxRating: maxRating ? parseInt(maxRating) : null
@@ -23,7 +26,6 @@ router.get('/next', authenticateToken, async (req, res) => {
       fen: puzzle.fen,
       rating: puzzle.rating,
       themes: puzzle.themes,
-      // Don't send solution to client!
       movesCount: puzzle.moves.split(' ').length
     });
   } catch (error) {
@@ -33,10 +35,10 @@ router.get('/next', authenticateToken, async (req, res) => {
 });
 
 // Get daily puzzle
-router.get('/daily', authenticateToken, async (req, res) => {
+router.get('/daily', optionalAuth, async (req, res) => {
   try {
     const puzzle = await puzzleService.getDailyPuzzle();
-    
+
     if (!puzzle) {
       return res.status(404).json({ error: 'No daily puzzle available' });
     }
@@ -55,7 +57,7 @@ router.get('/daily', authenticateToken, async (req, res) => {
 });
 
 // Validate a move in puzzle
-router.post('/:id/move', authenticateToken, async (req, res) => {
+router.post('/:id/move', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { move, moveIndex = 0 } = req.body;
@@ -73,9 +75,14 @@ router.post('/:id/move', authenticateToken, async (req, res) => {
   }
 });
 
-// Complete a puzzle attempt
-router.post('/:id/complete', authenticateToken, async (req, res) => {
+// Complete a puzzle attempt (requires login for rating tracking)
+router.post('/:id/complete', optionalAuth, async (req, res) => {
   try {
+    // Anonymous users can solve puzzles but we don't record stats
+    if (!req.user) {
+      return res.json({ newRating: 500, ratingChange: 0, solved: req.body.solved });
+    }
+
     const { id } = req.params;
     const { solved, timeTaken, movesTried } = req.body;
 
@@ -95,8 +102,12 @@ router.post('/:id/complete', authenticateToken, async (req, res) => {
 });
 
 // Get user's puzzle rating and stats
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', optionalAuth, async (req, res) => {
   try {
+    if (!req.user) {
+      // Anonymous users get default stats
+      return res.json({ rating: 500, rd: 350, vol: 0.06, puzzles_solved: 0, current_streak: 0, best_streak: 0, puzzle_rush_best: 0 });
+    }
     const rating = await puzzleService.getUserPuzzleRating(req.user.id);
     res.json(rating);
   } catch (error) {
@@ -106,11 +117,12 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // Start Puzzle Rush
-router.post('/rush/start', authenticateToken, async (req, res) => {
+router.post('/rush/start', optionalAuth, async (req, res) => {
   try {
     const { mode = 'survival' } = req.body;
-    const session = await puzzleService.startPuzzleRush(req.user.id, mode);
-    
+    const userId = req.user?.id || 'anonymous';
+    const session = await puzzleService.startPuzzleRush(userId, mode);
+
     // Return puzzles without solutions
     const sanitizedPuzzles = session.puzzles.map(p => ({
       id: p.id,
@@ -129,13 +141,13 @@ router.post('/rush/start', authenticateToken, async (req, res) => {
 });
 
 // Get puzzle solution (for Puzzle Rush validation)
-router.get('/:id/solution', authenticateToken, async (req, res) => {
+router.get('/:id/solution', optionalAuth, async (req, res) => {
   try {
     const puzzle = await puzzleService.getPuzzle(req.params.id);
     if (!puzzle) {
       return res.status(404).json({ error: 'Puzzle not found' });
     }
-    
+
     res.json({ moves: puzzle.moves });
   } catch (error) {
     console.error('Get solution error:', error);
@@ -144,8 +156,12 @@ router.get('/:id/solution', authenticateToken, async (req, res) => {
 });
 
 // End Puzzle Rush
-router.post('/rush/end', authenticateToken, async (req, res) => {
+router.post('/rush/end', optionalAuth, async (req, res) => {
   try {
+    if (!req.user) {
+      // Anonymous users - just acknowledge the score
+      return res.json({ score: req.body.score, recorded: false });
+    }
     const { score } = req.body;
     const result = await puzzleService.endPuzzleRush(req.user.id, score);
     res.json(result);
@@ -156,7 +172,7 @@ router.post('/rush/end', authenticateToken, async (req, res) => {
 });
 
 // Get available themes
-router.get('/themes', authenticateToken, async (req, res) => {
+router.get('/themes', optionalAuth, async (req, res) => {
   try {
     const themes = await puzzleService.getThemes();
     res.json(themes);
@@ -167,7 +183,7 @@ router.get('/themes', authenticateToken, async (req, res) => {
 });
 
 // Get puzzle leaderboard
-router.get('/leaderboard', authenticateToken, async (req, res) => {
+router.get('/leaderboard', optionalAuth, async (req, res) => {
   try {
     const { limit = 50 } = req.query;
     const leaderboard = await puzzleService.getLeaderboard(parseInt(limit));

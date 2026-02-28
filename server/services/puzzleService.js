@@ -23,37 +23,57 @@ class PuzzleService {
   async getNextPuzzle(userId, options = {}) {
     const { themes, minRating, maxRating, excludeRecent = true } = options;
 
-    // Get user's puzzle rating
-    const userRating = await this.getUserPuzzleRating(userId);
-    
+    // For anonymous users, use default rating
+    let userRating = { rating: 500, rd: 350, vol: 0.06, puzzles_solved: 0 };
+    if (userId) {
+      userRating = await this.getUserPuzzleRating(userId);
+    }
+
     // Target slightly above user rating for challenge
     const targetRating = userRating.rating + 50;
     const ratingRange = 200;
 
-    let query = `
-      SELECT p.*
-      FROM puzzles p
-      WHERE p.rating BETWEEN $2 AND $3
-        AND p.fen IS NOT NULL AND p.fen != ''
-        AND p.fen != 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-        AND p.moves IS NOT NULL AND p.moves != ''
-    `;
-    
-    const params = [
-      userId,
-      minRating || Math.max(800, targetRating - ratingRange),
-      maxRating || Math.min(2800, targetRating + ratingRange)
-    ];
+    let query, params;
 
-    // Exclude recently attempted puzzles
-    if (excludeRecent) {
-      query += `
-        AND p.id NOT IN (
-          SELECT puzzle_id FROM puzzle_attempts 
-          WHERE user_id = $1
-          AND created_at > NOW() - INTERVAL '24 hours'
-        )
+    if (userId) {
+      query = `
+        SELECT p.*
+        FROM puzzles p
+        WHERE p.rating BETWEEN $2 AND $3
+          AND p.fen IS NOT NULL AND p.fen != ''
+          AND p.fen != 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+          AND p.moves IS NOT NULL AND p.moves != ''
       `;
+      params = [
+        userId,
+        minRating || Math.max(800, targetRating - ratingRange),
+        maxRating || Math.min(2800, targetRating + ratingRange)
+      ];
+
+      // Exclude recently attempted puzzles
+      if (excludeRecent) {
+        query += `
+          AND p.id NOT IN (
+            SELECT puzzle_id FROM puzzle_attempts
+            WHERE user_id = $1
+            AND created_at > NOW() - INTERVAL '24 hours'
+          )
+        `;
+      }
+    } else {
+      // Anonymous user - just pick a random puzzle in range
+      query = `
+        SELECT p.*
+        FROM puzzles p
+        WHERE p.rating BETWEEN $1 AND $2
+          AND p.fen IS NOT NULL AND p.fen != ''
+          AND p.fen != 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+          AND p.moves IS NOT NULL AND p.moves != ''
+      `;
+      params = [
+        minRating || Math.max(800, targetRating - ratingRange),
+        maxRating || Math.min(2800, targetRating + ratingRange)
+      ];
     }
 
     query += ` ORDER BY RANDOM() LIMIT 1`;

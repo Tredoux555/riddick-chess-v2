@@ -96,11 +96,17 @@ export const BOARD_THEMES = {
   }
 };
 
+// Cache for piece sets - CRITICAL for react-chessboard drag-and-drop.
+// If customPieces object changes identity between renders, @dnd-kit loses
+// its drag reference and pieces "fly away". Cache ensures same object is
+// always returned for a given piece set.
+const pieceCache = {};
+
 // Generate custom pieces for react-chessboard
-// IMPORTANT: Uses <img> tags with draggable="false" so @dnd-kit handles drag properly.
-// Using <div> + background-image causes pieces to "fly away" because the DnD overlay
-// can't capture the visual from a background-image.
 export const createCustomPieces = (pieceSet = 'neo') => {
+  // Return cached version if it exists (prevents flying pieces)
+  if (pieceCache[pieceSet]) return pieceCache[pieceSet];
+
   const set = PIECE_SETS[pieceSet] || PIECE_SETS.neo;
   const pieces = {};
 
@@ -127,6 +133,8 @@ export const createCustomPieces = (pieceSet = 'neo') => {
     );
   });
 
+  // Cache for all future calls
+  pieceCache[pieceSet] = pieces;
   return pieces;
 };
 

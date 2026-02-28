@@ -1484,6 +1484,7 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
         .quiz-question {
           font-size: 1.3rem;
           margin: 20px 0 30px;
+          font-weight: 500;
         }
         .quiz-options {
           display: flex;
@@ -1496,6 +1497,8 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           border: 2px solid var(--border-color);
           border-radius: 12px;
           font-size: 1.1rem;
+          font-weight: 500;
+          color: var(--text-primary);
           cursor: pointer;
           transition: all 0.2s;
         }
