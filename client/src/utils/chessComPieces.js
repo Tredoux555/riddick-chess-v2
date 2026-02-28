@@ -107,17 +107,18 @@ export const createCustomPieces = (pieceSet = 'neo') => {
     const color = piece[0];
     const type = piece[1].toLowerCase();
     const url = `${set.baseUrl}/${color}${type}.png`;
-    
+
     pieces[piece] = ({ squareWidth }) => (
-      <div
+      <img
+        src={url}
+        alt={piece}
         style={{
           width: squareWidth,
           height: squareWidth,
-          backgroundImage: `url(${url})`,
-          backgroundSize: '100%',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
+          objectFit: 'contain',
+          pointerEvents: 'none',
         }}
+        draggable={false}
       />
     );
   });

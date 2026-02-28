@@ -39,6 +39,23 @@ const Puzzles = () => {
       setSolution(moves);
 
       const chess = new Chess(puzzleData.fen);
+
+      // Play the opponent's setup move (moves[0]) automatically
+      // In Lichess puzzle format, moves[0] is the opponent's last move that creates the tactic
+      // The player then needs to find the correct response starting from moves[1]
+      if (moves.length > 1 && moves[0]) {
+        try {
+          chess.move({
+            from: moves[0].slice(0, 2),
+            to: moves[0].slice(2, 4),
+            promotion: moves[0][4] || undefined
+          });
+          setMoveIndex(1); // Player starts solving from move index 1
+        } catch (e) {
+          console.error('Failed to play setup move:', e);
+        }
+      }
+
       setGame(chess);
       setLoading(false);
     } catch (error) {
@@ -136,6 +153,8 @@ const Puzzles = () => {
     );
   }
 
+  // Player's color is whoever's turn it is AFTER the setup move
+  // (i.e., the current turn, since we already played the opponent's setup move)
   const orientation = game.turn() === 'w' ? 'white' : 'black';
 
   return (

@@ -102,12 +102,24 @@ const PuzzleRush = () => {
       setPuzzles(fetchedPuzzles);
       puzzlesRef.current = fetchedPuzzles;
 
-      // Load first puzzle and wait for it
-      const success = await loadPuzzle(fetchedPuzzles[0]);
-      if (success) {
+      // Load first valid puzzle - skip bad ones
+      let loaded = false;
+      let startIdx = 0;
+      while (startIdx < fetchedPuzzles.length && startIdx < 10) {
+        const success = await loadPuzzle(fetchedPuzzles[startIdx]);
+        if (success) {
+          currentIndexRef.current = startIdx;
+          setCurrentIndex(startIdx);
+          loaded = true;
+          break;
+        }
+        startIdx++;
+      }
+
+      if (loaded) {
         setGameStarted(true);
       } else {
-        toast.error('Failed to load puzzles. Try again!');
+        toast.error('No valid puzzles available. Try again later!');
       }
     } catch (error) {
       console.error('Failed to start Puzzle Rush:', error);
@@ -127,8 +139,7 @@ const PuzzleRush = () => {
       if (!puzzleData || !puzzleData.fen || !puzzleData.id) {
         console.error('Invalid puzzle data:', puzzleData);
         isLoadingPuzzle.current = false;
-        setPuzzleError(true);
-        return false;
+        return false; // Return false - let advanceToNextPuzzle handle skipping
       }
 
       // Validate FEN
@@ -138,22 +149,13 @@ const PuzzleRush = () => {
       } catch (e) {
         console.error('Invalid FEN:', puzzleData.fen);
         isLoadingPuzzle.current = false;
-        setPuzzleError(true);
         return false;
       }
 
-      // Check it's not a starting position
+      // Check it's not a starting position - just return false, don't recurse
       if (puzzleData.fen === 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
         console.error('Puzzle has starting position FEN, skipping');
         isLoadingPuzzle.current = false;
-        // Skip this one silently and try next
-        const nextIdx = currentIndexRef.current + 1;
-        if (nextIdx < puzzlesRef.current.length) {
-          currentIndexRef.current = nextIdx;
-          setCurrentIndex(nextIdx);
-          isLoadingPuzzle.current = false;
-          return loadPuzzle(puzzlesRef.current[nextIdx]);
-        }
         return false;
       }
 
@@ -166,51 +168,42 @@ const PuzzleRush = () => {
       const response = await axios.get(`/api/puzzles/${puzzleData.id}/solution`);
       const moves = response.data.moves.split(' ').filter(m => m);
 
-      if (!moves || moves.length === 0) {
-        console.error('No solution moves for puzzle:', puzzleData.id);
+      if (!moves || moves.length < 2) {
+        console.error('Not enough solution moves for puzzle:', puzzleData.id);
         isLoadingPuzzle.current = false;
-        setPuzzleError(true);
         return false;
       }
 
       solutionsRef.current[puzzleData.id] = moves;
 
       // Make the first move (the opponent's setup move)
-      if (moves[0]) {
-        const newGame = new Chess(chess.fen());
-        try {
-          const moveResult = newGame.move({
-            from: moves[0].slice(0, 2),
-            to: moves[0].slice(2, 4),
-            promotion: moves[0][4] || undefined
-          });
-          if (!moveResult) {
-            console.error('First move invalid:', moves[0]);
-            isLoadingPuzzle.current = false;
-            setPuzzleError(true);
-            return false;
-          }
-          setGame(newGame);
-          setMoveIndex(1);
-          moveIndexRef.current = 1;
-        } catch (e) {
-          console.error('First move error:', e);
+      const newGame = new Chess(chess.fen());
+      try {
+        const moveResult = newGame.move({
+          from: moves[0].slice(0, 2),
+          to: moves[0].slice(2, 4),
+          promotion: moves[0][4] || undefined
+        });
+        if (!moveResult) {
+          console.error('First move invalid:', moves[0]);
           isLoadingPuzzle.current = false;
-          setPuzzleError(true);
           return false;
         }
-      } else {
-        setGame(chess);
+        setGame(newGame);
+        setMoveIndex(1);
+        moveIndexRef.current = 1;
+      } catch (e) {
+        console.error('First move error:', e);
+        isLoadingPuzzle.current = false;
+        return false;
       }
-      
+
       isLoadingPuzzle.current = false;
       setReady(true);
       return true;
     } catch (error) {
       console.error('Failed to load puzzle:', error);
       isLoadingPuzzle.current = false;
-      setPuzzleError(true);
-      // DO NOT cascade to next puzzle - show error state instead
       return false;
     }
   };
@@ -219,27 +212,21 @@ const PuzzleRush = () => {
     // Guard against rapid-fire advances
     if (isLoadingPuzzle.current || gameOverRef.current) return;
 
-    const nextIdx = currentIndexRef.current + 1;
-    if (nextIdx < puzzlesRef.current.length) {
-      setCurrentIndex(nextIdx);
-      currentIndexRef.current = nextIdx;
-      const success = await loadPuzzle(puzzlesRef.current[nextIdx]);
-      if (!success) {
-        // Try next puzzle if this one has bad data (but with a limit)
-        let attempts = 0;
-        let idx = nextIdx + 1;
-        while (idx < puzzlesRef.current.length && attempts < 5) {
-          currentIndexRef.current = idx;
-          setCurrentIndex(idx);
-          const ok = await loadPuzzle(puzzlesRef.current[idx]);
-          if (ok) return;
-          idx++;
-          attempts++;
-        }
-        // All remaining puzzles failed
-        handleEndGame();
-      }
-    } else {
+    let idx = currentIndexRef.current + 1;
+    let attempts = 0;
+    const maxSkips = 10; // Don't skip more than 10 bad puzzles in a row
+
+    while (idx < puzzlesRef.current.length && attempts < maxSkips) {
+      currentIndexRef.current = idx;
+      setCurrentIndex(idx);
+      const success = await loadPuzzle(puzzlesRef.current[idx]);
+      if (success) return; // Found a good puzzle
+      idx++;
+      attempts++;
+    }
+
+    // Either ran out of puzzles or too many bad ones
+    if (!gameOverRef.current) {
       handleEndGame();
     }
   };
