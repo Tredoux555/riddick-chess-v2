@@ -6,6 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
+const https = require('https');
 const { optionalAuth } = require('../middleware/auth');
 const pool = require('../utils/db');
 
@@ -113,30 +114,15 @@ router.post('/ask', optionalAuth, async (req, res) => {
     }
     messages.push({ role: 'user', content: message });
 
-    // Call Anthropic API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: MODELS[tutor],
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages
-      })
-    });
+    // Call Anthropic API using https module (compatible with all Node versions)
+    const apiData = await callAnthropicAPI(MODELS[tutor], SYSTEM_PROMPT, messages);
 
-    if (!response.ok) {
-      const errData = await response.text();
-      console.error('Anthropic API error:', response.status, errData);
+    if (apiData.error) {
+      console.error('Anthropic API error:', apiData.error);
       return res.status(500).json({ error: 'AI tutor had an issue. Try again in a moment!' });
     }
 
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Hmm, I got confused. Try asking again!';
+    const reply = apiData.content?.[0]?.text || 'Hmm, I got confused. Try asking again!';
 
     // Record usage for free trial tracking
     let trialUsed = false;
@@ -193,6 +179,55 @@ async function recordTrialUsage(userId, ip, tutor) {
   } catch (err) {
     console.error('Failed to record trial usage:', err.message);
   }
+}
+
+// HTTPS-based Anthropic API call (works on all Node.js versions)
+function callAnthropicAPI(model, system, messages) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({ model, max_tokens: 1024, system, messages });
+
+    const options = {
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode !== 200) {
+            resolve({ error: `Status ${res.statusCode}: ${data}` });
+          } else {
+            resolve(parsed);
+          }
+        } catch (e) {
+          resolve({ error: `Parse error: ${data}` });
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      resolve({ error: e.message });
+    });
+
+    req.setTimeout(30000, () => {
+      req.destroy();
+      resolve({ error: 'Request timed out' });
+    });
+
+    req.write(postData);
+    req.end();
+  });
 }
 
 module.exports = router;
