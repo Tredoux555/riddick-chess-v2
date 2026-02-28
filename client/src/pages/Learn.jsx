@@ -3,7 +3,9 @@ import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
-import { FaHeart, FaFire, FaStar, FaLock, FaCheck, FaPlay, FaPause, FaRedo, FaVolumeUp, FaVolumeMute, FaTrophy, FaGem, FaChess, FaChessKnight, FaArrowRight } from 'react-icons/fa';
+import { FaHeart, FaFire, FaStar, FaLock, FaCheck, FaRedo, FaTrophy, FaGem, FaChess, FaChessKnight, FaArrowRight, FaRobot, FaPaperPlane, FaCrown } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 import { useBoardSettings } from '../contexts/BoardSettingsContext';
 
 // Error boundary to catch crashes
@@ -958,6 +960,9 @@ const Learn = () => {
         })}
       </div>
 
+      {/* AI Chess Tutor Section */}
+      <AIChessTutor />
+
       <style>{`
         .learn-page {
           max-width: 600px;
@@ -1109,20 +1114,20 @@ class LessonErrorBoundary extends React.Component {
 const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }) => {
   const [phase, setPhase] = useState('video'); // 'video', 'puzzle', 'quiz', 'complete'
   const [sceneIndex, setSceneIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [showText, setShowText] = useState(false);
   const [hearts, setHearts] = useState(3);
   const [currentFen, setCurrentFen] = useState(lesson.video.scenes[0].fen);
-  const timerRef = useRef(null);
+  const [moveAnimated, setMoveAnimated] = useState(false);
 
   const scene = lesson.video.scenes[sceneIndex];
 
-  // Auto-advance scenes
+  // Show text and animate moves when scene changes (NO auto-advance)
   useEffect(() => {
-    if (phase !== 'video' || !isPlaying) return;
+    if (phase !== 'video') return;
 
     setShowText(false);
     setCurrentFen(scene.fen);
+    setMoveAnimated(false);
 
     // Show text after brief delay
     const textTimer = setTimeout(() => setShowText(true), 300);
@@ -1132,46 +1137,41 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
     if (scene.moveAnimation) {
       moveTimer = setTimeout(() => {
         try {
-          const { from, to, promotion, capture, castle } = scene.moveAnimation;
-          // Try to make the move with chess.js
+          const { from, to, promotion } = scene.moveAnimation;
           const tempGame = new Chess(scene.fen);
           const moveResult = tempGame.move({ from, to, promotion: promotion ? 'q' : undefined });
           if (moveResult) {
             setCurrentFen(tempGame.fen());
           } else {
-            // If chess.js rejects (educational FEN without kings), manually update
-            // by reconstructing FEN with piece moved
             const newFen = manualMoveFen(scene.fen, from, to);
             if (newFen) setCurrentFen(newFen);
           }
         } catch (e) {
-          // For educational FENs without kings, do manual move
           const newFen = manualMoveFen(scene.fen, scene.moveAnimation.from, scene.moveAnimation.to);
           if (newFen) setCurrentFen(newFen);
         }
+        setMoveAnimated(true);
       }, 1500);
     }
 
-    // Auto-advance to next scene
-    timerRef.current = setTimeout(() => {
-      if (sceneIndex < lesson.video.scenes.length - 1) {
-        setSceneIndex(prev => prev + 1);
-      } else {
-        // Video done, go to puzzle or quiz
-        if (lesson.video.puzzle) {
-          setPhase('puzzle');
-        } else {
-          setPhase('quiz');
-        }
-      }
-    }, scene.duration);
-
     return () => {
-      clearTimeout(timerRef.current);
       clearTimeout(textTimer);
       clearTimeout(moveTimer);
     };
-  }, [sceneIndex, isPlaying, phase]);
+  }, [sceneIndex, phase]);
+
+  // Advance to next scene or phase
+  const handleGotIt = () => {
+    if (sceneIndex < lesson.video.scenes.length - 1) {
+      setSceneIndex(prev => prev + 1);
+    } else {
+      if (lesson.video.puzzle) {
+        setPhase('puzzle');
+      } else {
+        setPhase('quiz');
+      }
+    }
+  };
 
   const handlePuzzleComplete = (correct) => {
     if (correct) {
@@ -1269,20 +1269,16 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
           </div>
 
           <div className="video-controls">
-            <button onClick={() => setIsPlaying(!isPlaying)}>
-              {isPlaying ? <FaPause /> : <FaPlay />}
-            </button>
             <div className="scene-dots">
               {lesson.video.scenes.map((_, i) => (
-                <span 
-                  key={i} 
+                <span
+                  key={i}
                   className={`dot ${i === sceneIndex ? 'active' : ''} ${i < sceneIndex ? 'done' : ''}`}
-                  onClick={() => { setSceneIndex(i); setIsPlaying(true); }}
                 />
               ))}
             </div>
-            <button onClick={() => sceneIndex < lesson.video.scenes.length - 1 && setSceneIndex(prev => prev + 1)}>
-              Skip →
+            <button className="got-it-btn" onClick={handleGotIt}>
+              {sceneIndex < lesson.video.scenes.length - 1 ? "Got it! →" : "Let's practice! →"}
             </button>
           </div>
         </div>
@@ -1442,19 +1438,31 @@ const LessonPlayer = ({ lesson, customPieces, currentTheme, onComplete, onExit }
         }
         .video-controls {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          gap: 20px;
+          gap: 16px;
           margin-top: 24px;
+          width: 100%;
         }
-        .video-controls button {
-          padding: 10px 20px;
-          background: var(--bg-card);
+        .got-it-btn {
+          padding: 16px 48px;
+          background: linear-gradient(135deg, #10b981, #059669);
           border: none;
-          border-radius: 8px;
-          color: var(--text-primary);
+          border-radius: 30px;
+          color: white;
           cursor: pointer;
-          font-size: 1rem;
+          font-size: 1.15rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          transition: all 0.2s;
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        .got-it-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+        .got-it-btn:active {
+          transform: translateY(0);
         }
         .scene-dots {
           display: flex;
@@ -1738,6 +1746,291 @@ const PracticeBoard = ({ customPieces, currentTheme, onExit }) => {
         .move.black { background: rgba(0,0,0,0.2); }
         .move-num { color: #c8c8dc; margin-right: 2px; }
         .turn-indicator { margin-top: 12px; padding: 8px; text-align: center; background: var(--bg-tertiary); border-radius: 8px; font-weight: 600; }
+      `}</style>
+    </div>
+  );
+};
+
+// ============ AI CHESS TUTOR COMPONENT ============
+const AI_TIERS = [
+  { id: 'haiku', name: 'Coach Pawn', model: 'Haiku', icon: '♟️', tier: 'Regular', color: '#10b981', desc: 'Quick tips & beginner help' },
+  { id: 'sonnet', name: 'Coach Knight', model: 'Sonnet', icon: '♞', tier: 'Platinum', color: '#8b5cf6', desc: 'Deep analysis & strategy' },
+  { id: 'opus', name: 'Grandmaster', model: 'Opus', icon: '♛', tier: 'Premium', color: '#f59e0b', desc: 'World-class chess mastery' },
+];
+
+const AIChessTutor = () => {
+  const { user } = useAuth();
+  const [selectedTutor, setSelectedTutor] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [trialUsed, setTrialUsed] = useState(false);
+  const [trialChecked, setTrialChecked] = useState(false);
+  const chatEndRef = useRef(null);
+
+  // Check if trial has been used
+  useEffect(() => {
+    const checkTrial = async () => {
+      try {
+        const res = await axios.get('/ai-tutor/trial-status');
+        setTrialUsed(res.data.trialUsed);
+      } catch {
+        // If endpoint doesn't exist yet, check localStorage
+        const localTrial = localStorage.getItem('chess_ai_trial_used');
+        setTrialUsed(!!localTrial);
+      }
+      setTrialChecked(true);
+    };
+    checkTrial();
+  }, []);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const getUserTier = () => {
+    if (!user) return null;
+    if (user.subscription === 'premium') return 'opus';
+    if (user.subscription === 'platinum') return 'sonnet';
+    if (user.subscription === 'regular') return 'haiku';
+    return null;
+  };
+
+  const canUseTutor = (tutorId) => {
+    const userTier = getUserTier();
+    if (userTier === 'opus') return true; // Premium gets all
+    if (userTier === 'sonnet') return tutorId !== 'opus';
+    if (userTier === 'haiku') return tutorId === 'haiku';
+    // Free user — can use trial
+    return !trialUsed;
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMsg = input.trim();
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setLoading(true);
+
+    try {
+      const res = await axios.post('/ai-tutor/ask', {
+        message: userMsg,
+        tutor: selectedTutor,
+        history: messages.slice(-10) // Last 10 messages for context
+      });
+
+      setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }]);
+
+      if (res.data.trialUsed) {
+        setTrialUsed(true);
+        localStorage.setItem('chess_ai_trial_used', 'true');
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.error || 'Failed to get response. Try again!';
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }]);
+    }
+    setLoading(false);
+  };
+
+  if (!selectedTutor) {
+    return (
+      <div className="ai-tutor-section">
+        <h2 className="ai-title"><FaRobot /> AI Chess Tutors</h2>
+        <p className="ai-subtitle">Get personalized coaching from AI chess masters!</p>
+
+        {!trialUsed && !getUserTier() && (
+          <div className="trial-banner">
+            ✨ Free trial: Ask one question to any tutor!
+          </div>
+        )}
+
+        <div className="tutor-cards">
+          {AI_TIERS.map(tutor => {
+            const accessible = canUseTutor(tutor.id);
+            const userTier = getUserTier();
+            return (
+              <button
+                key={tutor.id}
+                className={`tutor-card ${!accessible ? 'locked' : ''}`}
+                onClick={() => accessible && setSelectedTutor(tutor.id)}
+                style={{ '--tutor-color': tutor.color }}
+              >
+                <div className="tutor-icon">{tutor.icon}</div>
+                <div className="tutor-name">{tutor.name}</div>
+                <div className="tutor-model">{tutor.model}</div>
+                <div className="tutor-desc">{tutor.desc}</div>
+                <div className="tutor-tier">
+                  {accessible ? (
+                    userTier ? `✓ ${tutor.tier}` : '✨ Free Trial'
+                  ) : (
+                    <><FaLock style={{marginRight:4}} /> {tutor.tier} plan</>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <style>{`
+          .ai-tutor-section {
+            max-width: 600px; margin: 40px auto 0; padding: 0 20px;
+          }
+          .ai-title {
+            text-align: center; font-size: 1.8rem; margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+          }
+          .ai-subtitle { text-align: center; color: #c8c8dc; margin-bottom: 20px; }
+          .trial-banner {
+            text-align: center; padding: 12px 20px; margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(59,130,246,0.2));
+            border: 1px solid rgba(16,185,129,0.3); border-radius: 12px;
+            font-weight: 600; color: #10b981;
+          }
+          .tutor-cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+          .tutor-card {
+            flex: 1; min-width: 160px; max-width: 200px;
+            padding: 20px 16px; background: var(--bg-card);
+            border: 2px solid var(--border-color); border-radius: 16px;
+            text-align: center; cursor: pointer; transition: all 0.3s;
+          }
+          .tutor-card:hover:not(.locked) {
+            border-color: var(--tutor-color); transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+          }
+          .tutor-card.locked { opacity: 0.5; cursor: not-allowed; }
+          .tutor-icon { font-size: 2.5rem; margin-bottom: 8px; }
+          .tutor-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
+          .tutor-model { font-size: 0.8rem; color: var(--tutor-color); font-weight: 600; margin-bottom: 8px; }
+          .tutor-desc { font-size: 0.8rem; color: #c8c8dc; margin-bottom: 12px; }
+          .tutor-tier {
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+            background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Chat view
+  const tutor = AI_TIERS.find(t => t.id === selectedTutor);
+  return (
+    <div className="ai-chat-view">
+      <div className="chat-header">
+        <button className="back-btn" onClick={() => { setSelectedTutor(null); setMessages([]); }}>← Back</button>
+        <div className="chat-tutor-info">
+          <span className="chat-icon">{tutor.icon}</span>
+          <span className="chat-name">{tutor.name}</span>
+          <span className="chat-model-badge" style={{color: tutor.color}}>{tutor.model}</span>
+        </div>
+      </div>
+
+      <div className="chat-messages">
+        {messages.length === 0 && (
+          <div className="welcome-msg">
+            <div className="welcome-icon">{tutor.icon}</div>
+            <h3>Hi! I'm {tutor.name}</h3>
+            <p>Ask me anything about chess — openings, tactics, strategy, or get help analyzing a position!</p>
+            <div className="suggestion-chips">
+              {['How do I improve at tactics?', 'Explain the Italian Game opening', 'When should I castle?', 'How do I avoid blunders?'].map(q => (
+                <button key={q} className="chip" onClick={() => { setInput(q); }}>{q}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div key={i} className={`chat-bubble ${msg.role}`}>
+            {msg.role === 'assistant' && <span className="bubble-icon">{tutor.icon}</span>}
+            <div className="bubble-content">{msg.content}</div>
+          </div>
+        ))}
+        {loading && (
+          <div className="chat-bubble assistant">
+            <span className="bubble-icon">{tutor.icon}</span>
+            <div className="bubble-content typing">Thinking...</div>
+          </div>
+        )}
+        <div ref={chatEndRef} />
+      </div>
+
+      <div className="chat-input-bar">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && sendMessage()}
+          placeholder="Ask about chess..."
+          disabled={loading}
+        />
+        <button onClick={sendMessage} disabled={loading || !input.trim()}>
+          <FaPaperPlane />
+        </button>
+      </div>
+
+      <style>{`
+        .ai-chat-view {
+          max-width: 600px; margin: 0 auto; display: flex; flex-direction: column;
+          height: calc(100vh - 80px); padding: 0 12px;
+        }
+        .chat-header {
+          display: flex; align-items: center; gap: 12px; padding: 12px 0;
+          border-bottom: 1px solid var(--border-color); margin-bottom: 12px;
+        }
+        .back-btn {
+          padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-color);
+          border-radius: 8px; color: var(--text-primary); cursor: pointer;
+        }
+        .chat-tutor-info { display: flex; align-items: center; gap: 8px; }
+        .chat-icon { font-size: 1.5rem; }
+        .chat-name { font-weight: 700; font-size: 1.1rem; }
+        .chat-model-badge { font-size: 0.8rem; font-weight: 600; }
+        .chat-messages {
+          flex: 1; overflow-y: auto; padding: 12px 0;
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .welcome-msg { text-align: center; padding: 30px 20px; }
+        .welcome-icon { font-size: 3rem; margin-bottom: 12px; }
+        .welcome-msg h3 { margin-bottom: 8px; }
+        .welcome-msg p { color: #c8c8dc; margin-bottom: 16px; }
+        .suggestion-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .chip {
+          padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border-color);
+          border-radius: 20px; color: var(--text-primary); cursor: pointer; font-size: 0.85rem;
+          transition: all 0.2s;
+        }
+        .chip:hover { border-color: var(--accent-primary); }
+        .chat-bubble { display: flex; gap: 10px; max-width: 85%; }
+        .chat-bubble.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-bubble.assistant { align-self: flex-start; }
+        .bubble-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 4px; }
+        .bubble-content {
+          padding: 12px 16px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5;
+          white-space: pre-wrap;
+        }
+        .chat-bubble.user .bubble-content {
+          background: var(--accent-primary); color: white; border-bottom-right-radius: 4px;
+        }
+        .chat-bubble.assistant .bubble-content {
+          background: var(--bg-card); border: 1px solid var(--border-color); border-bottom-left-radius: 4px;
+        }
+        .typing { color: #c8c8dc; font-style: italic; }
+        .chat-input-bar {
+          display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border-color);
+        }
+        .chat-input-bar input {
+          flex: 1; padding: 14px 18px; background: var(--bg-card); border: 1px solid var(--border-color);
+          border-radius: 25px; color: var(--text-primary); font-size: 1rem; outline: none;
+        }
+        .chat-input-bar input:focus { border-color: var(--accent-primary); }
+        .chat-input-bar button {
+          width: 48px; height: 48px; border-radius: 50%; border: none;
+          background: var(--accent-primary); color: white; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; font-size: 1rem;
+          transition: all 0.2s;
+        }
+        .chat-input-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .chat-input-bar button:hover:not(:disabled) { transform: scale(1.05); }
       `}</style>
     </div>
   );
