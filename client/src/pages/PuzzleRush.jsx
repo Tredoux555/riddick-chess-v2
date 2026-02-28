@@ -22,6 +22,7 @@ const PuzzleRush = () => {
   const [moveIndex, setMoveIndex] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [ready, setReady] = useState(false);
+  const [puzzleError, setPuzzleError] = useState(false);
 
   // Use refs to avoid stale closure issues
   const solutionsRef = useRef({});
@@ -31,15 +32,21 @@ const PuzzleRush = () => {
   const scoreRef = useRef(0);
   const gameOverRef = useRef(false);
   const puzzlesRef = useRef([]);
+  const isLoadingPuzzle = useRef(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     loadBestScore();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
+  // Timer effect for timed mode
   useEffect(() => {
     if (!gameStarted || gameOver || mode !== 'timed') return;
 
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           handleEndGame();
@@ -49,7 +56,9 @@ const PuzzleRush = () => {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStarted, gameOver, mode]);
 
@@ -78,66 +87,158 @@ const PuzzleRush = () => {
     moveIndexRef.current = 0;
     solutionsRef.current = {};
     setReady(false);
+    setPuzzleError(false);
+    isLoadingPuzzle.current = false;
 
     try {
       const response = await axios.post('/api/puzzles/rush/start', { mode: selectedMode });
       const fetchedPuzzles = response.data.puzzles;
+
+      if (!fetchedPuzzles || fetchedPuzzles.length === 0) {
+        toast.error('No puzzles available. Ask your admin to add puzzles!');
+        return;
+      }
+
       setPuzzles(fetchedPuzzles);
       puzzlesRef.current = fetchedPuzzles;
 
-      if (fetchedPuzzles.length > 0) {
-        await loadPuzzle(fetchedPuzzles[0]);
+      // Load first puzzle and wait for it
+      const success = await loadPuzzle(fetchedPuzzles[0]);
+      if (success) {
+        setGameStarted(true);
+      } else {
+        toast.error('Failed to load puzzles. Try again!');
       }
-
-      setGameStarted(true);
     } catch (error) {
+      console.error('Failed to start Puzzle Rush:', error);
       toast.error('Failed to start Puzzle Rush');
     }
   };
 
   const loadPuzzle = async (puzzleData) => {
+    // Guard against concurrent loads
+    if (isLoadingPuzzle.current) return false;
+    isLoadingPuzzle.current = true;
     setReady(false);
-    const chess = new Chess(puzzleData.fen);
-
-    const firstMoveColor = chess.turn();
-    const pColor = firstMoveColor === 'w' ? 'b' : 'w';
-    setPlayerColor(pColor);
-    setMoveIndex(0);
-    moveIndexRef.current = 0;
+    setPuzzleError(false);
 
     try {
+      // Validate puzzle data
+      if (!puzzleData || !puzzleData.fen || !puzzleData.id) {
+        console.error('Invalid puzzle data:', puzzleData);
+        isLoadingPuzzle.current = false;
+        setPuzzleError(true);
+        return false;
+      }
+
+      // Validate FEN
+      let chess;
+      try {
+        chess = new Chess(puzzleData.fen);
+      } catch (e) {
+        console.error('Invalid FEN:', puzzleData.fen);
+        isLoadingPuzzle.current = false;
+        setPuzzleError(true);
+        return false;
+      }
+
+      // Check it's not a starting position
+      if (puzzleData.fen === 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
+        console.error('Puzzle has starting position FEN, skipping');
+        isLoadingPuzzle.current = false;
+        // Skip this one silently and try next
+        const nextIdx = currentIndexRef.current + 1;
+        if (nextIdx < puzzlesRef.current.length) {
+          currentIndexRef.current = nextIdx;
+          setCurrentIndex(nextIdx);
+          isLoadingPuzzle.current = false;
+          return loadPuzzle(puzzlesRef.current[nextIdx]);
+        }
+        return false;
+      }
+
+      const firstMoveColor = chess.turn();
+      const pColor = firstMoveColor === 'w' ? 'b' : 'w';
+      setPlayerColor(pColor);
+      setMoveIndex(0);
+      moveIndexRef.current = 0;
+
       const response = await axios.get(`/api/puzzles/${puzzleData.id}/solution`);
       const moves = response.data.moves.split(' ').filter(m => m);
+
+      if (!moves || moves.length === 0) {
+        console.error('No solution moves for puzzle:', puzzleData.id);
+        isLoadingPuzzle.current = false;
+        setPuzzleError(true);
+        return false;
+      }
+
       solutionsRef.current[puzzleData.id] = moves;
 
       // Make the first move (the opponent's setup move)
       if (moves[0]) {
         const newGame = new Chess(chess.fen());
-        newGame.move({
-          from: moves[0].slice(0, 2),
-          to: moves[0].slice(2, 4),
-          promotion: moves[0][4] || undefined
-        });
-        setGame(newGame);
-        setMoveIndex(1);
-        moveIndexRef.current = 1;
+        try {
+          const moveResult = newGame.move({
+            from: moves[0].slice(0, 2),
+            to: moves[0].slice(2, 4),
+            promotion: moves[0][4] || undefined
+          });
+          if (!moveResult) {
+            console.error('First move invalid:', moves[0]);
+            isLoadingPuzzle.current = false;
+            setPuzzleError(true);
+            return false;
+          }
+          setGame(newGame);
+          setMoveIndex(1);
+          moveIndexRef.current = 1;
+        } catch (e) {
+          console.error('First move error:', e);
+          isLoadingPuzzle.current = false;
+          setPuzzleError(true);
+          return false;
+        }
       } else {
         setGame(chess);
       }
+      
+      isLoadingPuzzle.current = false;
       setReady(true);
+      return true;
     } catch (error) {
-      console.error('Failed to get solution:', error);
-      // Skip to next puzzle on error
-      advanceToNextPuzzle();
+      console.error('Failed to load puzzle:', error);
+      isLoadingPuzzle.current = false;
+      setPuzzleError(true);
+      // DO NOT cascade to next puzzle - show error state instead
+      return false;
     }
   };
 
-  const advanceToNextPuzzle = () => {
+  const advanceToNextPuzzle = async () => {
+    // Guard against rapid-fire advances
+    if (isLoadingPuzzle.current || gameOverRef.current) return;
+
     const nextIdx = currentIndexRef.current + 1;
     if (nextIdx < puzzlesRef.current.length) {
       setCurrentIndex(nextIdx);
       currentIndexRef.current = nextIdx;
-      loadPuzzle(puzzlesRef.current[nextIdx]);
+      const success = await loadPuzzle(puzzlesRef.current[nextIdx]);
+      if (!success) {
+        // Try next puzzle if this one has bad data (but with a limit)
+        let attempts = 0;
+        let idx = nextIdx + 1;
+        while (idx < puzzlesRef.current.length && attempts < 5) {
+          currentIndexRef.current = idx;
+          setCurrentIndex(idx);
+          const ok = await loadPuzzle(puzzlesRef.current[idx]);
+          if (ok) return;
+          idx++;
+          attempts++;
+        }
+        // All remaining puzzles failed
+        handleEndGame();
+      }
     } else {
       handleEndGame();
     }
@@ -148,6 +249,7 @@ const PuzzleRush = () => {
     gameOverRef.current = true;
     setGameOver(true);
     setGameStarted(false);
+    if (timerRef.current) clearInterval(timerRef.current);
 
     try {
       const finalScore = scoreRef.current;
@@ -162,7 +264,7 @@ const PuzzleRush = () => {
   };
 
   const onDrop = useCallback((sourceSquare, targetSquare, piece) => {
-    if (gameOverRef.current || !ready) return false;
+    if (gameOverRef.current || !ready || isLoadingPuzzle.current) return false;
 
     const currentPuzzle = puzzlesRef.current[currentIndexRef.current];
     if (!currentPuzzle) return false;
@@ -193,33 +295,40 @@ const PuzzleRush = () => {
         const newScore = scoreRef.current + 1;
         setScore(newScore);
         scoreRef.current = newScore;
+        toast.success(`Puzzle ${currentIndexRef.current + 1} solved!`, { duration: 1000, icon: '✅' });
 
         setTimeout(() => {
           advanceToNextPuzzle();
-        }, 500);
+        }, 600);
       } else {
         // Make opponent's response move
         const nextMove = solution[mIdx + 1];
         if (nextMove) {
           setTimeout(() => {
             const oppGame = new Chess(newGame.fen());
-            const oppResult = oppGame.move({
-              from: nextMove.slice(0, 2),
-              to: nextMove.slice(2, 4),
-              promotion: nextMove[4] || undefined
-            });
-            if (oppResult) {
-              setGame(oppGame);
-              const newMoveIdx = mIdx + 2;
-              setMoveIndex(newMoveIdx);
-              moveIndexRef.current = newMoveIdx;
+            try {
+              const oppResult = oppGame.move({
+                from: nextMove.slice(0, 2),
+                to: nextMove.slice(2, 4),
+                promotion: nextMove[4] || undefined
+              });
+              if (oppResult) {
+                setGame(oppGame);
+                const newMoveIdx = mIdx + 2;
+                setMoveIndex(newMoveIdx);
+                moveIndexRef.current = newMoveIdx;
+              }
+            } catch (e) {
+              console.error('Opponent move error:', e);
             }
-          }, 200);
+          }, 250);
         }
       }
       return true;
     } else {
       // Wrong move
+      toast.error('Incorrect!', { duration: 800 });
+      
       if (mode === 'survival') {
         const newLives = livesRef.current - 1;
         setLives(newLives);
@@ -230,10 +339,10 @@ const PuzzleRush = () => {
           return false;
         }
       }
-      // Move to next puzzle
+      // Move to next puzzle after a brief delay
       setTimeout(() => {
         advanceToNextPuzzle();
-      }, 500);
+      }, 600);
       return false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -414,6 +523,7 @@ const PuzzleRush = () => {
           </div>
         ) : (
           <div className={`timer ${timeLeft < 30 ? 'low' : ''}`}>
+            <FaClock style={{ marginRight: 8, fontSize: '1.2rem' }} />
             {formatTime(timeLeft)}
           </div>
         )}
@@ -424,21 +534,38 @@ const PuzzleRush = () => {
       </div>
 
       <div className="rush-board" style={{ maxWidth: '450px', margin: '0 auto' }}>
-        <Chessboard
-          position={game.fen()}
-          onPieceDrop={onDrop}
-          boardOrientation={playerColor === 'b' ? 'black' : 'white'}
-          customPieces={customPieces}
-          snapToCursor={true}
-          arePiecesDraggable={ready}
-          customBoardStyle={{
-            borderRadius: '8px',
-            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
-          }}
-          customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
-          customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
-          animationDuration={100}
-        />
+        {!ready && !puzzleError && (
+          <div className="loading-puzzle">
+            <div className="loading-spinner">⏳</div>
+            <p>Loading puzzle...</p>
+          </div>
+        )}
+        {puzzleError && (
+          <div className="puzzle-error">
+            <p>⚠️ Failed to load puzzle</p>
+            <button className="btn btn-primary" onClick={() => {
+              setPuzzleError(false);
+              advanceToNextPuzzle();
+            }}>Skip to Next</button>
+          </div>
+        )}
+        <div style={{ opacity: ready ? 1 : 0.3, pointerEvents: ready ? 'auto' : 'none' }}>
+          <Chessboard
+            position={game.fen()}
+            onPieceDrop={onDrop}
+            boardOrientation={playerColor === 'b' ? 'black' : 'white'}
+            customPieces={customPieces}
+            snapToCursor={true}
+            arePiecesDraggable={ready && !gameOverRef.current}
+            customBoardStyle={{
+              borderRadius: '8px',
+              boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
+            }}
+            customDarkSquareStyle={{ backgroundColor: currentTheme.darkSquare }}
+            customLightSquareStyle={{ backgroundColor: currentTheme.lightSquare }}
+            animationDuration={200}
+          />
+        </div>
       </div>
 
       <div className="puzzle-counter">
@@ -476,6 +603,8 @@ const PuzzleRush = () => {
           font-size: 2rem;
           font-weight: 700;
           font-family: 'Outfit', monospace;
+          display: flex;
+          align-items: center;
         }
         .timer.low {
           color: var(--accent-danger);
@@ -493,9 +622,30 @@ const PuzzleRush = () => {
           margin-top: 16px;
           color: #c8c8dc;
         }
+        .loading-puzzle {
+          text-align: center;
+          padding: 40px;
+          color: #c8c8dc;
+        }
+        .loading-spinner {
+          font-size: 2rem;
+          animation: bounce 1s infinite;
+        }
+        .puzzle-error {
+          text-align: center;
+          padding: 30px;
+          color: #ef4444;
+        }
+        .puzzle-error button {
+          margin-top: 12px;
+        }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
         }
       `}</style>
     </div>

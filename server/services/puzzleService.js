@@ -31,10 +31,12 @@ class PuzzleService {
     const ratingRange = 200;
 
     let query = `
-      SELECT p.*, 
-             (SELECT COUNT(*) FROM puzzle_attempts pa WHERE pa.puzzle_id = p.id AND pa.user_id = $1 AND pa.solved = true) as user_solved
+      SELECT p.*
       FROM puzzles p
       WHERE p.rating BETWEEN $2 AND $3
+        AND p.fen IS NOT NULL AND p.fen != ''
+        AND p.fen != 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        AND p.moves IS NOT NULL AND p.moves != ''
     `;
     
     const params = [
@@ -42,12 +44,6 @@ class PuzzleService {
       minRating || Math.max(800, targetRating - ratingRange),
       maxRating || Math.min(2800, targetRating + ratingRange)
     ];
-
-    // Filter by themes if specified
-    if (themes && themes.length > 0) {
-      params.push(themes);
-      query += ` AND p.themes && $${params.length}`;
-    }
 
     // Exclude recently attempted puzzles
     if (excludeRecent) {
@@ -62,20 +58,39 @@ class PuzzleService {
 
     query += ` ORDER BY RANDOM() LIMIT 1`;
 
-    const result = await pool.query(query, params);
-    
-    if (result.rows.length === 0) {
-      // Fallback: get any puzzle in rating range
-      const fallback = await pool.query(`
-        SELECT * FROM puzzles 
-        WHERE rating BETWEEN $1 AND $2
-        ORDER BY RANDOM() LIMIT 1
-      `, [targetRating - 300, targetRating + 300]);
+    try {
+      const result = await pool.query(query, params);
       
-      return fallback.rows[0] || null;
-    }
+      if (result.rows.length === 0) {
+        // Fallback: get any valid puzzle in wider range
+        const fallback = await pool.query(`
+          SELECT * FROM puzzles 
+          WHERE rating BETWEEN $1 AND $2
+            AND fen IS NOT NULL AND fen != ''
+            AND moves IS NOT NULL AND moves != ''
+          ORDER BY RANDOM() LIMIT 1
+        `, [targetRating - 500, targetRating + 500]);
+        
+        if (fallback.rows.length === 0) {
+          // Ultra fallback: just get any puzzle
+          const any = await pool.query(`SELECT * FROM puzzles ORDER BY RANDOM() LIMIT 1`);
+          return any.rows[0] || null;
+        }
+        
+        return fallback.rows[0] || null;
+      }
 
-    return result.rows[0];
+      return result.rows[0];
+    } catch (error) {
+      console.error('getNextPuzzle error:', error.message);
+      // On any DB error, try simplest possible query
+      try {
+        const simple = await pool.query(`SELECT * FROM puzzles ORDER BY RANDOM() LIMIT 1`);
+        return simple.rows[0] || null;
+      } catch (e) {
+        return null;
+      }
+    }
   }
 
   /**
@@ -306,20 +321,46 @@ class PuzzleService {
    * Start a Puzzle Rush session
    */
   async startPuzzleRush(userId, mode = 'survival') {
-    // Get puzzles ordered by difficulty
+    // Get puzzles ordered by difficulty, randomized within rating bands
+    // Ensure we only get puzzles with valid FEN (not starting position) and valid moves
     const puzzles = await pool.query(`
       SELECT id, fen, moves, rating, themes
       FROM puzzles
-      ORDER BY rating ASC
+      WHERE fen IS NOT NULL 
+        AND fen != ''
+        AND fen != 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+        AND moves IS NOT NULL 
+        AND moves != ''
+        AND LENGTH(moves) >= 7
+      ORDER BY rating ASC, RANDOM()
       LIMIT 100
     `);
+
+    if (puzzles.rows.length === 0) {
+      // Fallback: get ANY puzzles
+      const fallback = await pool.query(`
+        SELECT id, fen, moves, rating, themes
+        FROM puzzles
+        WHERE fen IS NOT NULL AND moves IS NOT NULL
+        ORDER BY RANDOM()
+        LIMIT 50
+      `);
+      return {
+        sessionId: `rush_${userId}_${Date.now()}`,
+        mode,
+        puzzles: fallback.rows,
+        lives: mode === 'survival' ? 3 : Infinity,
+        timeLimit: mode === 'timed' ? 300000 : Infinity,
+        startTime: Date.now()
+      };
+    }
 
     return {
       sessionId: `rush_${userId}_${Date.now()}`,
       mode,
       puzzles: puzzles.rows,
       lives: mode === 'survival' ? 3 : Infinity,
-      timeLimit: mode === 'timed' ? 300000 : Infinity, // 5 minutes for timed mode
+      timeLimit: mode === 'timed' ? 300000 : Infinity,
       startTime: Date.now()
     };
   }

@@ -162,12 +162,13 @@ const Puzzles = () => {
               onPieceDrop={onDrop}
               boardOrientation={orientation}
               customSquareStyles={squareStyles}
-              arePiecesDraggable={true}
-              isDraggablePiece={() => true}
+              arePiecesDraggable={!solved && !loading}
+              isDraggablePiece={() => !solved && !loading}
               snapToCursor={true}
               customPieces={chessComPieces()}
               customDarkSquareStyle={{ backgroundColor: chessComBoardStyle.darkSquare }}
               customLightSquareStyle={{ backgroundColor: chessComBoardStyle.lightSquare }}
+              animationDuration={200}
             />
           </div>
 
