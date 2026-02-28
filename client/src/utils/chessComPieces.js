@@ -97,34 +97,36 @@ export const BOARD_THEMES = {
 };
 
 // Generate custom pieces for react-chessboard
+// IMPORTANT: Uses <img> tags with draggable="false" so @dnd-kit handles drag properly.
+// Using <div> + background-image causes pieces to "fly away" because the DnD overlay
+// can't capture the visual from a background-image.
 export const createCustomPieces = (pieceSet = 'neo') => {
   const set = PIECE_SETS[pieceSet] || PIECE_SETS.neo;
   const pieces = {};
-  
+
   const pieceTypes = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
-  
+
   pieceTypes.forEach((piece) => {
     const color = piece[0];
     const type = piece[1].toLowerCase();
     const url = `${set.baseUrl}/${color}${type}.png`;
 
     pieces[piece] = ({ squareWidth }) => (
-      <div
+      <img
+        src={url}
+        alt={piece}
+        draggable={false}
         style={{
           width: squareWidth,
           height: squareWidth,
-          backgroundImage: `url(${url})`,
-          backgroundSize: '100%',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          WebkitUserDrag: 'none',
+          objectFit: 'contain',
           userSelect: 'none',
-          touchAction: 'none',
+          pointerEvents: 'none',
         }}
       />
     );
   });
-  
+
   return pieces;
 };
 
