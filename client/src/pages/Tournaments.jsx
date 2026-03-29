@@ -280,6 +280,9 @@ const TournamentCard = ({ tournament, formatDate, formatTimeControl }) => (
           <FaTrophy />
           <span>{tournament.total_rounds} rounds</span>
         </div>
+        <div className="meta-item">
+          <span>{(tournament.entry_fee || 0) === 0 ? '🆓 Free' : `💰 $${(tournament.entry_fee / 100).toFixed(0)}`}</span>
+        </div>
       </div>
     </div>
     

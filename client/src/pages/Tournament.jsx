@@ -75,6 +75,23 @@ const Tournament = () => {
   };
 
   const handleRegister = async () => {
+    // Check if tournament is free
+    const entryFee = tournament.entry_fee || 0;
+    if (entryFee === 0) {
+      // Free tournament — register directly
+      try {
+        setProcessingPayment(true);
+        await axios.post(`/api/tournaments/${id}/register`);
+        toast.success('You are now registered!');
+        loadTournament();
+      } catch (err) {
+        toast.error(err.response?.data?.error || 'Failed to register');
+      } finally {
+        setProcessingPayment(false);
+      }
+      return;
+    }
+    // Paid tournament — go through Stripe
     try {
       setProcessingPayment(true);
       const response = await axios.post(`/api/payments/tournament/${id}/checkout`);
@@ -172,19 +189,21 @@ const Tournament = () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', color: 'white' }}>
-      {/* Charity Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        padding: '15px 20px',
-        borderRadius: '12px',
-        marginBottom: '20px',
-        textAlign: 'center',
-        fontWeight: 'bold',
-        fontSize: '16px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
-      }}>
-        💚 Every dollar funds free schools in South Africa. Play chess, change lives.
-      </div>
+      {/* Charity Banner - only show for paid tournaments */}
+      {(tournament.entry_fee || 0) > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          padding: '15px 20px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '16px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+        }}>
+          💚 Every dollar funds free schools in South Africa. Play chess, change lives.
+        </div>
+      )}
 
       {processingPayment && (
         <div style={{
@@ -238,7 +257,7 @@ const Tournament = () => {
               fontWeight: 'bold'
             }}
           >
-            {processingPayment ? 'Processing...' : 'Pay $1 & Register'}
+            {processingPayment ? 'Processing...' : (tournament.entry_fee || 0) > 0 ? `Pay $${(tournament.entry_fee / 100).toFixed(0)} & Register` : 'Register (Free)'}
           </button>
         )}
         {isRegistered && (

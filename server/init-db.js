@@ -407,6 +407,11 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_tournament_payments_status ON tournament_payments(status);
     `);
 
+    // Add entry_fee column for free tournaments
+    await client.query(`
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS entry_fee INTEGER DEFAULT 0;
+    `);
+
     // Chess lessons table
     await client.query(`
       CREATE TABLE IF NOT EXISTS chess_lessons (

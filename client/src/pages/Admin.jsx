@@ -760,7 +760,7 @@ const TournamentAdmin = () => {
   };
 
   const createOfficialTournament = async () => {
-    if (!window.confirm('Create the Official Back-to-School Tournament?\n\n🏆 Riddick from G5-1\'s Official Tournament\n⏱️ 10 min games, 8hr forfeit window\n📅 Jan 5-9 signup, Jan 9-11 games')) return;
+    if (!window.confirm('Create the Riddick Chess Open?\n\n🏆 Riddick Chess Open — April 2026\n⏱️ 5 min blitz, 4 rounds\n🆓 FREE entry\n📅 April 5th, 2026')) return;
     
     setCreating(true);
     try {
@@ -831,9 +831,9 @@ const TournamentAdmin = () => {
 const CreateTournament = () => {
   const [form, setForm] = useState({
     name: '', description: '', timeControl: 300, increment: 0,
-    maxPlayers: 16, totalRounds: 5, startTime: ''
+    maxPlayers: 16, totalRounds: 5, startTime: '', entryFee: 0
   });
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -844,18 +844,23 @@ const CreateTournament = () => {
       toast.error('Failed to create tournament');
     }
   };
-  
+
   return (
     <div style={{ maxWidth: '500px' }}>
       <h1>Create Tournament</h1>
       <form onSubmit={handleSubmit}>
         <div className="form-group"><label>Name</label><input className="form-input" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-        <div className="form-group"><label>Description</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+        <div className="form-group"><label>Description</label><textarea className="form-input" rows={4} value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
         <div className="form-group"><label>Time Control (sec)</label><input type="number" className="form-input" value={form.timeControl} onChange={e => setForm({...form, timeControl: +e.target.value})} /></div>
         <div className="form-group"><label>Increment (sec)</label><input type="number" className="form-input" value={form.increment} onChange={e => setForm({...form, increment: +e.target.value})} /></div>
         <div className="form-group"><label>Max Players</label><input type="number" className="form-input" value={form.maxPlayers} onChange={e => setForm({...form, maxPlayers: +e.target.value})} /></div>
         <div className="form-group"><label>Rounds</label><input type="number" className="form-input" value={form.totalRounds} onChange={e => setForm({...form, totalRounds: +e.target.value})} /></div>
         <div className="form-group"><label>Start Time</label><input type="datetime-local" className="form-input" value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} /></div>
+        <div className="form-group">
+          <label>Entry Fee (cents, 0 = free)</label>
+          <input type="number" className="form-input" value={form.entryFee} onChange={e => setForm({...form, entryFee: +e.target.value})} />
+          <small style={{ color: '#c8c8dc' }}>{form.entryFee === 0 ? '🆓 Free tournament — no payment needed' : `💰 $${(form.entryFee / 100).toFixed(2)} entry fee (via Stripe)`}</small>
+        </div>
         <button type="submit" className="btn btn-primary">Create Tournament</button>
       </form>
     </div>

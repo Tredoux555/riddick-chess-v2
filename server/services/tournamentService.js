@@ -27,21 +27,22 @@ class TournamentService {
       registrationEnd,
       tournamentEnd,
       forfeitHours = 24,
-      isArena = false
+      isArena = false,
+      entryFee = 0
     } = data;
 
     const result = await pool.query(`
       INSERT INTO tournaments (
-        name, description, created_by, type, time_control, increment, 
+        name, description, created_by, type, time_control, increment,
         max_players, total_rounds, prize_description, start_time,
-        registration_start, registration_end, tournament_end, forfeit_hours, is_arena
+        registration_start, registration_end, tournament_end, forfeit_hours, is_arena, entry_fee
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `, [
       name, description, createdBy, type, timeControl, increment,
       maxPlayers, totalRounds, prizeDescription, startTime,
-      registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena
+      registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena, entryFee
     ]);
 
     return result.rows[0];

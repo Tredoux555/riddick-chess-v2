@@ -145,9 +145,23 @@ router.get('/:id/rounds/:round', authenticateToken, async (req, res) => {
   }
 });
 
-// Register for a tournament
+// Register for a tournament (free tournaments only, or admin override)
 router.post('/:id/register', authenticateToken, async (req, res) => {
   try {
+    const pool = require('../utils/db');
+    // Check if tournament is free (entry_fee = 0 or null)
+    const tournament = await pool.query(
+      'SELECT entry_fee FROM tournaments WHERE id = $1', [req.params.id]
+    );
+    if (tournament.rows.length === 0) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+    const entryFee = tournament.rows[0].entry_fee || 0;
+    // Allow free registration if entry_fee is 0 or user is admin
+    const isAdmin = req.user.is_admin;
+    if (entryFee > 0 && !isAdmin) {
+      return res.status(400).json({ error: 'This tournament requires payment to register' });
+    }
     const result = await tournamentService.registerPlayer(req.params.id, req.user.id);
     res.json(result);
   } catch (error) {
@@ -253,87 +267,62 @@ router.post('/:id/activity', authenticateToken, async (req, res) => {
   }
 });
 
-// Quick create the official tournament (admin only) - one time use
+// Admin: register a user for a tournament (bypasses payment)
+router.post('/:id/admin-register', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+    const result = await tournamentService.registerPlayer(req.params.id, userId);
+    res.json(result);
+  } catch (error) {
+    console.error('Admin register error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Quick create the official tournament (admin only)
 router.post('/create-official-tournament', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const pool = require('../utils/db');
-    
-    // First add any missing columns
+
+    // Ensure entry_fee column exists
     await pool.query(`
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS registration_start TIMESTAMP;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS registration_end TIMESTAMP;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tournament_end TIMESTAMP;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS forfeit_hours INTEGER DEFAULT 24;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS total_rounds INTEGER DEFAULT 5;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS increment INTEGER DEFAULT 0;
-      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS is_arena BOOLEAN DEFAULT FALSE;
-      
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT NOW();
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS games_played INTEGER DEFAULT 0;
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS games_forfeited INTEGER DEFAULT 0;
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS registered_at TIMESTAMP DEFAULT NOW();
-      ALTER TABLE tournament_participants ADD COLUMN IF NOT EXISTS checked_in BOOLEAN DEFAULT FALSE;
-      
-      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS forfeit_deadline TIMESTAMP;
-      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS is_forfeited BOOLEAN DEFAULT FALSE;
-      ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS forfeited_by INTEGER;
+      ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS entry_fee INTEGER DEFAULT 0;
     `);
 
-    // Create the tournament
+    // Create the tournament — FREE entry
     const result = await pool.query(`
       INSERT INTO tournaments (
         name, description, type, time_control, increment, max_players, total_rounds,
-        status, current_round, start_time, registration_start, registration_end,
-        tournament_end, forfeit_hours, is_arena, created_by
+        status, current_round, start_time, forfeit_hours, is_arena, created_by, entry_fee
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
       )
       RETURNING *
     `, [
-      "Riddick from G5-1's Official Tournament",
-      `🏆 The schoolwide official back-to-school tournament!
-返校官方锦标赛！欢迎所有人参加！
-
-📅 SCHEDULE / 时间安排
-• Sign up / 报名: Mon Jan 5th - Fri Jan 9th 5PM
-• Tournament / 比赛: Fri Jan 9th 5PM - Sun Jan 11th 6PM
-• Finals / 决赛: Mon Jan 12th at Recess (in person! 当面对决！)
-
-⏱️ GAME FORMAT / 比赛形式
-• 10 minutes per player, no extra time
-• 每人10分钟，无加时
-
-⚠️ RULES / 规则
-• You have 8 HOURS to play each game or forfeit
-• 每场比赛必须在8小时内完成，否则判负
-• 2 forfeits = kicked out / 两次弃权 = 退出比赛
-• Top 2 play finals IN PERSON! / 前两名现场决赛！
-
-🎯 Anyone can join! Come have fun!
-欢迎所有人参加！来玩吧！`,
+      'Riddick Chess Open — April 2026',
+      '🏆 The Riddick Chess Open!\n\n📅 Sign up now, tournament starts April 5th\n⏱️ 5+0 blitz games (5 minutes per player)\n🔄 Swiss system — 4 rounds\n👥 Open to everyone!\n\n🆓 FREE entry — just sign up and play!\n\nCome compete and climb the leaderboard!',
       'swiss',
-      600,    // 10 minutes
+      300,    // 5 minutes per player
       0,      // no increment
-      500,    // max players (realistic)
-      6,      // 6 rounds (good for up to 64 players, can extend)
+      32,     // max players
+      4,      // 4 rounds
       'upcoming',
       0,
-      '2026-01-09T09:00:00Z',  // Fri Jan 9 5PM Beijing = 9AM UTC
-      '2026-01-04T16:00:00Z',  // Mon Jan 5 midnight Beijing
-      '2026-01-09T09:00:00Z',  // Registration ends when tournament starts
-      '2026-01-11T10:00:00Z',  // Sun Jan 11 6PM Beijing
-      8,      // 8 HOURS to play each game
+      '2026-04-05T12:00:00Z',  // April 5, 2026 noon UTC
+      8,      // 8 hours to play each game
       false,
-      req.user.id
+      req.user.id,
+      0       // FREE
     ]);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       tournament: result.rows[0],
       viewUrl: `/tournament/${result.rows[0].id}`,
-      message: 'Tournament created! Share the tournaments page with students.'
+      message: 'Free tournament created! Share the tournaments page with students.'
     });
   } catch (error) {
     console.error('Create official tournament error:', error);
