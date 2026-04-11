@@ -58,8 +58,10 @@ router.get('/unread', authenticateToken, async (req, res) => {
 router.get('/:userId', authenticateToken, async (req, res) => {
   try {
     const otherId = parseInt(req.params.userId);
+    if (!otherId || isNaN(otherId)) return res.status(400).json({ error: 'Invalid user ID' });
+
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
-    const before = req.query.before;
+    const before = req.query.before ? parseInt(req.query.before) : null;
 
     let query = `
       SELECT dm.id, dm.sender_id, dm.receiver_id, dm.content, dm.created_at, dm.read_at,
@@ -71,8 +73,8 @@ router.get('/:userId', authenticateToken, async (req, res) => {
     `;
     const params = [req.user.id, otherId];
 
-    if (before) {
-      query += ` AND dm.id < $3`;
+    if (before && Number.isInteger(before)) {
+      query += ` AND dm.id < $${params.length + 1}`;
       params.push(before);
     }
 

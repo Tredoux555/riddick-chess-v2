@@ -29,7 +29,7 @@ const DirectMessage = () => {
         } else {
           // Fallback: fetch user info
           try {
-            const userRes = await axios.get(`/api/users/${otherId}/profile`);
+            const userRes = await axios.get(`/api/users/${otherId}`);
             setOtherUser({ username: userRes.data.username, avatar: userRes.data.avatar });
           } catch (e) {
             setOtherUser({ username: `User #${otherId}` });

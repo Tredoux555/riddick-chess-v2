@@ -843,6 +843,7 @@ function initializeSocket(io) {
     });
 
     socket.on('tournament:leave', ({ tournamentId }) => {
+      if (!userId) return;
       const tId = Number(tournamentId);
       socket.leave(`tournament:${tId}`);
     });
@@ -892,8 +893,13 @@ function initializeSocket(io) {
       if (!userId) return;
       if (!content || !content.trim() || content.length > 1000) return;
       const rId = Number(receiverId);
+      if (!rId || rId === userId) return; // Can't message yourself
 
       try {
+        // Verify receiver exists and isn't banned
+        const receiverCheck = await pool.query('SELECT id FROM users WHERE id = $1 AND is_banned = FALSE', [rId]);
+        if (receiverCheck.rows.length === 0) return;
+
         const senderInfo = await pool.query('SELECT username, avatar FROM users WHERE id = $1', [userId]);
         const filtered = filterBadWords(content.trim());
 

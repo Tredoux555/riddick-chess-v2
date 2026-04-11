@@ -69,22 +69,18 @@ const Tournament = () => {
     return () => clearInterval(interval);
   }, [id]);
 
-  // Join tournament chat room via socket
+  // Join tournament chat room via socket — consolidated lifecycle
   useEffect(() => {
     if (!socket || !connected || !tournament?.isRegistered) return;
 
-    if (!joinedRoom.current) {
-      socket.emit('tournament:join', { tournamentId: id });
-      joinedRoom.current = true;
-    }
+    socket.emit('tournament:join', { tournamentId: id });
+    joinedRoom.current = true;
 
     const handleMessage = (msg) => {
       setChatMessages(prev => {
-        // Deduplicate
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      // Auto-scroll
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     };
 
@@ -92,24 +88,29 @@ const Tournament = () => {
 
     return () => {
       socket.off('tournament:message', handleMessage);
-    };
-  }, [socket, connected, tournament?.isRegistered, id]);
-
-  // Leave room on unmount
-  useEffect(() => {
-    return () => {
-      if (socket && joinedRoom.current) {
+      if (joinedRoom.current) {
         socket.emit('tournament:leave', { tournamentId: id });
         joinedRoom.current = false;
       }
     };
-  }, [socket, id]);
+  }, [socket, connected, tournament?.isRegistered, id]);
 
-  // Load chat history when chat is opened
+  // Load chat history when chat is opened — merge with any socket messages already received
   const loadChatHistory = async () => {
     try {
       const res = await axios.get(`/api/tournaments/${id}/messages?limit=50`);
-      setChatMessages(res.data || []);
+      setChatMessages(prev => {
+        const history = res.data || [];
+        const merged = [...history, ...prev];
+        // Deduplicate by id, keep chronological order
+        const seen = new Set();
+        const deduped = merged.filter(m => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+        return deduped.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      });
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
       // silent

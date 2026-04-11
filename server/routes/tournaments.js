@@ -327,8 +327,19 @@ router.post('/create-official-tournament', authenticateToken, requireAdmin, asyn
 router.get('/:id/messages', authenticateToken, async (req, res) => {
   try {
     const pool = require('../utils/db');
+    const tournamentId = req.params.id;
+
+    // Verify user is a participant
+    const participant = await pool.query(
+      'SELECT id FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+      [tournamentId, req.user.id]
+    );
+    if (participant.rows.length === 0) {
+      return res.status(403).json({ error: 'Not a tournament participant' });
+    }
+
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
-    const before = req.query.before; // cursor-based pagination
+    const before = req.query.before ? parseInt(req.query.before) : null;
 
     let query = `
       SELECT tm.id, tm.content, tm.created_at, tm.user_id,
@@ -337,9 +348,9 @@ router.get('/:id/messages', authenticateToken, async (req, res) => {
       JOIN users u ON tm.user_id = u.id
       WHERE tm.tournament_id = $1
     `;
-    const params = [req.params.id];
+    const params = [tournamentId];
 
-    if (before) {
+    if (before && Number.isInteger(before)) {
       query += ` AND tm.id < $${params.length + 1}`;
       params.push(before);
     }
