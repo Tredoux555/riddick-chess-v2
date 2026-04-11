@@ -490,6 +490,35 @@ async function initDatabase() {
       LIMIT 100;
     `);
 
+    // Tournament chat messages
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tournament_messages (
+        id SERIAL PRIMARY KEY,
+        tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_tournament_messages_tournament ON tournament_messages(tournament_id, created_at);
+    `);
+
+    // Direct messages between players
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS direct_messages (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        read_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_dm_sender ON direct_messages(sender_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_dm_receiver ON direct_messages(receiver_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_dm_conversation ON direct_messages(
+        LEAST(sender_id, receiver_id), GREATEST(sender_id, receiver_id), created_at
+      );
+    `);
+
     await initBotTables(client);
     console.log('✅ Database initialized successfully!');
   } catch (err) {

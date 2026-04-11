@@ -824,6 +824,123 @@ function initializeSocket(io) {
     });
 
     // ========================================
+    // TOURNAMENT CHAT
+    // ========================================
+
+    socket.on('tournament:join', async ({ tournamentId }) => {
+      if (!userId) return;
+      const tId = Number(tournamentId);
+
+      // Verify user is a participant
+      const participant = await pool.query(
+        'SELECT id FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2 AND (is_withdrawn = FALSE OR is_withdrawn IS NULL)',
+        [tId, userId]
+      );
+      if (participant.rows.length === 0) return;
+
+      socket.join(`tournament:${tId}`);
+      console.log(`User ${userId} joined tournament chat ${tId}`);
+    });
+
+    socket.on('tournament:leave', ({ tournamentId }) => {
+      const tId = Number(tournamentId);
+      socket.leave(`tournament:${tId}`);
+    });
+
+    socket.on('tournament:message', async ({ tournamentId, content }) => {
+      if (!userId) return;
+      if (!content || !content.trim() || content.length > 500) return;
+      const tId = Number(tournamentId);
+
+      // Verify participant
+      const participant = await pool.query(
+        'SELECT id FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2 AND (is_withdrawn = FALSE OR is_withdrawn IS NULL)',
+        [tId, userId]
+      );
+      if (participant.rows.length === 0) return;
+
+      try {
+        const userInfo = await pool.query('SELECT username, avatar FROM users WHERE id = $1', [userId]);
+        const filtered = filterBadWords(content.trim());
+
+        const result = await pool.query(`
+          INSERT INTO tournament_messages (tournament_id, user_id, content)
+          VALUES ($1, $2, $3)
+          RETURNING id, created_at
+        `, [tId, userId, filtered]);
+
+        const messageData = {
+          id: result.rows[0].id,
+          user_id: userId,
+          username: userInfo.rows[0].username,
+          avatar: userInfo.rows[0].avatar,
+          content: filtered,
+          created_at: result.rows[0].created_at
+        };
+
+        io.to(`tournament:${tId}`).emit('tournament:message', messageData);
+      } catch (error) {
+        console.error('Tournament chat error:', error);
+      }
+    });
+
+    // ========================================
+    // DIRECT MESSAGES
+    // ========================================
+
+    socket.on('dm:send', async ({ receiverId, content }) => {
+      if (!userId) return;
+      if (!content || !content.trim() || content.length > 1000) return;
+      const rId = Number(receiverId);
+
+      try {
+        const senderInfo = await pool.query('SELECT username, avatar FROM users WHERE id = $1', [userId]);
+        const filtered = filterBadWords(content.trim());
+
+        const result = await pool.query(`
+          INSERT INTO direct_messages (sender_id, receiver_id, content)
+          VALUES ($1, $2, $3)
+          RETURNING id, created_at
+        `, [userId, rId, filtered]);
+
+        const messageData = {
+          id: result.rows[0].id,
+          sender_id: userId,
+          receiver_id: rId,
+          sender_username: senderInfo.rows[0].username,
+          sender_avatar: senderInfo.rows[0].avatar,
+          content: filtered,
+          created_at: result.rows[0].created_at
+        };
+
+        // Send to sender
+        socket.emit('dm:receive', messageData);
+
+        // Send to receiver if online
+        const receiverSocketId = userSockets.get(rId);
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('dm:receive', messageData);
+        }
+      } catch (error) {
+        console.error('DM error:', error);
+      }
+    });
+
+    socket.on('dm:read', async ({ otherUserId }) => {
+      if (!userId) return;
+      const otherId = Number(otherUserId);
+
+      try {
+        await pool.query(`
+          UPDATE direct_messages SET read_at = NOW()
+          WHERE sender_id = $1 AND receiver_id = $2 AND read_at IS NULL
+        `, [otherId, userId]);
+      } catch (error) {
+        console.error('DM read error:', error);
+      }
+    });
+
+    // ========================================
     // DISCONNECT HANDLING
     // ========================================
 

@@ -26,6 +26,8 @@ import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
 import ForgotPassword from './pages/ForgotPassword';
+import Messages from './pages/Messages';
+import DirectMessage from './pages/DirectMessage';
 import SecretStore from './pages/SecretStore';
 import SecretStoreShop from './pages/SecretStoreShop';
 import SecretStoreAdmin from './pages/SecretStoreAdmin';
@@ -110,6 +112,12 @@ function App() {
           } />
           <Route path="/tournaments" element={
             <ProtectedRoute><Tournaments /></ProtectedRoute>
+          } />
+          <Route path="/messages" element={
+            <ProtectedRoute><Messages /></ProtectedRoute>
+          } />
+          <Route path="/messages/:userId" element={
+            <ProtectedRoute><DirectMessage /></ProtectedRoute>
           } />
           <Route path="/tournament/:id" element={
             <ProtectedRoute><Tournament /></ProtectedRoute>

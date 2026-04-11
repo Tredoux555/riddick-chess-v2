@@ -3,34 +3,32 @@
   "url": "riddickchess.site",
   "repo": "~/Desktop/riddick-chess-v2",
   "github": "github.com/Tredoux555/riddick-chess-v2",
-  "lastUpdated": "2026-02-24T12:00:00Z",
+  "lastUpdated": "2026-02-26T12:00:00Z",
   "owner": "Riddick (age 10)",
 
-  "CALL_TO_ACTION": "🚨 PUSH 1 COMMIT — Run 'git push origin main' from Mac terminal. Then test Killer Openings live on riddickchess.site/killer-openings. Then Phase 4 polish.",
+  "CALL_TO_ACTION": "All pushed. Verify fonts + light mode on riddickchess.site after deploy. Then Phase 4 polish or fix is_active DB column.",
 
-  "currentPriority": "KILLER OPENINGS — BUILT, UI POLISHED, 1 COMMIT TO PUSH",
-
-  "killerOpeningsStatus": {
-    "research": "DONE",
-    "build": "DONE — Phases 1-3 complete, code audited, all chess moves verified legal",
-    "deployment": "1 UNPUSHED COMMIT (73a2e08 — login page light mode fix). Run git push origin main.",
-    "testing": "NOT YET TESTED LIVE — needs manual play-through on riddickchess.site",
-    "remaining": [
-      "Phase 4: Polish — XP integration with server, achievements, sound effects",
-      "Phase 5: Demo GIF/screenshots for YouTuber outreach"
-    ]
-  },
+  "currentPriority": "VERIFY DEPLOY — fonts, light mode, favicon. Then Phase 4 Killer Openings polish.",
 
   "status": {
-    "killer_openings": "BUILT & UI POLISHED — 10 openings, guided board, 3 bot modes, light mode fixed. 1 commit to push.",
+    "fonts": "FIXED — hardcoded #e0e0ee / #c8c8dc across 24+ files, no more CSS variables for text colors",
+    "light_mode": "FIXED — nuclear override with html[data-theme='light'] selectors, ~240 lines in index.css",
+    "favicon": "FIXED — deleted broken SVG + generated files, favicon.ico is primary",
+    "snapToCursor": "FIXED — added to all 11 Chessboard components, pieces no longer fly away",
+    "git_history": "CLEAN — purged 217MB pptx blob, .git is 1.1MB",
+    "killer_openings": "BUILT & UI POLISHED — 10 openings, guided board, 3 bot modes. Needs Phase 4 polish.",
     "learn_page": "22 lessons, puzzles, quizzes, XP system, error boundary — DONE",
     "bot_system": "6 bots, BotGame.jsx INCOMPLETE (missing render method) — BLOCKED",
     "pieces": "Chess.com piece sets working (Neo, Classic, Wood, Glass, Gothic, Metal)",
     "themes": "Board themes working (Green, Brown, Blue)",
     "ip_banning": "Working — banned_ips table in Railway PostgreSQL",
-    "light_dark_theme": "Working — warm off-white + green accents",
     "deployment": "Railway auto-deploy from GitHub main branch"
   },
+
+  "knownIssues": [
+    "Health check: 'column is_active does not exist' in bots table — needs DB migration or code fix",
+    "BotGame.jsx: incomplete render method — see HANDOFF_BOT_ANALYSIS_JAN4.md"
+  ],
 
   "techStack": {
     "frontend": "React (CRA) + chess.js + react-chessboard",
@@ -42,26 +40,52 @@
   "keyPatterns": {
     "auth": "import { useAuth } from '../contexts/AuthContext'; const { token } = useAuth(); headers: { 'Authorization': `Bearer ${token}` }",
     "board": "import { useBoardSettings } from '../contexts/BoardSettingsContext';",
-    "routing": "App.js — Routes component, ProtectedRoute wrapper for auth-required pages"
+    "routing": "App.js — Routes component, ProtectedRoute wrapper for auth-required pages",
+    "textColors": "Hardcoded hex (#e0e0ee, #c8c8dc) — do NOT use var(--text-secondary) or var(--text-muted)",
+    "lightMode": "html[data-theme='light'] with !important in index.css — highest specificity override"
   },
 
   "nextSteps": [
-    "1. PUSH: run 'git push origin main' to deploy login page light mode fix (1 commit)",
-    "2. TEST: play through Scholar's Mate on riddickchess.site/killer-openings in all 3 modes",
-    "3. POLISH: connect XP rewards to server API, add achievements, sound effects on checkmate",
-    "4. SCREENSHOTS: take demo screenshots/GIF of guided play for YouTuber outreach",
-    "5. OUTREACH: DM chess YouTubers starting with Tier 3-4 (see docs/HANDOFF_KILLER_OPENINGS.md)",
-    "6. BACKLOG: finish BotGame.jsx render method (see HANDOFF_BOT_ANALYSIS_JAN4.md)"
+    "1. VERIFY: check fonts + light mode + favicon on riddickchess.site after deploy",
+    "2. DB FIX: add is_active column to bots table on Railway PostgreSQL, or remove the query",
+    "3. PHASE 4: Killer Openings polish — XP integration with server API, achievements, sound effects",
+    "4. BOTGAME: fix BotGame.jsx render method (see HANDOFF_BOT_ANALYSIS_JAN4.md)",
+    "5. PHASE 5: demo screenshots/GIF, DM chess YouTubers (see docs/HANDOFF_KILLER_OPENINGS.md)"
   ],
 
   "recentWork": [
-    "Fixed login/auth page readability in light mode (white card, dark text)",
-    "Fixed navbar text readability in light mode (darker color, bolder weight)",
-    "Moved Tournaments & Leaderboards from navbar to profile dropdown (declutter)",
-    "Built Killer Openings selection page (KillerOpenings.jsx)",
-    "Built guided board engine (KillerOpeningPlayer.jsx) with 3 bot modes",
-    "Created data file with all 10 openings — move trees, trap lines, defense lines",
-    "Audited all code — fixed defense logic bug, unused imports, responsive board width",
-    "Verified all 100% chess moves are legal via chess.js test script"
-  ]
+    "Added snapToCursor={true} to all 11 Chessboard components (piece drag fix)",
+    "Hardcoded text colors across 24+ files — replaced CSS variables with #e0e0ee / #c8c8dc",
+    "Added !important inline style overrides in Home.jsx for dark mode readability",
+    "Built light mode nuclear override (~240 lines CSS) with html[data-theme='light'] selectors",
+    "Deleted broken favicon.svg + generated favicons, set favicon.ico as primary in index.html",
+    "Purged 217MB pptx from git history, reduced .git from 217MB to 1.1MB",
+    "Pushed all changes to GitHub (commit fdb5080)"
+  ],
+
+  "importantNotes": [
+    "DO NOT use 'git add -A' or 'git add .' — it picks up large files like .pptx",
+    "DO NOT use var(--text-secondary) or var(--text-muted) for text colors — they don't apply reliably, use hardcoded hex",
+    "Light mode overrides MUST use html[data-theme='light'] selector (not :root) for specificity over inline styles"
+  ],
+
+  "workflows": {
+    "3x3x3": {
+      "description": "Riddick's quality assurance workflow for building features",
+      "steps": [
+        "Phase 1 — PLAN-AUDIT (x3): Plan the implementation, audit the plan, repeat 3 times",
+        "Phase 2 — CHECK-AUDIT (x3): Check the plan against existing code, audit plan again, repeat 3 times",
+        "Phase 3 — BUILD-AUDIT (x3): Build the feature, audit the build, repeat 3 times"
+      ]
+    },
+    "3x3x3x3": {
+      "description": "Extended version — adds internet research phase before the 3x3x3",
+      "steps": [
+        "Phase 0 — RESEARCH (x3): Research the internet for the best known documented and used methods of completing the task, repeat 3 times to ensure thorough coverage",
+        "Phase 1 — PLAN-AUDIT (x3): Plan the implementation informed by research, audit the plan, repeat 3 times",
+        "Phase 2 — CHECK-AUDIT (x3): Check the plan against existing code, audit plan again, repeat 3 times",
+        "Phase 3 — BUILD-AUDIT (x3): Build the feature, audit the build, repeat 3 times"
+      ]
+    }
+  }
 }

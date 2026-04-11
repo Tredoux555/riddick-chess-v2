@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 import toast from 'react-hot-toast';
-import { FaClock, FaUsers, FaTrophy, FaCheck, FaEye, FaPlay, FaChess } from 'react-icons/fa';
+import { FaClock, FaUsers, FaTrophy, FaCheck, FaEye, FaPlay, FaChess, FaComments, FaEnvelope } from 'react-icons/fa';
 
 const Tournament = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const { socket, connected } = useSocket();
   const [tournament, setTournament] = useState(null);
   const [rounds, setRounds] = useState([]);
   const [activeGames, setActiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [registering, setRegistering] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef(null);
+  const joinedRoom = useRef(false);
 
   const loadTournament = async () => {
     setLoading(true);
@@ -61,6 +68,72 @@ const Tournament = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, [id]);
+
+  // Join tournament chat room via socket
+  useEffect(() => {
+    if (!socket || !connected || !tournament?.isRegistered) return;
+
+    if (!joinedRoom.current) {
+      socket.emit('tournament:join', { tournamentId: id });
+      joinedRoom.current = true;
+    }
+
+    const handleMessage = (msg) => {
+      setChatMessages(prev => {
+        // Deduplicate
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      // Auto-scroll
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    };
+
+    socket.on('tournament:message', handleMessage);
+
+    return () => {
+      socket.off('tournament:message', handleMessage);
+    };
+  }, [socket, connected, tournament?.isRegistered, id]);
+
+  // Leave room on unmount
+  useEffect(() => {
+    return () => {
+      if (socket && joinedRoom.current) {
+        socket.emit('tournament:leave', { tournamentId: id });
+        joinedRoom.current = false;
+      }
+    };
+  }, [socket, id]);
+
+  // Load chat history when chat is opened
+  const loadChatHistory = async () => {
+    try {
+      const res = await axios.get(`/api/tournaments/${id}/messages?limit=50`);
+      setChatMessages(res.data || []);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch (err) {
+      // silent
+    }
+  };
+
+  const toggleChat = () => {
+    const next = !showChat;
+    setShowChat(next);
+    if (next) loadChatHistory();
+  };
+
+  const sendChatMessage = () => {
+    if (!chatInput.trim() || !socket) return;
+    socket.emit('tournament:message', { tournamentId: id, content: chatInput.trim() });
+    setChatInput('');
+  };
+
+  const handleChatKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendChatMessage();
+    }
+  };
 
   const handleRegister = async () => {
     try {
@@ -194,6 +267,61 @@ const Tournament = () => {
         )}
       </div>
 
+      {/* ============ TOURNAMENT CHAT TOGGLE ============ */}
+      {tournament.isRegistered && (
+        <div style={{ marginTop: '16px' }}>
+          <button onClick={toggleChat} style={{ ...styles.btn, background: showChat ? '#6366f1' : '#4b5563' }}>
+            <FaComments style={{ marginRight: '6px' }} /> {showChat ? 'Hide Chat' : 'Tournament Chat'}
+          </button>
+        </div>
+      )}
+
+      {/* ============ TOURNAMENT CHAT PANEL ============ */}
+      {showChat && tournament.isRegistered && (
+        <div style={styles.chatPanel}>
+          <div style={styles.chatHeader}>
+            <FaComments style={{ marginRight: '6px' }} /> Tournament Chat
+            <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '8px' }}>
+              {tournament.participant_count || 0} participants
+            </span>
+          </div>
+          <div style={styles.chatMessages}>
+            {chatMessages.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#666', padding: '20px', fontSize: '13px' }}>
+                No messages yet. Say hi to your opponents!
+              </div>
+            )}
+            {chatMessages.map(msg => (
+              <div key={msg.id} style={{
+                ...styles.chatMsg,
+                background: msg.user_id === user?.id ? 'rgba(118, 150, 86, 0.15)' : 'rgba(255,255,255,0.04)'
+              }}>
+                <span style={{ fontWeight: 'bold', color: msg.user_id === user?.id ? '#95cc75' : '#7c8dff', fontSize: '13px' }}>
+                  {msg.username}
+                </span>
+                <span style={{ color: '#d0d0e0', marginLeft: '8px', fontSize: '14px' }}>{msg.content}</span>
+                <span style={{ color: '#555', fontSize: '11px', marginLeft: '8px' }}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div style={styles.chatInputRow}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleChatKeyDown}
+              placeholder="Type a message..."
+              maxLength={500}
+              style={styles.chatInputField}
+            />
+            <button onClick={sendChatMessage} style={styles.chatSendBtn}>Send</button>
+          </div>
+        </div>
+      )}
+
       {/* ============ YOUR MATCH (the key missing piece) ============ */}
       {tournament.status === 'active' && isRegistered && myPairing && (
         <div style={styles.myMatchBox}>
@@ -209,15 +337,25 @@ const Tournament = () => {
                 <span style={{ color: '#666', margin: '0 10px' }}>vs</span>
                 <span style={{ color: myPairing.black_player_id === user?.id ? '#fff' : '#b0b0c4' }}>{myPairing.black_username}</span>
               </div>
-              {myPairing.result ? (
-                <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: 'bold' }}>
-                  Result: {formatResult(myPairing.result)}
-                </span>
-              ) : myPairing.game_id ? (
-                <button onClick={() => navigate(`/game/${myPairing.game_id}`)} style={styles.playBtn}>
-                  <FaChess style={{ marginRight: '6px' }} /> Play Game
-                </button>
-              ) : null}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {(() => {
+                  const opponentId = myPairing.white_player_id === user?.id ? myPairing.black_player_id : myPairing.white_player_id;
+                  return (
+                    <button onClick={() => navigate(`/messages/${opponentId}`)} style={styles.msgBtn}>
+                      <FaEnvelope style={{ marginRight: '4px' }} /> Message
+                    </button>
+                  );
+                })()}
+                {myPairing.result ? (
+                  <span style={{ fontSize: '16px', color: '#94a3b8', fontWeight: 'bold' }}>
+                    Result: {formatResult(myPairing.result)}
+                  </span>
+                ) : myPairing.game_id ? (
+                  <button onClick={() => navigate(`/game/${myPairing.game_id}`)} style={styles.playBtn}>
+                    <FaChess style={{ marginRight: '6px' }} /> Play Game
+                  </button>
+                ) : null}
+              </div>
             </div>
           )}
         </div>
@@ -400,6 +538,36 @@ const styles = {
   smallWatchBtn: {
     padding: '4px 12px', background: '#6366f1', color: 'white', border: 'none',
     borderRadius: '4px', cursor: 'pointer', fontSize: '12px'
+  },
+  msgBtn: {
+    padding: '8px 16px', background: '#6366f1', color: 'white', border: 'none',
+    borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
+    display: 'flex', alignItems: 'center'
+  },
+  chatPanel: {
+    marginTop: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid #333',
+    borderRadius: '12px', overflow: 'hidden'
+  },
+  chatHeader: {
+    padding: '10px 16px', borderBottom: '1px solid #333', fontSize: '14px',
+    fontWeight: 'bold', color: '#d0d0e0', display: 'flex', alignItems: 'center'
+  },
+  chatMessages: {
+    height: '250px', overflowY: 'auto', padding: '8px 12px'
+  },
+  chatMsg: {
+    padding: '6px 10px', borderRadius: '6px', marginBottom: '4px'
+  },
+  chatInputRow: {
+    display: 'flex', gap: '8px', padding: '10px 12px', borderTop: '1px solid #333'
+  },
+  chatInputField: {
+    flex: 1, background: '#1a1a2e', border: '1px solid #444', borderRadius: '6px',
+    padding: '8px 12px', color: '#e0e0ee', fontSize: '14px', outline: 'none'
+  },
+  chatSendBtn: {
+    padding: '8px 16px', background: '#769656', color: 'white', border: 'none',
+    borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px'
   }
 };
 

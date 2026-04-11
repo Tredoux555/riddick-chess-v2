@@ -320,4 +320,40 @@ router.post('/create-official-tournament', authenticateToken, requireAdmin, asyn
   }
 });
 
+// ========================================
+// TOURNAMENT CHAT — load history
+// ========================================
+
+router.get('/:id/messages', authenticateToken, async (req, res) => {
+  try {
+    const pool = require('../utils/db');
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const before = req.query.before; // cursor-based pagination
+
+    let query = `
+      SELECT tm.id, tm.content, tm.created_at, tm.user_id,
+             u.username, u.avatar
+      FROM tournament_messages tm
+      JOIN users u ON tm.user_id = u.id
+      WHERE tm.tournament_id = $1
+    `;
+    const params = [req.params.id];
+
+    if (before) {
+      query += ` AND tm.id < $${params.length + 1}`;
+      params.push(before);
+    }
+
+    query += ` ORDER BY tm.created_at DESC LIMIT $${params.length + 1}`;
+    params.push(limit);
+
+    const result = await pool.query(query, params);
+    // Return oldest-first so UI can append
+    res.json(result.rows.reverse());
+  } catch (error) {
+    console.error('Get tournament messages error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
