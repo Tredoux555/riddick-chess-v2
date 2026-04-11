@@ -21,28 +21,26 @@ class TournamentService {
       increment = 0,
       maxPlayers = 32,
       totalRounds = 5,
-      prizeDescription,
       startTime,
       registrationStart,
       registrationEnd,
       tournamentEnd,
       forfeitHours = 24,
-      isArena = false,
-      entryFee = 0
+      isArena = false
     } = data;
 
     const result = await pool.query(`
       INSERT INTO tournaments (
         name, description, created_by, type, time_control, increment,
-        max_players, total_rounds, prize_description, start_time,
-        registration_start, registration_end, tournament_end, forfeit_hours, is_arena, entry_fee
+        max_players, total_rounds, start_time,
+        registration_start, registration_end, tournament_end, forfeit_hours, is_arena
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `, [
       name, description, createdBy, type, timeControl, increment,
-      maxPlayers, totalRounds, prizeDescription, startTime,
-      registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena, entryFee
+      maxPlayers, totalRounds, startTime,
+      registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena
     ]);
 
     return result.rows[0];
@@ -382,13 +380,30 @@ class TournamentService {
       throw new Error('Need at least 2 participants to start');
     }
 
+    const n = participants.rows.length;
+    let totalRounds = tournament.rows[0].total_rounds;
+
+    // For round-robin tournaments, auto-calculate total_rounds
+    if (tournament.rows[0].type === 'round-robin') {
+      totalRounds = n % 2 === 0 ? n - 1 : n;
+      // Update tournament's total_rounds
+      await pool.query(`
+        UPDATE tournaments SET total_rounds = $1 WHERE id = $2
+      `, [totalRounds, tournamentId]);
+    }
+
     // Update tournament status
     await pool.query(`
       UPDATE tournaments SET status = 'active', current_round = 1 WHERE id = $1
     `, [tournamentId]);
 
-    // Generate first round pairings
-    const pairings = await this.generatePairings(tournamentId, 1, participants.rows);
+    // Generate first round pairings based on tournament type
+    let pairings;
+    if (tournament.rows[0].type === 'round-robin') {
+      pairings = await this.generateRoundRobinPairings(tournamentId, 1);
+    } else {
+      pairings = await this.generatePairings(tournamentId, 1, participants.rows);
+    }
 
     return {
       success: true,
@@ -522,6 +537,142 @@ class TournamentService {
   }
 
   /**
+   * Generate round robin pairings using circle/rotation method
+   * Fixes player 0 in position, rotates all others
+   * For odd N: adds a "ghost" player for byes
+   */
+  async generateRoundRobinPairings(tournamentId, round) {
+    // Get all active participants
+    const result = await pool.query(`
+      SELECT tp.user_id, tp.score, tp.colors,
+             ur.blitz_rating as rating
+      FROM tournament_participants tp
+      LEFT JOIN user_ratings ur ON tp.user_id = ur.user_id
+      WHERE tp.tournament_id = $1 AND tp.is_withdrawn = FALSE
+      ORDER BY tp.user_id ASC
+    `, [tournamentId]);
+
+    const players = result.rows.map(r => r.user_id);
+    const n = players.length;
+
+    if (n < 2) {
+      throw new Error('Need at least 2 players for round robin');
+    }
+
+    const tournament = await pool.query(`
+      SELECT time_control, increment FROM tournaments WHERE id = $1
+    `, [tournamentId]);
+
+    const { time_control, increment } = tournament.rows[0];
+    const pairings = [];
+
+    // Determine if odd number of players
+    const isOdd = n % 2 === 1;
+    const pairingCount = isOdd ? n : n - 1;
+    const ghostIndex = n; // Virtual ghost player index for odd case
+
+    // Create initial array for rotation
+    let rotation = [...players];
+    if (isOdd) {
+      rotation.push(null); // Add ghost/bye
+    }
+
+    // Calculate rotations needed to get to the desired round
+    // Round 1 = 0 rotations, Round 2 = 1 rotation, etc.
+    const rotations = round - 1;
+    for (let r = 0; r < rotations; r++) {
+      // Rotate: keep first element, rotate rest
+      const first = rotation[0];
+      const rest = rotation.slice(1);
+      rotation = [first, ...rest.slice(-1), ...rest.slice(0, -1)];
+    }
+
+    // Generate pairings for this round
+    const pairedPlayers = new Set();
+
+    for (let i = 0; i < rotation.length / 2; i++) {
+      const player1Id = rotation[i];
+      const player2Id = rotation[rotation.length - 1 - i];
+
+      // Handle bye (either player could be the ghost/null)
+      if (player1Id === null || player2Id === null) {
+        const realPlayer = player1Id === null ? player2Id : player1Id;
+        if (realPlayer && !pairedPlayers.has(realPlayer)) {
+          pairings.push({
+            white_player_id: realPlayer,
+            black_player_id: null,
+            is_bye: true,
+            result: '1-0'
+          });
+
+          // Update player's bye status and score
+          await pool.query(`
+            UPDATE tournament_participants
+            SET has_bye = TRUE, score = score + 1, games_played = COALESCE(games_played, 0) + 1
+            WHERE tournament_id = $1 AND user_id = $2
+          `, [tournamentId, realPlayer]);
+
+          // Record bye in tournament_pairings table
+          await pool.query(`
+            INSERT INTO tournament_pairings (tournament_id, round, white_player_id, black_player_id, is_bye, result)
+            VALUES ($1, $2, $3, NULL, TRUE, '1-0')
+          `, [tournamentId, round, realPlayer]);
+
+          pairedPlayers.add(realPlayer);
+        }
+      } else if (!pairedPlayers.has(player1Id) && !pairedPlayers.has(player2Id)) {
+        // Normal pairing
+        const colors = this.assignColors(
+          result.rows.find(r => r.user_id === player1Id),
+          result.rows.find(r => r.user_id === player2Id)
+        );
+
+        // Create the game
+        const gameResult = await pool.query(`
+          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, tournament_id, rated)
+          VALUES ($1, $2, $3, $4, $3, $3, $5, TRUE)
+          RETURNING id
+        `, [colors.white, colors.black, time_control, increment, tournamentId]);
+
+        const gameId = gameResult.rows[0].id;
+
+        // Create pairing record
+        await pool.query(`
+          INSERT INTO tournament_pairings (tournament_id, round, white_player_id, black_player_id, game_id)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [tournamentId, round, colors.white, colors.black, gameId]);
+
+        // Update opponent history and colors
+        await pool.query(`
+          UPDATE tournament_participants
+          SET opponents = array_append(COALESCE(opponents, '{}'), $1),
+              colors = array_append(COALESCE(colors, '{}'), $2)
+          WHERE tournament_id = $3 AND user_id = $4
+        `, [player2Id, colors.white === player1Id ? 'w' : 'b', tournamentId, player1Id]);
+
+        await pool.query(`
+          UPDATE tournament_participants
+          SET opponents = array_append(COALESCE(opponents, '{}'), $1),
+              colors = array_append(COALESCE(colors, '{}'), $2)
+          WHERE tournament_id = $3 AND user_id = $4
+        `, [player1Id, colors.white === player2Id ? 'w' : 'b', tournamentId, player2Id]);
+
+        pairings.push({
+          white_player_id: colors.white,
+          black_player_id: colors.black,
+          game_id: gameId,
+          is_bye: false
+        });
+
+        pairedPlayers.add(player1Id);
+        pairedPlayers.add(player2Id);
+      }
+    }
+
+    return pairings;
+  }
+
+  /**
    * Assign colors based on color history
    */
   assignColors(player1, player2) {
@@ -611,14 +762,21 @@ class TournamentService {
    * Complete a round and prepare for next
    */
   async completeRound(tournamentId, round) {
-    // Calculate Buchholz scores
-    await this.calculateBuchholz(tournamentId);
-
-    // Check if tournament is complete
+    // Get tournament type
     const tournament = await pool.query(`
-      SELECT total_rounds FROM tournaments WHERE id = $1
+      SELECT type, total_rounds FROM tournaments WHERE id = $1
     `, [tournamentId]);
 
+    const tournamentType = tournament.rows[0].type;
+
+    // Calculate tiebreaker scores
+    if (tournamentType === 'round-robin') {
+      await this.calculateSonnebornBerger(tournamentId);
+    } else {
+      await this.calculateBuchholz(tournamentId);
+    }
+
+    // Check if tournament is complete
     if (round >= tournament.rows[0].total_rounds) {
       // Tournament complete
       await pool.query(`
@@ -640,7 +798,11 @@ class TournamentService {
         UPDATE tournaments SET current_round = $1 WHERE id = $2
       `, [round + 1, tournamentId]);
 
-      await this.generatePairings(tournamentId, round + 1);
+      if (tournamentType === 'round-robin') {
+        await this.generateRoundRobinPairings(tournamentId, round + 1);
+      } else {
+        await this.generatePairings(tournamentId, round + 1);
+      }
     }
   }
 
@@ -671,6 +833,75 @@ class TournamentService {
         UPDATE tournament_participants SET buchholz = $1
         WHERE tournament_id = $2 AND user_id = $3
       `, [buchholz, tournamentId, participant.user_id]);
+    }
+  }
+
+  /**
+   * Calculate Sonneborn-Berger tiebreaker for round-robin tournaments
+   * Sum of scores of opponents the player beat + half the scores of opponents drawn with
+   */
+  async calculateSonnebornBerger(tournamentId) {
+    const participants = await pool.query(`
+      SELECT user_id, opponents FROM tournament_participants
+      WHERE tournament_id = $1 AND is_withdrawn = FALSE
+    `, [tournamentId]);
+
+    for (const participant of participants.rows) {
+      let sb = 0;
+
+      // Get all pairings for this player
+      const pairings = await pool.query(`
+        SELECT
+          CASE
+            WHEN white_player_id = $1 THEN black_player_id
+            WHEN black_player_id = $1 THEN white_player_id
+          END as opponent_id,
+          CASE
+            WHEN white_player_id = $1 THEN
+              CASE result
+                WHEN '1-0' THEN 1.0
+                WHEN '1/2-1/2' THEN 0.5
+                ELSE 0
+              END
+            WHEN black_player_id = $1 THEN
+              CASE result
+                WHEN '0-1' THEN 1.0
+                WHEN '1/2-1/2' THEN 0.5
+                ELSE 0
+              END
+          END as points_against_opponent
+        FROM tournament_pairings
+        WHERE tournament_id = $2 AND result IS NOT NULL
+          AND (white_player_id = $1 OR black_player_id = $1)
+          AND is_bye = FALSE
+      `, [participant.user_id, tournamentId]);
+
+      for (const pairing of pairings.rows) {
+        if (pairing.opponent_id && pairing.points_against_opponent > 0) {
+          // Get opponent's score
+          const oppScore = await pool.query(`
+            SELECT score FROM tournament_participants
+            WHERE tournament_id = $1 AND user_id = $2
+          `, [tournamentId, pairing.opponent_id]);
+
+          if (oppScore.rows.length > 0) {
+            const oppTotalScore = parseFloat(oppScore.rows[0].score);
+            if (pairing.points_against_opponent === 1) {
+              // Beat the opponent: add full opponent score
+              sb += oppTotalScore;
+            } else if (pairing.points_against_opponent === 0.5) {
+              // Drew with opponent: add half opponent score
+              sb += oppTotalScore * 0.5;
+            }
+          }
+        }
+      }
+
+      // Store in buchholz column (reusing for SB as both serve as tiebreaker)
+      await pool.query(`
+        UPDATE tournament_participants SET buchholz = $1
+        WHERE tournament_id = $2 AND user_id = $3
+      `, [sb, tournamentId, participant.user_id]);
     }
   }
 

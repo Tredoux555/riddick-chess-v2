@@ -830,8 +830,8 @@ const TournamentAdmin = () => {
 
 const CreateTournament = () => {
   const [form, setForm] = useState({
-    name: '', description: '', timeControl: 300, increment: 0,
-    maxPlayers: 16, totalRounds: 5, startTime: '', entryFee: 0
+    name: '', description: '', type: 'swiss', timeControl: 300, increment: 0,
+    maxPlayers: 16, totalRounds: 5, startTime: ''
   });
 
   const handleSubmit = async (e) => {
@@ -851,16 +851,27 @@ const CreateTournament = () => {
       <form onSubmit={handleSubmit}>
         <div className="form-group"><label>Name</label><input className="form-input" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
         <div className="form-group"><label>Description</label><textarea className="form-input" rows={4} value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+        <div className="form-group">
+          <label>Tournament Type</label>
+          <select className="form-input" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+            <option value="swiss">Swiss</option>
+            <option value="round-robin">Round Robin</option>
+          </select>
+        </div>
         <div className="form-group"><label>Time Control (sec)</label><input type="number" className="form-input" value={form.timeControl} onChange={e => setForm({...form, timeControl: +e.target.value})} /></div>
         <div className="form-group"><label>Increment (sec)</label><input type="number" className="form-input" value={form.increment} onChange={e => setForm({...form, increment: +e.target.value})} /></div>
         <div className="form-group"><label>Max Players</label><input type="number" className="form-input" value={form.maxPlayers} onChange={e => setForm({...form, maxPlayers: +e.target.value})} /></div>
-        <div className="form-group"><label>Rounds</label><input type="number" className="form-input" value={form.totalRounds} onChange={e => setForm({...form, totalRounds: +e.target.value})} /></div>
+        {form.type === 'swiss' && (
+          <div className="form-group"><label>Rounds</label><input type="number" className="form-input" value={form.totalRounds} onChange={e => setForm({...form, totalRounds: +e.target.value})} /></div>
+        )}
+        {form.type === 'round-robin' && (
+          <div className="form-group">
+            <label>Rounds</label>
+            <input type="number" className="form-input" disabled value={form.totalRounds} />
+            <small style={{ color: '#c8c8dc' }}>Rounds are auto-calculated based on player count</small>
+          </div>
+        )}
         <div className="form-group"><label>Start Time</label><input type="datetime-local" className="form-input" value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} /></div>
-        <div className="form-group">
-          <label>Entry Fee (cents, 0 = free)</label>
-          <input type="number" className="form-input" value={form.entryFee} onChange={e => setForm({...form, entryFee: +e.target.value})} />
-          <small style={{ color: '#c8c8dc' }}>{form.entryFee === 0 ? '🆓 Free tournament — no payment needed' : `💰 $${(form.entryFee / 100).toFixed(2)} entry fee (via Stripe)`}</small>
-        </div>
         <button type="submit" className="btn btn-primary">Create Tournament</button>
       </form>
     </div>

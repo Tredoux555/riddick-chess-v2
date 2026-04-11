@@ -145,23 +145,9 @@ router.get('/:id/rounds/:round', authenticateToken, async (req, res) => {
   }
 });
 
-// Register for a tournament (free tournaments only, or admin override)
+// Register for a tournament
 router.post('/:id/register', authenticateToken, async (req, res) => {
   try {
-    const pool = require('../utils/db');
-    // Check if tournament is free (entry_fee = 0 or null)
-    const tournament = await pool.query(
-      'SELECT entry_fee FROM tournaments WHERE id = $1', [req.params.id]
-    );
-    if (tournament.rows.length === 0) {
-      return res.status(404).json({ error: 'Tournament not found' });
-    }
-    const entryFee = tournament.rows[0].entry_fee || 0;
-    // Allow free registration if entry_fee is 0 or user is admin
-    const isAdmin = req.user.is_admin;
-    if (entryFee > 0 && !isAdmin) {
-      return res.status(400).json({ error: 'This tournament requires payment to register' });
-    }
     const result = await tournamentService.registerPlayer(req.params.id, req.user.id);
     res.json(result);
   } catch (error) {

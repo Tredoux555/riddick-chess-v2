@@ -258,6 +258,17 @@ const TournamentCard = ({ tournament, formatDate, formatTimeControl }) => (
   <Link to={`/tournament/${tournament.id}`} className="tournament-card">
     <div className="tournament-header">
       <h3>{tournament.name}</h3>
+      <span className="type-badge" style={{
+        background: tournament.type === 'round-robin' ? '#10b981' : '#6366f1',
+        color: 'white',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        whiteSpace: 'nowrap'
+      }}>
+        {tournament.type === 'round-robin' ? 'Round Robin' : 'Swiss'}
+      </span>
     </div>
     <div className="tournament-body">
       {tournament.description && (
@@ -281,7 +292,7 @@ const TournamentCard = ({ tournament, formatDate, formatTimeControl }) => (
           <span>{tournament.total_rounds} rounds</span>
         </div>
         <div className="meta-item">
-          <span>{(tournament.entry_fee || 0) === 0 ? '🆓 Free' : `💰 $${(tournament.entry_fee / 100).toFixed(0)}`}</span>
+          <span>Free</span>
         </div>
       </div>
     </div>
