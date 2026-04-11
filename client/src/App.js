@@ -25,6 +25,7 @@ import Club from './pages/Club';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
+import ForgotPassword from './pages/ForgotPassword';
 import SecretStore from './pages/SecretStore';
 import SecretStoreShop from './pages/SecretStoreShop';
 import SecretStoreAdmin from './pages/SecretStoreAdmin';
@@ -97,6 +98,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected routes */}
