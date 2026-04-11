@@ -305,6 +305,7 @@ async function initDatabase() {
       ALTER TABLE games ADD COLUMN IF NOT EXISTS black_rating_before INTEGER;
       ALTER TABLE games ADD COLUMN IF NOT EXISTS black_rating_after INTEGER;
       ALTER TABLE games ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+      ALTER TABLE games ADD COLUMN IF NOT EXISTS is_untimed BOOLEAN DEFAULT false;
     `);
 
     // Migrate old column names to new if they exist

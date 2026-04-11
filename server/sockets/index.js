@@ -24,6 +24,7 @@ class GameState {
     this.whiteId = gameData.white_player_id;
     this.blackId = gameData.black_player_id;
     this.chess = new Chess(gameData.fen || undefined);
+    this.isUntimed = gameData.is_untimed || false;
     this.timeControl = gameData.time_control * 1000;
     this.increment = (gameData.increment || 0) * 1000;
     this.whiteTime = gameData.white_time_remaining ? gameData.white_time_remaining * 1000 : this.timeControl;
@@ -40,7 +41,8 @@ class GameState {
 
   startClock() {
     if (this.timerInterval) return;
-    
+    if (this.isUntimed) return; // No clock for untimed games
+
     this.lastMoveTime = Date.now();
     this.timerInterval = setInterval(() => {
       const elapsed = Date.now() - this.lastMoveTime;
@@ -78,11 +80,13 @@ class GameState {
       const result = this.chess.move(move);
       if (!result) return { valid: false, error: 'Invalid move' };
 
-      // Add increment to player who just moved
-      if (turn === 'w') {
-        this.whiteTime += this.increment;
-      } else {
-        this.blackTime += this.increment;
+      // Add increment to player who just moved (skip for untimed)
+      if (!this.isUntimed) {
+        if (turn === 'w') {
+          this.whiteTime += this.increment;
+        } else {
+          this.blackTime += this.increment;
+        }
       }
       
       this.lastMoveTime = Date.now();
@@ -249,7 +253,8 @@ class GameState {
       history: this.chess.history({ verbose: true }),
       whiteId: this.whiteId,
       blackId: this.blackId,
-      tournamentId: this.tournamentId
+      tournamentId: this.tournamentId,
+      isUntimed: this.isUntimed
     };
   }
 }

@@ -492,8 +492,8 @@ class TournamentService {
 
         // Create the game
         const gameResult = await pool.query(`
-          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, tournament_id, rated)
-          VALUES ($1, $2, $3, $4, $3, $3, $5, TRUE)
+          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, tournament_id, rated, is_untimed)
+          VALUES ($1, $2, $3, $4, $3, $3, $5, TRUE, TRUE)
           RETURNING id
         `, [colors.white, colors.black, time_control, increment, tournamentId]);
 
@@ -629,8 +629,8 @@ class TournamentService {
 
         // Create the game
         const gameResult = await pool.query(`
-          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, tournament_id, rated)
-          VALUES ($1, $2, $3, $4, $3, $3, $5, TRUE)
+          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, tournament_id, rated, is_untimed)
+          VALUES ($1, $2, $3, $4, $3, $3, $5, TRUE, TRUE)
           RETURNING id
         `, [colors.white, colors.black, time_control, increment, tournamentId]);
 

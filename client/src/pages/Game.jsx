@@ -208,9 +208,9 @@ const Game = () => {
     };
   }, [socket, user.id, playerColor]);
 
-  // Clock countdown
+  // Clock countdown (skip for untimed games)
   useEffect(() => {
-    if (gameOver || !gameData) return;
+    if (gameOver || !gameData || gameData.isUntimed) return;
 
     const interval = setInterval(() => {
       const turn = game.turn();
@@ -404,9 +404,11 @@ const Game = () => {
                 {boardOrientation === 'white' ? blackPlayer : whitePlayer}
               </div>
             </div>
-            <div className={`clock ${(boardOrientation === 'white' ? blackTime : whiteTime) < 30000 ? 'low-time' : ''}`}>
-              {formatTime(boardOrientation === 'white' ? blackTime : whiteTime)}
-            </div>
+            {!gameData?.isUntimed && (
+              <div className={`clock ${(boardOrientation === 'white' ? blackTime : whiteTime) < 30000 ? 'low-time' : ''}`}>
+                {formatTime(boardOrientation === 'white' ? blackTime : whiteTime)}
+              </div>
+            )}
           </div>
 
           <div className="board-container">
@@ -444,9 +446,11 @@ const Game = () => {
                 {!isSpectating && ' (You)'}
               </div>
             </div>
-            <div className={`clock ${(boardOrientation === 'white' ? whiteTime : blackTime) < 30000 ? 'low-time' : ''}`}>
-              {formatTime(boardOrientation === 'white' ? whiteTime : blackTime)}
-            </div>
+            {!gameData?.isUntimed && (
+              <div className={`clock ${(boardOrientation === 'white' ? whiteTime : blackTime) < 30000 ? 'low-time' : ''}`}>
+                {formatTime(boardOrientation === 'white' ? whiteTime : blackTime)}
+              </div>
+            )}
           </div>
         </div>
 
