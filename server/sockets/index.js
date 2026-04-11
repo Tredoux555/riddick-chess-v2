@@ -692,58 +692,6 @@ function initializeSocket(io) {
     });
 
     // ========================================
-    // REMATCH
-    // ========================================
-
-    socket.on('game:rematch', async ({ gameId }) => {
-      if (!userId) return;
-
-      const gId = Number(gameId);
-
-      try {
-        // Look up the finished game to get opponents
-        const original = await pool.query(
-          'SELECT white_player_id, black_player_id, is_untimed, time_control, increment FROM games WHERE id = $1',
-          [gId]
-        );
-        if (original.rows.length === 0) return;
-
-        const orig = original.rows[0];
-
-        // Only a player in the game can request a rematch
-        if (orig.white_player_id !== userId && orig.black_player_id !== userId) return;
-
-        // Swap colours for the rematch
-        const whitePlayer = orig.black_player_id;
-        const blackPlayer = orig.white_player_id;
-        const isUntimed = orig.is_untimed || false;
-        const timeControl = orig.time_control || 300;
-        const increment = orig.increment || 0;
-
-        // Create a new casual (unrated, no tournament) game
-        const newGame = await pool.query(`
-          INSERT INTO games (white_player_id, black_player_id, time_control, increment, white_time_remaining, black_time_remaining, rated, is_untimed)
-          VALUES ($1, $2, $3, $4, $3, $3, FALSE, $5)
-          RETURNING id
-        `, [whitePlayer, blackPlayer, timeControl, increment, isUntimed]);
-
-        const newGameId = newGame.rows[0].id;
-
-        // Notify both players — send them to the new game
-        const opponentId = userId === orig.white_player_id ? orig.black_player_id : orig.white_player_id;
-        const opponentSocketId = userSockets.get(opponentId);
-
-        socket.emit('game:rematch:created', { gameId: newGameId });
-        if (opponentSocketId) {
-          io.to(opponentSocketId).emit('game:rematch:created', { gameId: newGameId });
-        }
-      } catch (error) {
-        console.error('Error creating rematch:', error);
-        socket.emit('game:error', { message: 'Failed to create rematch' });
-      }
-    });
-
-    // ========================================
     // CHAT
     // ========================================
 

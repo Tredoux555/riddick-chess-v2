@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PIECE_SETS, BOARD_THEMES, createCustomPieces } from '../utils/chessComPieces';
 import { preloadSounds, playMoveSound, playSound } from '../utils/sounds';
 import toast from 'react-hot-toast';
-import { FaFlag, FaHandshake, FaComments, FaEye, FaShare, FaRedo } from 'react-icons/fa';
+import { FaFlag, FaHandshake, FaComments, FaEye, FaShare } from 'react-icons/fa';
 import ShareModal from '../components/ShareModal';
 
 const Game = () => {
@@ -194,10 +194,6 @@ const Game = () => {
       setSpectatorCount(count);
     });
 
-    socket.on('game:rematch:created', ({ gameId: newGameId }) => {
-      navigate(`/game/${newGameId}`);
-    });
-
     return () => {
       socket.off('game:state');
       socket.off('game:moved');
@@ -209,7 +205,6 @@ const Game = () => {
       socket.off('game:opponent_reconnected');
       socket.off('chat:message');
       socket.off('spectators:update');
-      socket.off('game:rematch:created');
     };
   }, [socket, user.id, playerColor]);
 
@@ -320,12 +315,6 @@ const Game = () => {
 
   const handleDeclineDraw = () => {
     declineDraw(gameId);
-  };
-
-  const handleRematch = () => {
-    if (socket && gameId) {
-      socket.emit('game:rematch', { gameId });
-    }
   };
 
   const handleSendMessage = () => {
@@ -484,18 +473,13 @@ const Game = () => {
                   )}
                 </div>
               )}
-              {!isSpectating && (
-                <button className="btn btn-primary" onClick={handleRematch} style={{ marginBottom: '8px' }}>
-                  <FaRedo /> Rematch
-                </button>
-              )}
               {tournamentId ? (
-                <button className="btn btn-secondary" onClick={() => navigate(`/tournament/${tournamentId}`)}>
+                <button className="btn btn-primary" onClick={() => navigate(`/tournament/${tournamentId}`)}>
                   🏆 Back to Tournament
                 </button>
               ) : (
-                <button className="btn btn-secondary" onClick={() => navigate('/play')}>
-                  New Opponent
+                <button className="btn btn-primary" onClick={() => navigate('/play')}>
+                  Play Again
                 </button>
               )}
             </div>
