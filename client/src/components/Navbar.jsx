@@ -20,6 +20,7 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const navLinks = [
+    { path: '/tournaments', label: 'Tournaments', icon: <FaTrophy />, requiresAuth: true },
     { path: '/play', label: 'Play', icon: <FaPlay />, requiresAuth: true },
     { path: '/bots', label: 'Bots', icon: <FaRobot />, requiresAuth: false },
     { path: '/puzzles', label: 'Puzzles', icon: <FaPuzzlePiece />, requiresAuth: false },
@@ -116,9 +117,6 @@ const Navbar = () => {
                       <FaCog /> Settings
                     </Link>
                     <div className="dropdown-divider"></div>
-                    <Link to="/tournaments" className="dropdown-item">
-                      <FaTrophy /> Tournaments
-                    </Link>
                     <Link to="/leaderboards" className="dropdown-item">
                       <FaChartLine /> Leaderboards
                     </Link>
