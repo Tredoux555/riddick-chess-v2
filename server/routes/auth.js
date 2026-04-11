@@ -6,21 +6,6 @@ const { OAuth2Client } = require('google-auth-library');
 const pool = require('../utils/db');
 const { authenticateToken } = require('../middleware/auth');
 const { authLimiter, registerLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
-const nodemailer = require('nodemailer');
-
-// Email transporter - uses Gmail SMTP if configured, otherwise logs to console
-const getEmailTransporter = () => {
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
-  }
-  return null;
-};
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "438652858045-9r90vj4o3b3ivojorb531q7pjnk5v1l8.apps.googleusercontent.com");
 
@@ -350,42 +335,13 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
       UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3
     `, [token, expires, user.rows[0].id]);
     
-    // Send reset email
-    const resetUrl = `${process.env.CLIENT_URL || 'https://riddickchess.site'}/reset-password?token=${token}`;
-    const transporter = getEmailTransporter();
+    // Return token directly — frontend will redirect to reset page
+    console.log(`Password reset for ${email}, token: ${token}`);
 
-    if (transporter) {
-      try {
-        await transporter.sendMail({
-          from: `"Riddick Chess" <${process.env.GMAIL_USER}>`,
-          to: email,
-          subject: 'Reset your Riddick Chess password',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333;">Reset Your Password</h2>
-              <p>Hi <strong>${user.rows[0].username}</strong>,</p>
-              <p>We received a request to reset your Riddick Chess password. Click the button below to choose a new one:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" style="background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-                  Reset Password
-                </a>
-              </div>
-              <p style="color: #888; font-size: 13px;">This link expires in 24 hours. If you didn't request this, you can safely ignore this email.</p>
-              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="color: #aaa; font-size: 12px;">Riddick Chess — riddickchess.site</p>
-            </div>
-          `,
-        });
-        console.log(`Password reset email sent to ${email}`);
-      } catch (emailErr) {
-        console.error('Failed to send reset email:', emailErr);
-      }
-    } else {
-      console.log(`Password reset requested for ${email}, token: ${token}`);
-      console.log(`Reset URL: ${resetUrl}`);
-    }
-
-    res.json({ message: 'If an account exists with this email, a reset link has been generated.' });
+    res.json({
+      message: 'Reset link generated.',
+      resetToken: token
+    });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ error: 'Server error' });

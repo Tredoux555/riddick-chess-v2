@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FaEnvelope, FaChessKing } from 'react-icons/fa';
@@ -7,39 +7,25 @@ import { FaEnvelope, FaChessKing } from 'react-icons/fa';
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/auth/forgot-password', { email });
-      setSent(true);
+      const res = await axios.post('/api/auth/forgot-password', { email });
+      if (res.data.resetToken) {
+        // Redirect straight to the reset page
+        navigate(`/reset-password?token=${res.data.resetToken}`);
+      } else {
+        toast('If that account exists, a reset link was generated.');
+      }
     } catch (error) {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (sent) {
-    return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div className="auth-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-            <FaEnvelope />
-          </div>
-          <h1 className="auth-title">Check Your Email</h1>
-          <p style={{ color: '#c8c8dc', textAlign: 'center', lineHeight: '1.6' }}>
-            If an account exists for <strong>{email}</strong>, we've sent a password reset link. Check your inbox and spam folder.
-          </p>
-          <p style={{ textAlign: 'center', marginTop: '24px' }}>
-            <Link to="/login" style={{ color: '#6366f1' }}>Back to login</Link>
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="auth-page">
@@ -49,7 +35,7 @@ const ForgotPassword = () => {
         </div>
         <h1 className="auth-title">Reset Password</h1>
         <p style={{ color: '#c8c8dc', textAlign: 'center', marginBottom: '24px' }}>
-          Enter your email and we'll send you a link to reset your password.
+          Enter your email and we'll take you to reset your password.
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -78,7 +64,7 @@ const ForgotPassword = () => {
               opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? 'Verifying...' : 'Reset Password'}
           </button>
         </form>
 
