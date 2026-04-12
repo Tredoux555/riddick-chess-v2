@@ -76,11 +76,28 @@ const Dashboard = () => {
   const [bannedIPs, setBannedIPs] = useState([]);
   const [newBanIP, setNewBanIP] = useState('');
   const [banReason, setBanReason] = useState('');
+  const [expandedCard, setExpandedCard] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [activeGames, setActiveGames] = useState([]);
 
   useEffect(() => {
     axios.get('/api/admin/stats').then(r => setStats(r.data)).catch(console.error);
     fetchBannedIPs();
   }, []);
+
+  const toggleCard = async (card) => {
+    if (expandedCard === card) { setExpandedCard(null); return; }
+    setExpandedCard(card);
+    try {
+      if (card === 'online') {
+        const r = await axios.get('/api/users/status/online');
+        setOnlineUsers(r.data || []);
+      } else if (card === 'games') {
+        const r = await axios.get('/api/games/live/all');
+        setActiveGames(r.data || []);
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const fetchBannedIPs = async () => {
     try {
@@ -125,12 +142,65 @@ const Dashboard = () => {
       <h1>Dashboard</h1>
       <div className="stats-grid">
         <Link to="/admin/riddick/users" className="stat-card clickable"><div className="stat-value">{stats.totalUsers}</div><div className="stat-label">Total Users</div></Link>
-        <div className="stat-card"><div className="stat-value">{stats.onlineUsers}</div><div className="stat-label">Online Now</div></div>
+        <div className="stat-card clickable" onClick={() => toggleCard('online')} style={{ border: expandedCard === 'online' ? '1px solid #6366f1' : '1px solid transparent' }}>
+          <div className="stat-value">{stats.onlineUsers}</div><div className="stat-label">Online Now</div>
+        </div>
         <div className="stat-card"><div className="stat-value">{stats.totalGames}</div><div className="stat-label">Games Played</div></div>
-        <div className="stat-card"><div className="stat-value">{stats.activeGames}</div><div className="stat-label">Active Games</div></div>
+        <div className="stat-card clickable" onClick={() => toggleCard('games')} style={{ border: expandedCard === 'games' ? '1px solid #6366f1' : '1px solid transparent' }}>
+          <div className="stat-value">{stats.activeGames}</div><div className="stat-label">Active Games</div>
+        </div>
         <div className="stat-card"><div className="stat-value">{stats.clubMembers}</div><div className="stat-label">Club Members</div></div>
         <Link to="/admin/riddick/tournaments" className="stat-card clickable"><div className="stat-value">{stats.activeTournaments}</div><div className="stat-label">Active Tournaments</div></Link>
       </div>
+
+      {/* Online Users Panel */}
+      {expandedCard === 'online' && (
+        <div style={{ background: 'var(--bg-card)', borderRadius: '12px', padding: '16px', marginTop: '16px', border: '1px solid #6366f1' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem' }}>Online Users</h3>
+          {onlineUsers.length === 0 ? (
+            <p style={{ color: '#c8c8dc' }}>No users online right now</p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {onlineUsers.map(u => (
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                  <span>{u.username}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active Games Panel */}
+      {expandedCard === 'games' && (
+        <div style={{ background: 'var(--bg-card)', borderRadius: '12px', padding: '16px', marginTop: '16px', border: '1px solid #6366f1' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem' }}>Active Games</h3>
+          {activeGames.length === 0 ? (
+            <p style={{ color: '#c8c8dc' }}>No active games right now</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {activeGames.map(g => (
+                <a key={g.id} href={`/game/${g.id}`} target="_blank" rel="noreferrer" style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  background: 'var(--bg-tertiary)', padding: '10px 16px', borderRadius: '8px',
+                  textDecoration: 'none', color: 'inherit', transition: 'background 0.15s'
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold' }}>{g.white_username}</span>
+                    <span style={{ color: '#c8c8dc', margin: '0 8px' }}>vs</span>
+                    <span style={{ fontWeight: 'bold' }}>{g.black_username}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {g.spectator_count > 0 && <span style={{ fontSize: '12px', color: '#c8c8dc' }}>{g.spectator_count} watching</span>}
+                    <span style={{ background: '#6366f1', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Spectate</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* IP Ban Section */}
       <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '20px', marginTop: '20px', border: '2px solid #ef4444' }}>

@@ -24,7 +24,7 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
       SELECT COUNT(*) as count FROM users 
       WHERE last_online > NOW() - INTERVAL '5 minutes' AND is_banned = FALSE
     `);
-    const activeTournaments = await pool.query("SELECT COUNT(*) as count FROM tournaments WHERE status = 'active'");
+    const activeTournaments = await pool.query("SELECT COUNT(*) as count FROM tournaments WHERE status IN ('active', 'upcoming')");
 
     res.json({
       totalUsers: parseInt(users.rows[0].count),
