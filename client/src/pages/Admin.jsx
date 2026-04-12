@@ -124,12 +124,12 @@ const Dashboard = () => {
     <div>
       <h1>Dashboard</h1>
       <div className="stats-grid">
-        <div className="stat-card"><div className="stat-value">{stats.totalUsers}</div><div className="stat-label">Total Users</div></div>
+        <Link to="/admin/riddick/users" className="stat-card clickable"><div className="stat-value">{stats.totalUsers}</div><div className="stat-label">Total Users</div></Link>
         <div className="stat-card"><div className="stat-value">{stats.onlineUsers}</div><div className="stat-label">Online Now</div></div>
         <div className="stat-card"><div className="stat-value">{stats.totalGames}</div><div className="stat-label">Games Played</div></div>
         <div className="stat-card"><div className="stat-value">{stats.activeGames}</div><div className="stat-label">Active Games</div></div>
         <div className="stat-card"><div className="stat-value">{stats.clubMembers}</div><div className="stat-label">Club Members</div></div>
-        <div className="stat-card"><div className="stat-value">{stats.activeTournaments}</div><div className="stat-label">Active Tournaments</div></div>
+        <Link to="/admin/riddick/tournaments" className="stat-card clickable"><div className="stat-value">{stats.activeTournaments}</div><div className="stat-label">Active Tournaments</div></Link>
       </div>
 
       {/* IP Ban Section */}
@@ -181,7 +181,9 @@ const Dashboard = () => {
       <style jsx>{`
         h1 { margin-bottom: 24px; }
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .stat-card { background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); text-align: center; }
+        .stat-card { background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; }
+        .stat-card.clickable { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid transparent; }
+        .stat-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); border-color: #6366f1; }
         .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent-primary); }
         .stat-label { color: #c8c8dc; }
       `}</style>
@@ -197,8 +199,55 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalAction, setModalAction] = useState(null);
   const [actionData, setActionData] = useState({});
-  
-  useEffect(() => { loadUsers(); }, []);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [tournaments, setTournaments] = useState([]);
+  const [showTournamentPicker, setShowTournamentPicker] = useState(false);
+  const [inviting, setInviting] = useState(false);
+
+  useEffect(() => { loadUsers(); loadTournaments(); }, []);
+
+  const loadTournaments = async () => {
+    try {
+      const r = await axios.get('/api/tournaments');
+      setTournaments(r.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const filteredIds = filtered.map(u => u.id);
+    const allSelected = filteredIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredIds));
+    }
+  };
+
+  const inviteToTournament = async (tournamentId) => {
+    if (selectedIds.size === 0) return;
+    setInviting(true);
+    try {
+      const res = await axios.post(`/api/admin/tournaments/${tournamentId}/bulk-register`, {
+        userIds: Array.from(selectedIds)
+      });
+      toast.success(`Registered ${res.data.registered} players (${res.data.skipped} already in)`);
+      setSelectedIds(new Set());
+      setShowTournamentPicker(false);
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Failed to register users');
+    } finally {
+      setInviting(false);
+    }
+  };
   
   const loadUsers = async () => {
     const r = await axios.get('/api/admin/users');
@@ -276,18 +325,43 @@ const Users = () => {
   return (
     <div>
       <h1>User Management</h1>
-      <input 
-        className="form-input" 
-        placeholder="Search by username or email..." 
-        value={search} 
-        onChange={e => setSearch(e.target.value)} 
-        style={{ marginBottom: '16px', maxWidth: '400px' }} 
-      />
-      
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          className="form-input"
+          placeholder="Search by username or email..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ maxWidth: '400px', flex: 1 }}
+        />
+        {selectedIds.size > 0 && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: '#c8c8dc', fontSize: '14px' }}>{selectedIds.size} selected</span>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#6366f1', color: 'white' }}
+              onClick={() => setShowTournamentPicker(true)}
+            >
+              <FaTrophy /> Invite to Tournament
+            </button>
+            <button className="btn btn-sm" style={{ background: '#374151', color: '#c8c8dc' }} onClick={() => setSelectedIds(new Set())}>
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="users-table">
         <table>
           <thead>
             <tr>
+              <th style={{ width: '40px' }}>
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && filtered.every(u => selectedIds.has(u.id))}
+                  onChange={toggleSelectAll}
+                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                />
+              </th>
               <th>User</th>
               <th>Email</th>
               <th>Rating</th>
@@ -298,7 +372,15 @@ const Users = () => {
           </thead>
           <tbody>
             {filtered.map(u => (
-              <tr key={u.id} className={u.is_banned ? 'banned' : ''}>
+              <tr key={u.id} className={`${u.is_banned ? 'banned' : ''} ${selectedIds.has(u.id) ? 'selected-row' : ''}`}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(u.id)}
+                    onChange={() => toggleSelect(u.id)}
+                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                  />
+                </td>
                 <td>
                   <div className="user-cell">
                     <span className="username">{u.username}</span>
@@ -309,7 +391,7 @@ const Users = () => {
                 <td>{u.email}</td>
                 <td>{u.blitz_rating || 500}</td>
                 <td>
-                  {u.is_banned ? <span className="status banned"><FaBan /> Banned</span> : 
+                  {u.is_banned ? <span className="status banned"><FaBan /> Banned</span> :
                    u.is_muted ? <span className="status muted"><FaVolumeMute /> Muted</span> :
                    <span className="status active"><FaCheck /> Active</span>}
                 </td>
@@ -324,6 +406,39 @@ const Users = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Tournament Picker Modal */}
+      {showTournamentPicker && (
+        <div className="modal-overlay" onClick={() => setShowTournamentPicker(false)}>
+          <div className="modal small" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FaTrophy /> Invite {selectedIds.size} user{selectedIds.size !== 1 ? 's' : ''} to Tournament</h2>
+              <button className="close-btn" onClick={() => setShowTournamentPicker(false)}><FaTimes /></button>
+            </div>
+            {tournaments.length === 0 ? (
+              <p style={{ color: '#c8c8dc', padding: '20px 0' }}>No tournaments available. Create one first.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                {tournaments.map(t => (
+                  <button
+                    key={t.id}
+                    className="btn"
+                    disabled={inviting}
+                    onClick={() => inviteToTournament(t.id)}
+                    style={{ background: 'var(--bg-tertiary)', textAlign: 'left', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <div>
+                      <strong>{t.name}</strong>
+                      <div style={{ fontSize: '12px', color: '#c8c8dc' }}>{t.status} • {t.participant_count || 0} players</div>
+                    </div>
+                    <FaUserPlus style={{ color: '#6366f1' }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User Management Modal */}
       {selectedUser && modalAction === 'manage' && (
@@ -583,6 +698,7 @@ const Users = () => {
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { color: #c8c8dc; font-weight: 500; }
         tr.banned { opacity: 0.6; background: rgba(239, 68, 68, 0.1); }
+        tr.selected-row { background: rgba(99, 102, 241, 0.1); }
         .user-cell { display: flex; align-items: center; gap: 8px; }
         .admin-badge { color: gold; }
         .club-badge { color: #a855f7; }
