@@ -21,14 +21,14 @@ root.render(
           <SocketProvider>
             <BoardSettingsProvider>
               <App />
-              <Toaster 
+              <Toaster
                 position="top-right"
                 toastOptions={{
                   duration: 3000,
                   style: {
-                    background: '#1e1e2e',
-                    color: '#fff',
-                    border: '1px solid #333'
+                    background: 'var(--bg-card-solid, #1e1e2e)',
+                    color: 'var(--text-primary, #fff)',
+                    border: '1px solid var(--border-color, #333)'
                   }
                 }}
               />
