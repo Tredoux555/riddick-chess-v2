@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,20 @@ const NotificationPopup = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activePopup, setActivePopup] = useState(null);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDropdown]);
 
   // Load unread notifications on mount
   const loadNotifications = useCallback(async () => {
@@ -29,13 +43,13 @@ const NotificationPopup = () => {
       const unreadInvite = (notifRes.data || []).find(
         n => n.type === 'tournament_invite' && !n.read_at
       );
-      if (unreadInvite && !activePopup) {
-        setActivePopup(unreadInvite);
+      if (unreadInvite) {
+        setActivePopup(prev => prev ? prev : unreadInvite);
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
     }
-  }, [user, activePopup]);
+  }, [user]);
 
   useEffect(() => {
     loadNotifications();
@@ -92,7 +106,7 @@ const NotificationPopup = () => {
   return (
     <>
       {/* Bell Icon with Badge */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }} ref={dropdownRef}>
         <button
           onClick={() => { setShowDropdown(!showDropdown); if (!showDropdown) loadNotifications(); }}
           style={{
