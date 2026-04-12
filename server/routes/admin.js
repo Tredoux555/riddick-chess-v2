@@ -732,6 +732,9 @@ router.get('/users-by-ip/:ip', authenticateToken, requireAdmin, async (req, res)
 router.post('/users/:id/impersonate', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const targetId = parseInt(req.params.id);
+    if (isNaN(targetId) || targetId < 1) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
 
     const result = await pool.query(
       'SELECT id, username, email, avatar, is_admin, is_club_member FROM users WHERE id = $1',
@@ -766,7 +769,10 @@ router.post('/users/:id/impersonate', authenticateToken, requireAdmin, async (re
 
 router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const tournamentId = req.params.id;
+    const tournamentId = parseInt(req.params.id);
+    if (isNaN(tournamentId) || tournamentId < 1) {
+      return res.status(400).json({ error: 'Invalid tournament ID' });
+    }
     const { userIds } = req.body; // array of user IDs
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
@@ -788,7 +794,7 @@ router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, a
     res.json({
       success: true,
       registered: results.registered.length,
-      failed: results.failed.length,
+      skipped: results.failed.length,
       details: results
     });
   } catch (error) {
@@ -800,7 +806,11 @@ router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, a
 // Register ALL users for a tournament
 router.post('/tournaments/:id/register-all', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const tournamentId = req.params.id;
+    const tournamentId = parseInt(req.params.id);
+    if (isNaN(tournamentId) || tournamentId < 1) {
+      return res.status(400).json({ error: 'Invalid tournament ID' });
+    }
+
     const tournamentService = require('../services/tournamentService');
 
     // Get all non-banned users
@@ -822,7 +832,8 @@ router.post('/tournaments/:id/register-all', authenticateToken, requireAdmin, as
 
     res.json({
       success: true,
-      message: `Registered ${results.registered.length} users, ${results.failed.length} skipped`,
+      registered: results.registered.length,
+      skipped: results.failed.length,
       details: results
     });
   } catch (error) {

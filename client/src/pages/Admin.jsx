@@ -882,6 +882,7 @@ const ClubMembers = () => {
 const TournamentAdmin = () => {
   const [tournaments, setTournaments] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [registeringAll, setRegisteringAll] = useState(null);
   
   useEffect(() => {
     loadTournaments();
@@ -951,17 +952,21 @@ const TournamentAdmin = () => {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 onClick={async () => {
+                  if (registeringAll) return;
                   if (!window.confirm(`Sign up ALL users to "${t.name}"?`)) return;
+                  setRegisteringAll(t.id);
                   try {
                     const res = await axios.post(`/api/admin/tournaments/${t.id}/register-all`);
                     toast.success(`Registered ${res.data.registered} users (${res.data.skipped} already in)`);
                     loadTournaments();
                   } catch (e) { toast.error(e.response?.data?.error || 'Failed to bulk register'); }
+                  finally { setRegisteringAll(null); }
                 }}
+                disabled={registeringAll === t.id}
                 className="btn btn-sm"
-                style={{ background: '#6366f1', color: 'white' }}
+                style={{ background: registeringAll === t.id ? '#4b5563' : '#6366f1', color: 'white' }}
               >
-                <FaUserPlus /> Sign Up All Users
+                <FaUserPlus /> {registeringAll === t.id ? 'Registering...' : 'Sign Up All Users'}
               </button>
               <button
                 onClick={() => deleteTournament(t.id, t.name)}

@@ -208,8 +208,29 @@ export function AuthProvider({ children }) {
   // Switch back to admin account
   const stopImpersonating = () => {
     const adminToken = localStorage.getItem('adminToken');
-    const adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
+    let adminUser = null;
+    try {
+      adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
+    } catch (e) {
+      console.error('Corrupted adminUser data, clearing impersonation');
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      setImpersonating(false);
+      return;
+    }
     if (adminToken && adminUser) {
+      // Check if admin token is still valid
+      const decoded = decodeToken(adminToken);
+      if (!decoded?.exp || decoded.exp * 1000 < Date.now()) {
+        console.warn('Admin token expired during impersonation');
+        localStorage.removeItem('token');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        setToken(null);
+        setUser(null);
+        setImpersonating(false);
+        return;
+      }
       localStorage.setItem('token', adminToken);
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
