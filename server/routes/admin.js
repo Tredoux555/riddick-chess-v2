@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const pool = require('../utils/db');
 
@@ -721,6 +722,112 @@ router.get('/users-by-ip/:ip', authenticateToken, requireAdmin, async (req, res)
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// IMPERSONATION — Login as any user
+// ============================================
+
+router.post('/users/:id/impersonate', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+
+    const result = await pool.query(
+      'SELECT id, username, email, avatar, is_admin, is_club_member FROM users WHERE id = $1',
+      [targetId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = result.rows[0];
+
+    // Generate a token for the target user
+    const token = jwt.sign({ id: targetUser.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+
+    res.json({
+      token,
+      user: targetUser,
+      impersonating: true,
+      adminId: req.user.id,
+      message: `Now logged in as ${targetUser.username}`
+    });
+  } catch (error) {
+    console.error('Impersonate error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ============================================
+// BULK TOURNAMENT SIGNUP — sign up multiple users at once
+// ============================================
+
+router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const tournamentId = req.params.id;
+    const { userIds } = req.body; // array of user IDs
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds array is required' });
+    }
+
+    const tournamentService = require('../services/tournamentService');
+    const results = { registered: [], failed: [] };
+
+    for (const uid of userIds) {
+      try {
+        await tournamentService.registerPlayer(tournamentId, uid);
+        results.registered.push(uid);
+      } catch (err) {
+        results.failed.push({ userId: uid, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      registered: results.registered.length,
+      failed: results.failed.length,
+      details: results
+    });
+  } catch (error) {
+    console.error('Bulk register error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Register ALL users for a tournament
+router.post('/tournaments/:id/register-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const tournamentId = req.params.id;
+    const tournamentService = require('../services/tournamentService');
+
+    // Get all non-banned users
+    const users = await pool.query(
+      'SELECT id FROM users WHERE is_banned = FALSE ORDER BY id'
+    );
+
+    const results = { registered: [], failed: [] };
+
+    for (const user of users.rows) {
+      try {
+        await tournamentService.registerPlayer(tournamentId, user.id);
+        results.registered.push(user.id);
+      } catch (err) {
+        // Skip already registered, etc.
+        results.failed.push({ userId: user.id, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Registered ${results.registered.length} users, ${results.failed.length} skipped`,
+      details: results
+    });
+  } catch (error) {
+    console.error('Register all error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

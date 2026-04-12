@@ -20,6 +20,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [impersonating, setImpersonating] = useState(!!localStorage.getItem('adminToken'));
   const refreshTimerRef = useRef(null);
 
   // Schedule a token refresh before it expires
@@ -185,8 +186,37 @@ export function AuthProvider({ children }) {
       refreshTimerRef.current = null;
     }
     localStorage.removeItem('token');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
     setToken(null);
     setUser(null);
+    setImpersonating(false);
+  };
+
+  // Impersonation: login as another user (admin only)
+  const impersonate = (newToken, targetUser) => {
+    // Save current admin session
+    localStorage.setItem('adminToken', token);
+    localStorage.setItem('adminUser', JSON.stringify(user));
+    // Switch to target user
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setUser(targetUser);
+    setImpersonating(true);
+  };
+
+  // Switch back to admin account
+  const stopImpersonating = () => {
+    const adminToken = localStorage.getItem('adminToken');
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
+    if (adminToken && adminUser) {
+      localStorage.setItem('token', adminToken);
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      setToken(adminToken);
+      setUser(adminUser);
+      setImpersonating(false);
+    }
   };
 
   const updateUser = (updates) => {
@@ -200,10 +230,13 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     isAdmin: user?.is_admin || false,
     isClubMember: user?.is_club_member || false,
+    impersonating,
     login,
     register,
     googleLogin,
     logout,
+    impersonate,
+    stopImpersonating,
     updateUser
   };
 

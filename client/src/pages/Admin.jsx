@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useTheme } from '../contexts/ThemeContext';
-import { 
-  FaUsers, FaTrophy, FaShieldAlt, FaChartBar, FaCrown, FaBan, FaCheck, 
-  FaHeartbeat, FaDownload, FaSync, FaCheckCircle, FaTimesCircle, 
+import { useAuth } from '../contexts/AuthContext';
+import {
+  FaUsers, FaTrophy, FaShieldAlt, FaChartBar, FaCrown, FaBan, FaCheck,
+  FaHeartbeat, FaDownload, FaSync, FaCheckCircle, FaTimesCircle,
   FaExclamationTriangle, FaEdit, FaTrash, FaKey, FaLink, FaVolumeMute,
-  FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments, FaGuitar
+  FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments, FaGuitar, FaSignInAlt,
+  FaUserPlus
 } from 'react-icons/fa';
 
 const Admin = () => {
@@ -188,6 +190,8 @@ const Dashboard = () => {
 };
 
 const Users = () => {
+  const { impersonate: doImpersonate } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -422,9 +426,21 @@ const Users = () => {
                       <FaCrown /> Add to Club
                     </button>
                   )}
+                  <button className="btn btn-sm" style={{ background: '#6366f1', color: 'white' }} onClick={async () => {
+                    if (!window.confirm(`Login as ${selectedUser.username}? You'll be switched to their account.`)) return;
+                    try {
+                      const res = await axios.post(`/api/admin/users/${selectedUser.id}/impersonate`);
+                      doImpersonate(res.data.token, res.data.user);
+                      toast.success(`Now viewing as ${selectedUser.username}`);
+                      setSelectedUser(null);
+                      navigate('/');
+                    } catch (e) { toast.error('Failed to impersonate user'); }
+                  }}>
+                    <FaSignInAlt /> Login As
+                  </button>
                 </div>
               </div>
-              
+
               <div className="action-section danger-zone">
                 <h4>⚠️ Danger Zone</h4>
                 <button className="btn btn-sm btn-danger" onClick={() => handleAction('delete', selectedUser.id)}>
@@ -808,20 +824,38 @@ const TournamentAdmin = () => {
         </div>
       )}
       {tournaments.map(t => (
-        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ margin: 0 }}>{t.name}</h3>
-            <p style={{ color: '#c8c8dc', margin: '4px 0 0 0' }}>
-              {t.status} • {t.participant_count || 0} players • ID: {t.id}
-            </p>
+        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ margin: 0 }}>{t.name}</h3>
+              <p style={{ color: '#c8c8dc', margin: '4px 0 0 0' }}>
+                {t.status} • {t.participant_count || 0} players • ID: {t.id}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={async () => {
+                  if (!window.confirm(`Sign up ALL users to "${t.name}"?`)) return;
+                  try {
+                    const res = await axios.post(`/api/admin/tournaments/${t.id}/register-all`);
+                    toast.success(`Registered ${res.data.registered} users (${res.data.skipped} already in)`);
+                    loadTournaments();
+                  } catch (e) { toast.error(e.response?.data?.error || 'Failed to bulk register'); }
+                }}
+                className="btn btn-sm"
+                style={{ background: '#6366f1', color: 'white' }}
+              >
+                <FaUserPlus /> Sign Up All Users
+              </button>
+              <button
+                onClick={() => deleteTournament(t.id, t.name)}
+                className="btn btn-sm"
+                style={{ background: '#ef4444', color: 'white' }}
+              >
+                <FaTrash /> Delete
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={() => deleteTournament(t.id, t.name)}
-            className="btn btn-sm"
-            style={{ background: '#ef4444', color: 'white' }}
-          >
-            <FaTrash /> Delete
-          </button>
         </div>
       ))}
     </div>

@@ -83,6 +83,28 @@ const LoadingScreen = () => (
   </div>
 );
 
+const ImpersonationBanner = () => {
+  const { user, impersonating, stopImpersonating } = useAuth();
+  if (!impersonating) return null;
+  return (
+    <div style={{
+      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+      color: 'white', padding: '8px 16px', display: 'flex',
+      justifyContent: 'center', alignItems: 'center', gap: '12px',
+      fontSize: '14px', fontWeight: 'bold', zIndex: 9999
+    }}>
+      <span>Viewing as {user?.username} (ID: {user?.id})</span>
+      <button onClick={stopImpersonating} style={{
+        background: 'white', color: '#6366f1', border: 'none',
+        padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
+        fontWeight: 'bold', fontSize: '13px'
+      }}>
+        Switch Back to Admin
+      </button>
+    </div>
+  );
+};
+
 function App() {
   const { loading } = useAuth();
 
@@ -92,6 +114,7 @@ function App() {
 
   return (
     <div className="app">
+      <ImpersonationBanner />
       <Navbar />
       <main className="main-content">
         <ErrorBoundary>
