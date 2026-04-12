@@ -169,14 +169,14 @@ const Settings = () => {
         .settings-page {
           min-height: calc(100vh - 60px);
           padding: 2rem;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          background: var(--bg-primary);
         }
         .settings-container {
           max-width: 1000px;
           margin: 0 auto;
         }
         .settings-container h1 {
-          color: #fff;
+          color: var(--text-primary);
           margin-bottom: 2rem;
           display: flex;
           align-items: center;
@@ -189,30 +189,31 @@ const Settings = () => {
         }
         .tab {
           padding: 0.75rem 1.5rem;
-          background: rgba(255,255,255,0.1);
+          background: var(--bg-tertiary);
           border: none;
           border-radius: 8px;
-          color: #fff;
+          color: var(--text-primary);
           cursor: pointer;
           display: flex;
           align-items: center;
           gap: 0.5rem;
           transition: all 0.2s;
         }
-        .tab:hover { background: rgba(255,255,255,0.2); }
-        .tab.active { background: #769656; }
+        .tab:hover { background: var(--bg-card); }
+        .tab.active { background: #769656; color: #fff; }
         .settings-content {
           display: grid;
           grid-template-columns: 400px 1fr;
           gap: 2rem;
         }
         .preview-section {
-          background: rgba(255,255,255,0.05);
+          background: var(--bg-card);
           padding: 1.5rem;
           border-radius: 12px;
+          border: 1px solid var(--border-color);
         }
         .preview-section h3 {
-          color: #fff;
+          color: var(--text-primary);
           margin-bottom: 1rem;
         }
         .board-preview {
@@ -236,16 +237,17 @@ const Settings = () => {
           background: rgba(118, 150, 86, 0.2);
           padding: 1rem;
           border-radius: 8px;
-          color: #fff;
+          color: var(--text-primary);
           text-align: center;
         }
         .redirect-notice p {
           margin-bottom: 0.5rem;
         }
         .options-section {
-          background: rgba(255,255,255,0.05);
+          background: var(--bg-card);
           padding: 1.5rem;
           border-radius: 12px;
+          border: 1px solid var(--border-color);
         }
         .theme-grid, .pieces-grid {
           display: grid;
@@ -253,20 +255,21 @@ const Settings = () => {
           gap: 1rem;
         }
         .theme-option, .piece-option {
-          background: rgba(255,255,255,0.1);
+          background: var(--bg-tertiary);
           border-radius: 8px;
           padding: 1rem;
           cursor: pointer;
           transition: all 0.2s;
           text-align: center;
           position: relative;
+          border: 2px solid transparent;
         }
         .theme-option:hover, .piece-option:hover {
-          background: rgba(255,255,255,0.2);
+          background: var(--bg-secondary);
           transform: translateY(-2px);
         }
         .theme-option.selected, .piece-option.selected {
-          background: rgba(118, 150, 86, 0.3);
+          background: rgba(118, 150, 86, 0.2);
           border: 2px solid #769656;
         }
         .mini-board {
@@ -280,7 +283,7 @@ const Settings = () => {
         }
         .square { width: 30px; height: 30px; }
         .theme-name, .piece-name {
-          color: #fff;
+          color: var(--text-primary);
           font-size: 0.9rem;
         }
         .check-icon {
