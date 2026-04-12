@@ -747,6 +747,16 @@ router.post('/users/:id/impersonate', authenticateToken, requireAdmin, async (re
 
     const targetUser = result.rows[0];
 
+    // Block self-impersonation
+    if (targetId === req.user.id) {
+      return res.status(400).json({ error: 'Cannot impersonate yourself' });
+    }
+
+    // Block impersonating other admins
+    if (targetUser.is_admin) {
+      return res.status(403).json({ error: 'Cannot impersonate other administrators' });
+    }
+
     // Generate a token for the target user
     const token = jwt.sign({ id: targetUser.id }, process.env.JWT_SECRET, { expiresIn: '2h' });
 
@@ -777,6 +787,11 @@ router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, a
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return res.status(400).json({ error: 'userIds array is required' });
+    }
+
+    // Validate all IDs are positive integers
+    if (userIds.some(id => !Number.isInteger(id) || id < 1)) {
+      return res.status(400).json({ error: 'All userIds must be positive integers' });
     }
 
     const tournamentService = require('../services/tournamentService');

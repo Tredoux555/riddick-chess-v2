@@ -195,6 +195,11 @@ export function AuthProvider({ children }) {
 
   // Impersonation: login as another user (admin only)
   const impersonate = (newToken, targetUser) => {
+    // Prevent chained impersonation — must be actual admin, not already impersonating
+    if (impersonating) {
+      console.warn('Already impersonating — switch back first');
+      return;
+    }
     // Save current admin session
     localStorage.setItem('adminToken', token);
     localStorage.setItem('adminUser', JSON.stringify(user));

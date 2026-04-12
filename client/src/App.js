@@ -88,14 +88,15 @@ const ImpersonationBanner = () => {
   if (!impersonating) return null;
   return (
     <div style={{
-      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+      background: 'linear-gradient(90deg, #dc2626, #ef4444)',
       color: 'white', padding: '8px 16px', display: 'flex',
       justifyContent: 'center', alignItems: 'center', gap: '12px',
-      fontSize: '14px', fontWeight: 'bold', zIndex: 9999
+      fontSize: '14px', fontWeight: 'bold', zIndex: 9999,
+      position: 'sticky', top: 0
     }}>
       <span>Viewing as {user?.username} (ID: {user?.id})</span>
       <button onClick={stopImpersonating} style={{
-        background: 'white', color: '#6366f1', border: 'none',
+        background: 'white', color: '#dc2626', border: 'none',
         padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
         fontWeight: 'bold', fontSize: '13px'
       }}>
