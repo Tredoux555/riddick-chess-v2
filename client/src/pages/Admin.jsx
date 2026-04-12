@@ -250,8 +250,13 @@ const Users = () => {
   };
   
   const loadUsers = async () => {
-    const r = await axios.get('/api/admin/users');
-    setUsers(r.data);
+    try {
+      const r = await axios.get('/api/admin/users');
+      setUsers(r.data || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      toast.error('Failed to load users');
+    }
   };
   
   const handleAction = async (action, userId, data = {}) => {
