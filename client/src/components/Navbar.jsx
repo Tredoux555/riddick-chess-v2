@@ -8,6 +8,7 @@ import {
   FaMedal, FaUsers, FaCrown, FaCog, FaSignOutAlt, FaUser,
   FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaEnvelope
 } from 'react-icons/fa';
+import NotificationPopup from './NotificationPopup';
 
 const Navbar = () => {
   const { user, isAdmin, isClubMember, logout } = useAuth();
@@ -80,14 +81,16 @@ const Navbar = () => {
           </button>
           {user ? (
             <>
-              <div 
+              <div
                 className={`connection-status ${connected ? 'connected' : 'disconnected'}`}
                 title={connected ? 'Connected' : 'Disconnected'}
               >
                 <span className="status-dot"></span>
               </div>
-              
-              <div 
+
+              <NotificationPopup />
+
+              <div
                 className="user-menu"
                 onMouseEnter={() => setShowDropdown(true)}
                 onMouseLeave={() => setShowDropdown(false)}

@@ -17,6 +17,8 @@ const matchmakingQueues = new Map();
 const userSockets = new Map();
 // Spectators per game
 const gameSpectators = new Map();
+// Store io instance for external access
+let ioInstance = null;
 
 class GameState {
   constructor(gameData) {
@@ -260,6 +262,7 @@ class GameState {
 }
 
 function initializeSocket(io) {
+  ioInstance = io;
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
     let userId = null;
@@ -1330,4 +1333,4 @@ function endOupaGame(io, roomId, result) {
   }, 300000);
 }
 
-module.exports = { initializeSocket, activeGames, userSockets };
+module.exports = { initializeSocket, activeGames, userSockets, getIO: () => ioInstance };

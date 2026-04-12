@@ -519,6 +519,23 @@ async function initDatabase() {
       );
     `);
 
+    // Notifications table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT,
+        data JSONB DEFAULT '{}',
+        read_at TIMESTAMP,
+        dismissed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id) WHERE read_at IS NULL AND dismissed_at IS NULL;
+    `);
+
     await initBotTables(client);
     console.log('✅ Database initialized successfully!');
   } catch (err) {

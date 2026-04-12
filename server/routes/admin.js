@@ -774,6 +774,40 @@ router.post('/users/:id/impersonate', authenticateToken, requireAdmin, async (re
 });
 
 // ============================================
+// NOTIFICATION HELPER — send tournament invite notifications
+// ============================================
+
+async function sendTournamentInviteNotifications(tournamentId, userIds) {
+  const { userSockets } = require('../sockets');
+  // Get tournament name
+  const tResult = await pool.query('SELECT name FROM tournaments WHERE id = $1', [tournamentId]);
+  const tournamentName = tResult.rows[0]?.name || 'a tournament';
+
+  for (const uid of userIds) {
+    try {
+      // Save notification to DB
+      const notif = await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message, data)
+         VALUES ($1, 'tournament_invite', $2, $3, $4) RETURNING *`,
+        [uid, `Tournament Invite`, `You've been invited to ${tournamentName}!`,
+         JSON.stringify({ tournamentId, tournamentName })]
+      );
+
+      // Send real-time socket notification if user is online
+      const socketId = userSockets.get(uid);
+      if (socketId) {
+        const io = require('../sockets').getIO();
+        if (io) {
+          io.to(socketId).emit('notification', notif.rows[0]);
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to send notification to user ${uid}:`, err.message);
+    }
+  }
+}
+
+// ============================================
 // BULK TOURNAMENT SIGNUP — sign up multiple users at once
 // ============================================
 
@@ -804,6 +838,11 @@ router.post('/tournaments/:id/bulk-register', authenticateToken, requireAdmin, a
       } catch (err) {
         results.failed.push({ userId: uid, error: err.message });
       }
+    }
+
+    // Send notifications to all successfully registered users
+    if (results.registered.length > 0) {
+      sendTournamentInviteNotifications(tournamentId, results.registered).catch(console.error);
     }
 
     res.json({
@@ -843,6 +882,11 @@ router.post('/tournaments/:id/register-all', authenticateToken, requireAdmin, as
         // Skip already registered, etc.
         results.failed.push({ userId: user.id, error: err.message });
       }
+    }
+
+    // Send notifications to all successfully registered users
+    if (results.registered.length > 0) {
+      sendTournamentInviteNotifications(tournamentId, results.registered).catch(console.error);
     }
 
     res.json({
