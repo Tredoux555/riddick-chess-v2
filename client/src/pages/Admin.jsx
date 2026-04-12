@@ -888,18 +888,43 @@ const TournamentAdmin = () => {
   const [tournaments, setTournaments] = useState([]);
   const [creating, setCreating] = useState(false);
   const [registeringAll, setRegisteringAll] = useState(null);
-  
+  const [expandedId, setExpandedId] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [standings, setStandings] = useState([]);
+  const [rounds, setRounds] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   useEffect(() => {
     loadTournaments();
   }, []);
 
   const loadTournaments = () => {
-    axios.get('/api/tournaments').then(r => setTournaments(r.data));
+    axios.get('/api/tournaments').then(r => setTournaments(r.data)).catch(console.error);
+  };
+
+  const loadTournamentDetail = async (id) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    setDetailLoading(true);
+    try {
+      const [detailRes, standingsRes, roundsRes] = await Promise.all([
+        axios.get(`/api/tournaments/${id}`),
+        axios.get(`/api/tournaments/${id}/standings`).catch(() => ({ data: [] })),
+        axios.get(`/api/tournaments/${id}/rounds`).catch(() => ({ data: [] }))
+      ]);
+      setDetail(detailRes.data);
+      setStandings(Array.isArray(standingsRes.data) ? standingsRes.data : standingsRes.data?.standings || []);
+      setRounds(Array.isArray(roundsRes.data) ? roundsRes.data : []);
+    } catch (err) {
+      toast.error('Failed to load tournament details');
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const createOfficialTournament = async () => {
     if (!window.confirm('Create the Riddick Chess Open?\n\n🏆 Riddick Chess Open — April 2026\n⏱️ 5 min blitz, 4 rounds\n🆓 FREE entry\n📅 April 5th, 2026')) return;
-    
     setCreating(true);
     try {
       const res = await axios.post('/api/tournaments/create-official-tournament');
@@ -908,9 +933,7 @@ const TournamentAdmin = () => {
       alert(`✅ Tournament created!\n\nID: ${res.data.tournament.id}\nView at: /tournament/${res.data.tournament.id}\n\nShare with students!`);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create tournament');
-    } finally {
-      setCreating(false);
-    }
+    } finally { setCreating(false); }
   };
 
   const deleteTournament = async (id, name) => {
@@ -918,23 +941,17 @@ const TournamentAdmin = () => {
     try {
       await axios.delete(`/api/tournaments/${id}`);
       toast.success('Tournament deleted');
+      if (expandedId === id) setExpandedId(null);
       loadTournaments();
-    } catch (err) {
-      toast.error('Failed to delete tournament');
-    }
+    } catch (err) { toast.error('Failed to delete tournament'); }
   };
-  
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h1>Tournaments</h1>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={createOfficialTournament} 
-            disabled={creating}
-            className="btn"
-            style={{ background: '#10b981', color: 'white', fontWeight: 'bold' }}
-          >
+          <button onClick={createOfficialTournament} disabled={creating} className="btn" style={{ background: '#10b981', color: 'white', fontWeight: 'bold' }}>
             {creating ? '⏳ Creating...' : '🏆 Create Official Tournament'}
           </button>
           <Link to="/admin/riddick/tournaments/create" className="btn btn-primary">+ Custom Tournament</Link>
@@ -946,15 +963,21 @@ const TournamentAdmin = () => {
         </div>
       )}
       {tournaments.map(t => (
-        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div key={t.id} className="card" style={{ marginBottom: '12px', padding: '0', overflow: 'hidden' }}>
+          {/* Tournament Header — clickable */}
+          <div
+            onClick={() => loadTournamentDetail(t.id)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', cursor: 'pointer', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             <div>
-              <h3 style={{ margin: 0 }}>{t.name}</h3>
+              <h3 style={{ margin: 0 }}>{expandedId === t.id ? '▼' : '▶'} {t.name}</h3>
               <p style={{ color: '#c8c8dc', margin: '4px 0 0 0' }}>
                 {t.status} • {t.participant_count || 0} players • ID: {t.id}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
               <button
                 onClick={async () => {
                   if (registeringAll) return;
@@ -964,6 +987,7 @@ const TournamentAdmin = () => {
                     const res = await axios.post(`/api/admin/tournaments/${t.id}/register-all`);
                     toast.success(`Registered ${res.data.registered} users (${res.data.skipped} already in)`);
                     loadTournaments();
+                    if (expandedId === t.id) loadTournamentDetail(t.id);
                   } catch (e) { toast.error(e.response?.data?.error || 'Failed to bulk register'); }
                   finally { setRegisteringAll(null); }
                 }}
@@ -973,15 +997,92 @@ const TournamentAdmin = () => {
               >
                 <FaUserPlus /> {registeringAll === t.id ? 'Registering...' : 'Sign Up All Users'}
               </button>
-              <button
-                onClick={() => deleteTournament(t.id, t.name)}
-                className="btn btn-sm"
-                style={{ background: '#ef4444', color: 'white' }}
-              >
+              <a href={`/tournament/${t.id}`} target="_blank" rel="noreferrer" className="btn btn-sm" style={{ background: '#10b981', color: 'white', textDecoration: 'none' }}>
+                View Public Page
+              </a>
+              <button onClick={() => deleteTournament(t.id, t.name)} className="btn btn-sm" style={{ background: '#ef4444', color: 'white' }}>
                 <FaTrash /> Delete
               </button>
             </div>
           </div>
+
+          {/* Expanded Detail Panel */}
+          {expandedId === t.id && (
+            <div style={{ borderTop: '1px solid var(--border-color)', padding: '16px', background: 'var(--bg-tertiary)' }}>
+              {detailLoading ? (
+                <p style={{ textAlign: 'center', color: '#c8c8dc' }}>Loading...</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  {/* Participants / Standings */}
+                  <div>
+                    <h4 style={{ margin: '0 0 12px 0' }}>Participants ({standings.length || detail?.participants?.length || 0})</h4>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <th style={{ textAlign: 'left', padding: '6px 8px', color: '#c8c8dc' }}>#</th>
+                            <th style={{ textAlign: 'left', padding: '6px 8px', color: '#c8c8dc' }}>Player</th>
+                            <th style={{ textAlign: 'center', padding: '6px 8px', color: '#c8c8dc' }}>Pts</th>
+                            <th style={{ textAlign: 'center', padding: '6px 8px', color: '#c8c8dc' }}>W/L/D</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(standings.length > 0 ? standings : (detail?.participants || [])).map((p, i) => (
+                            <tr key={p.user_id || p.id || i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '6px 8px' }}>{i + 1}</td>
+                              <td style={{ padding: '6px 8px' }}>{p.username || p.player_name || 'Unknown'}</td>
+                              <td style={{ textAlign: 'center', padding: '6px 8px', fontWeight: 'bold' }}>{p.points ?? p.score ?? '-'}</td>
+                              <td style={{ textAlign: 'center', padding: '6px 8px', color: '#c8c8dc' }}>
+                                {p.wins != null ? `${p.wins}/${p.losses}/${p.draws}` : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                          {standings.length === 0 && (!detail?.participants || detail.participants.length === 0) && (
+                            <tr><td colSpan={4} style={{ padding: '12px', textAlign: 'center', color: '#c8c8dc' }}>No participants yet</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Rounds */}
+                  <div>
+                    <h4 style={{ margin: '0 0 12px 0' }}>Rounds ({rounds.length})</h4>
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {rounds.length === 0 ? (
+                        <p style={{ color: '#c8c8dc', fontSize: '13px' }}>No rounds played yet</p>
+                      ) : (
+                        rounds.map((round, ri) => (
+                          <div key={ri} style={{ marginBottom: '12px' }}>
+                            <h5 style={{ margin: '0 0 6px 0', color: '#a5b4fc', fontSize: '13px' }}>
+                              Round {round.round || ri + 1}
+                            </h5>
+                            {(round.pairings || round.games || []).map((g, gi) => (
+                              <div key={gi} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', fontSize: '12px', background: 'var(--bg-card)', borderRadius: '4px', marginBottom: '4px' }}>
+                                <span>{g.white_username || g.white_name || '?'} vs {g.black_username || g.black_name || '?'}</span>
+                                <span style={{ color: g.result ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
+                                  {g.result || g.status || 'Pending'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tournament Info */}
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '24px', fontSize: '13px', color: '#c8c8dc', borderTop: '1px solid var(--border-color)', paddingTop: '12px', flexWrap: 'wrap' }}>
+                    {detail?.type && <span>Type: <strong style={{ color: 'white' }}>{detail.type}</strong></span>}
+                    {detail?.current_round != null && <span>Current Round: <strong style={{ color: 'white' }}>{detail.current_round}</strong></span>}
+                    {detail?.total_rounds && <span>Total Rounds: <strong style={{ color: 'white' }}>{detail.total_rounds}</strong></span>}
+                    {detail?.time_control && <span>Time: <strong style={{ color: 'white' }}>{detail.time_control}s</strong></span>}
+                    {detail?.created_at && <span>Created: <strong style={{ color: 'white' }}>{new Date(detail.created_at).toLocaleDateString()}</strong></span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>
