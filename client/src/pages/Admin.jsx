@@ -11,6 +11,7 @@ import {
   FaStar, FaTimes, FaUserCog, FaBullhorn, FaComments, FaGuitar, FaSignInAlt,
   FaUserPlus
 } from 'react-icons/fa';
+import NotifyForm from '../components/NotifyForm';
 
 const Admin = () => {
   const location = useLocation();
@@ -247,6 +248,8 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      <NotifyForm />
 
       <style jsx>{`
         h1 { margin-bottom: 24px; }
@@ -1202,7 +1205,7 @@ const CreateTournament = () => {
             <small style={{ color: '#c8c8dc' }}>Rounds are auto-calculated based on player count</small>
           </div>
         )}
-        <div className="form-group"><label>Start Time</label><input type="datetime-local" className="form-input" value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} /></div>
+        <div className="form-group"><label>Start Time</label><input type="datetime-local" className="form-input" required value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} /></div>
         <button type="submit" className="btn btn-primary">Create Tournament</button>
       </form>
     </div>

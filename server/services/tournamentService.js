@@ -29,6 +29,10 @@ class TournamentService {
       isArena = false
     } = data;
 
+    // Coerce an empty string or missing value to null so a blank
+    // start time can never crash the timestamp insert.
+    const normalizedStartTime = startTime ? startTime : null;
+
     const result = await pool.query(`
       INSERT INTO tournaments (
         name, description, created_by, type, time_control, increment,
@@ -39,7 +43,7 @@ class TournamentService {
       RETURNING *
     `, [
       name, description, createdBy, type, timeControl, increment,
-      maxPlayers, totalRounds, startTime,
+      maxPlayers, totalRounds, normalizedStartTime,
       registrationStart, registrationEnd, tournamentEnd, forfeitHours, isArena
     ]);
 

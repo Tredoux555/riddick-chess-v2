@@ -9,6 +9,7 @@ import {
   FaShieldAlt, FaGraduationCap, FaVideo, FaChessBoard, FaRobot, FaEnvelope
 } from 'react-icons/fa';
 import NotificationPopup from './NotificationPopup';
+import { subscribeToPush } from '../utils/push';
 
 const Navbar = () => {
   const { user, isAdmin, isClubMember, logout } = useAuth();
@@ -89,6 +90,24 @@ const Navbar = () => {
               </div>
 
               <NotificationPopup />
+
+              <button
+                className="notify-me-btn"
+                onClick={subscribeToPush}
+                title="Get push notifications for tournament alerts"
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                🔔 Notify me
+              </button>
 
               <div
                 className="user-menu"

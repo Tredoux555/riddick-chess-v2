@@ -83,6 +83,7 @@ app.use('/api/lessons', require('./routes/lessons'));
 app.use('/api/ai-tutor', require('./routes/ai-tutor'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/push', require('./routes/push'));
 
 // Rating fix endpoint — admin only
 app.get('/api/fix-missing-ratings', async (req, res) => {
