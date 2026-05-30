@@ -4,12 +4,30 @@ const webpush = require('web-push');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const pool = require('../utils/db');
 
-// Configure web-push with VAPID details from environment
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT,
-  process.env.VAPID_PUBLIC_KEY,
+// Configure web-push with VAPID details from environment.
+// IMPORTANT: setVapidDetails throws if any value is missing. Calling it at
+// module load means a missing env var would crash the ENTIRE server on boot
+// (not just push). Guard it so the rest of the app always starts; push routes
+// simply report as unconfigured until the VAPID vars are set.
+let pushConfigured = false;
+if (
+  process.env.VAPID_SUBJECT &&
+  process.env.VAPID_PUBLIC_KEY &&
   process.env.VAPID_PRIVATE_KEY
-);
+) {
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+    pushConfigured = true;
+  } catch (err) {
+    console.error('Web Push disabled — invalid VAPID config:', err.message);
+  }
+} else {
+  console.warn('Web Push disabled — VAPID_SUBJECT / VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not all set.');
+}
 
 // ============================================
 // PUBLIC KEY
@@ -17,6 +35,9 @@ webpush.setVapidDetails(
 
 // Return the VAPID public key so the client can subscribe
 router.get('/public-key', (req, res) => {
+  if (!pushConfigured) {
+    return res.status(503).json({ error: 'Push notifications are not configured' });
+  }
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 
@@ -54,6 +75,10 @@ router.post('/subscribe', async (req, res) => {
 // Send a push notification to all stored subscriptions.
 router.post('/notify', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    if (!pushConfigured) {
+      return res.status(503).json({ error: 'Push notifications are not configured' });
+    }
+
     const { title, body } = req.body || {};
 
     if (!title || !body) {

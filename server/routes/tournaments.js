@@ -192,9 +192,19 @@ router.post('/:id/next-round', authenticateToken, requireAdmin, async (req, res)
     }
 
     const pairings = await tournamentService.generatePairings(
-      req.params.id, 
+      req.params.id,
       tournament.current_round + 1
     );
+
+    // Don't create a blank round: if no real games could be paired (e.g. only
+    // 2 players who already played each other), end the tournament instead.
+    const realGames = (pairings || []).filter(p => !p.is_bye).length;
+    if (realGames === 0) {
+      await require('../utils/db').query(`
+        UPDATE tournaments SET status = 'completed' WHERE id = $1
+      `, [req.params.id]);
+      return res.json({ completed: true, message: 'No further pairings possible — tournament completed.' });
+    }
 
     // Update current round
     await require('../utils/db').query(`
