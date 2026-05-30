@@ -243,6 +243,34 @@ const Tournament = () => {
         </div>
       )}
 
+      {/* ============ CHAMPION BANNER (completed tournaments) ============ */}
+      {tournament.status === 'completed' && tournament.participants?.length > 0 && (
+        <div style={{
+          marginTop: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '18px 22px',
+          borderRadius: '14px',
+          background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+          boxShadow: '0 6px 24px rgba(253, 160, 133, 0.35)'
+        }}>
+          <div style={{ fontSize: '44px', lineHeight: 1 }}>🏆</div>
+          <div>
+            <div style={{ fontSize: '12px', color: '#5a3a1a', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+              Tournament Complete — Champion
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#1a1a1a' }}>
+              {tournament.participants[0].username}
+            </div>
+            <div style={{ fontSize: '13px', color: '#4a2e10', fontWeight: 600 }}>
+              {tournament.participants[0].score ?? 0} {(tournament.participants[0].score === 1) ? 'point' : 'points'}
+              {tournament.participants.length > 1 && ` · ${tournament.participants.length} players`}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action buttons */}
       <div style={{ marginTop: '16px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
         {canRegister && (
