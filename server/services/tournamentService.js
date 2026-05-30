@@ -780,8 +780,49 @@ class TournamentService {
       await this.calculateBuchholz(tournamentId);
     }
 
-    // Check if tournament is complete
-    if (round >= tournament.rows[0].total_rounds) {
+    // Cap the number of rounds to what's actually playable. In a Swiss
+    // event players can't be paired against the same opponent twice, so with
+    // N active players the most meaningful rounds is N - 1. With only 2
+    // players that's a single round — without this cap the tournament would
+    // keep spawning empty rounds toward total_rounds (default 5).
+    let effectiveTotalRounds = tournament.rows[0].total_rounds;
+    if (tournamentType !== 'round-robin') {
+      const activeRes = await pool.query(`
+        SELECT COUNT(*) AS count FROM tournament_participants
+        WHERE tournament_id = $1 AND is_withdrawn = FALSE
+      `, [tournamentId]);
+      const activePlayers = parseInt(activeRes.rows[0].count);
+      effectiveTotalRounds = Math.min(effectiveTotalRounds, Math.max(1, activePlayers - 1));
+    }
+
+    let shouldComplete = round >= effectiveTotalRounds;
+
+    if (!shouldComplete) {
+      // Generate next round pairings
+      await pool.query(`
+        UPDATE tournaments SET current_round = $1 WHERE id = $2
+      `, [round + 1, tournamentId]);
+
+      let nextPairings;
+      if (tournamentType === 'round-robin') {
+        nextPairings = await this.generateRoundRobinPairings(tournamentId, round + 1);
+      } else {
+        nextPairings = await this.generatePairings(tournamentId, round + 1);
+      }
+
+      // Safety net: if no real games could be created (e.g. everyone has
+      // already played everyone), end the tournament instead of leaving an
+      // empty round that can never finish.
+      const realGames = (nextPairings || []).filter(p => !p.is_bye).length;
+      if (realGames === 0) {
+        await pool.query(`
+          UPDATE tournaments SET current_round = $1 WHERE id = $2
+        `, [round, tournamentId]);
+        shouldComplete = true;
+      }
+    }
+
+    if (shouldComplete) {
       // Tournament complete
       await pool.query(`
         UPDATE tournaments SET status = 'completed' WHERE id = $1
@@ -795,17 +836,6 @@ class TournamentService {
           i + 1,
           tournamentId
         );
-      }
-    } else {
-      // Generate next round pairings
-      await pool.query(`
-        UPDATE tournaments SET current_round = $1 WHERE id = $2
-      `, [round + 1, tournamentId]);
-
-      if (tournamentType === 'round-robin') {
-        await this.generateRoundRobinPairings(tournamentId, round + 1);
-      } else {
-        await this.generatePairings(tournamentId, round + 1);
       }
     }
   }
