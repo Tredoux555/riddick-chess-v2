@@ -162,6 +162,24 @@ class GameState {
         try {
           await tournamentService.recordResult(this.tournamentId, this.id, result);
           console.log(`Tournament ${this.tournamentId} result recorded: ${result}`);
+
+          // If this result completed the tournament, push a real-time
+          // "tournament over" event so both players immediately see the
+          // winner and final standings — no page refresh needed.
+          const t = await tournamentService.getTournament(this.tournamentId);
+          if (t && t.status === 'completed' && ioInstance) {
+            const standings = t.participants || [];
+            const payload = {
+              tournamentId: this.tournamentId,
+              tournamentName: t.name,
+              winner: standings[0] || null,
+              runnerUp: standings[1] || null,
+              standings
+            };
+            ioInstance.to(`game:${this.id}`).emit('tournament:over', payload);
+            ioInstance.to(`tournament:${this.tournamentId}`).emit('tournament:over', payload);
+            console.log(`Tournament ${this.tournamentId} completed — emitted tournament:over`);
+          }
         } catch (err) {
           console.error('Failed to record tournament result:', err);
         }

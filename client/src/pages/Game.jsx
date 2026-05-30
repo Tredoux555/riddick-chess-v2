@@ -42,6 +42,7 @@ const Game = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingPromotion, setPendingPromotion] = useState(null);
   const [tournamentId, setTournamentId] = useState(null);
+  const [tournamentResult, setTournamentResult] = useState(null);
   const [lastMove, setLastMove] = useState(null);
 
   useEffect(() => {
@@ -194,6 +195,12 @@ const Game = () => {
       setSpectatorCount(count);
     });
 
+    // Tournament finished as a result of this game — show winner/loser instantly
+    socket.on('tournament:over', (data) => {
+      setGameOver(true);
+      setTournamentResult(data);
+    });
+
     return () => {
       socket.off('game:state');
       socket.off('game:moved');
@@ -203,6 +210,7 @@ const Game = () => {
       socket.off('game:draw:declined');
       socket.off('game:opponent_disconnected');
       socket.off('game:opponent_reconnected');
+      socket.off('tournament:over');
       socket.off('chat:message');
       socket.off('spectators:update');
     };
@@ -482,6 +490,49 @@ const Game = () => {
                   Play Again
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Tournament finished — real-time winner/loser result */}
+          {tournamentResult && (
+            <div style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
+            }}>
+              <div style={{
+                background: '#1e1e2e', borderRadius: '16px', padding: '32px',
+                textAlign: 'center', maxWidth: '420px', width: '90%',
+                border: '2px solid #f6d365', boxShadow: '0 0 40px rgba(246, 211, 101, 0.25)'
+              }}>
+                <div style={{ fontSize: '52px', lineHeight: 1 }}>🏆</div>
+                <h2 style={{ color: '#fff', margin: '8px 0 4px' }}>Tournament Complete</h2>
+                {tournamentResult.tournamentName && (
+                  <div style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '16px' }}>
+                    {tournamentResult.tournamentName}
+                  </div>
+                )}
+                {tournamentResult.winner && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '12px', color: '#f6d365', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>🥇 Winner</div>
+                    <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff' }}>
+                      {tournamentResult.winner.username}
+                      <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 'normal' }}> · {tournamentResult.winner.score ?? 0} pts</span>
+                    </div>
+                  </div>
+                )}
+                {tournamentResult.runnerUp && (
+                  <div style={{ marginBottom: '18px' }}>
+                    <div style={{ fontSize: '12px', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>🥈 Runner-up</div>
+                    <div style={{ fontSize: '18px', color: '#e2e8f0' }}>
+                      {tournamentResult.runnerUp.username}
+                      <span style={{ color: '#94a3b8', fontSize: '13px' }}> · {tournamentResult.runnerUp.score ?? 0} pts</span>
+                    </div>
+                  </div>
+                )}
+                <button className="btn btn-primary" onClick={() => navigate(`/tournament/${tournamentResult.tournamentId}`)}>
+                  View Final Standings
+                </button>
+              </div>
             </div>
           )}
 
