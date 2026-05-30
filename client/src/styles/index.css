@@ -481,8 +481,9 @@ h4 { font-size: 1.125rem; }
   }
 }
 
-/* Mobile: collapse nav into hamburger menu */
-@media (max-width: 768px) {
+/* Tablet & mobile: collapse nav into hamburger menu so the top bar
+   doesn't cram all the links into one row (covers iPad widths). */
+@media (max-width: 1200px) {
   .nav-toggle { display: flex; }
   .navbar-nav {
     display: none;
@@ -493,9 +494,22 @@ h4 { font-size: 1.125rem; }
     background: var(--bg-secondary);
     padding: var(--spacing-md);
     flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-xs);
     border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
   }
   .navbar-nav.open { display: flex; }
+  /* Restore comfortable link sizing inside the dropdown menu */
+  .navbar-nav .nav-link {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.95rem;
+  }
+  /* Tighten the remaining top-bar controls so they sit cleanly */
+  .navbar-user {
+    gap: var(--spacing-sm);
+  }
 }
 
 
