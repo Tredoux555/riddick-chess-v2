@@ -181,19 +181,19 @@ router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async 
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     
     const result = await pool.query(`
-      UPDATE users SET password = $1, must_change_password = TRUE WHERE id = $2
+      UPDATE users SET password_hash = $1 WHERE id = $2
       RETURNING username, email
     `, [hashedPassword, id]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    res.json({ 
+
+    res.json({
       message: `Password reset for ${result.rows[0].username}`,
       tempPassword: tempPassword,
       email: result.rows[0].email,
-      note: 'Give this temporary password to the user. They will be prompted to change it on login.'
+      note: 'Give this temporary password to the user. They can change it from Settings after logging in.'
     });
   } catch (error) {
     console.error('Reset password error:', error);
