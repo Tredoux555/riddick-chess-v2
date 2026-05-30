@@ -177,6 +177,19 @@ const Tournament = () => {
     }
   };
 
+  const handleEndTournament = async () => {
+    if (!window.confirm('End this tournament now and crown the current leader as the winner?')) return;
+    try {
+      const res = await axios.post(`/api/tournaments/${id}/end`);
+      const winner = res.data?.winner?.username;
+      toast.success(winner ? `Tournament ended — ${winner} wins!` : 'Tournament ended!');
+      loadTournament();
+      loadRounds();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to end tournament');
+    }
+  };
+
   // --- Loading / Error states ---
   if (loading) {
     return <div style={styles.center}><p>Loading tournament...</p></div>;
@@ -292,6 +305,11 @@ const Tournament = () => {
         {isAdmin && tournament.status === 'upcoming' && (
           <button onClick={handleStartTournament} style={{ ...styles.btn, background: '#f59e0b' }}>
             <FaPlay style={{ marginRight: '6px' }} /> Start Tournament
+          </button>
+        )}
+        {isAdmin && tournament.status === 'active' && (
+          <button onClick={handleEndTournament} style={{ ...styles.btn, background: '#ef4444' }}>
+            <FaTrophy style={{ marginRight: '6px' }} /> End Tournament
           </button>
         )}
       </div>

@@ -218,6 +218,22 @@ router.post('/:id/next-round', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
+// Force-complete a tournament and crown the current leader (admin only)
+router.post('/:id/end', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const standings = await tournamentService.endTournament(req.params.id);
+    res.json({
+      success: true,
+      status: 'completed',
+      winner: standings[0] || null,
+      standings
+    });
+  } catch (error) {
+    console.error('End tournament error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Process forfeits for inactive players (admin only)
 router.post('/:id/process-forfeits', authenticateToken, requireAdmin, async (req, res) => {
   try {

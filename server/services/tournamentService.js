@@ -773,11 +773,18 @@ class TournamentService {
 
     const tournamentType = tournament.rows[0].type;
 
-    // Calculate tiebreaker scores
-    if (tournamentType === 'round-robin') {
-      await this.calculateSonnebornBerger(tournamentId);
-    } else {
-      await this.calculateBuchholz(tournamentId);
+    // Calculate tiebreaker scores. Guarded: a tiebreaker error must NEVER
+    // prevent the tournament from completing (the game-end handler swallows
+    // exceptions, which would otherwise leave the tournament stuck "active"
+    // forever with no winner).
+    try {
+      if (tournamentType === 'round-robin') {
+        await this.calculateSonnebornBerger(tournamentId);
+      } else {
+        await this.calculateBuchholz(tournamentId);
+      }
+    } catch (tbErr) {
+      console.error('Tiebreaker calculation failed (continuing):', tbErr.message);
     }
 
     // Cap the number of rounds to what's actually playable. In a Swiss
@@ -838,6 +845,42 @@ class TournamentService {
         );
       }
     }
+  }
+
+  /**
+   * Force-complete a tournament immediately and crown the current leader.
+   * Admin "End Tournament" action — works regardless of round state, so a
+   * tournament can always be ended and a winner declared.
+   */
+  async endTournament(tournamentId) {
+    const t = await pool.query(`SELECT type FROM tournaments WHERE id = $1`, [tournamentId]);
+    if (t.rows.length === 0) throw new Error('Tournament not found');
+
+    // Tiebreakers (guarded — must not block completion)
+    try {
+      if (t.rows[0].type === 'round-robin') {
+        await this.calculateSonnebornBerger(tournamentId);
+      } else {
+        await this.calculateBuchholz(tournamentId);
+      }
+    } catch (e) {
+      console.error('Tiebreaker calc failed during endTournament (continuing):', e.message);
+    }
+
+    await pool.query(`UPDATE tournaments SET status = 'completed' WHERE id = $1`, [tournamentId]);
+
+    // Award achievements to final standings (guarded)
+    let standings = [];
+    try {
+      standings = await this.getStandings(tournamentId);
+      for (let i = 0; i < standings.length; i++) {
+        await achievementService.checkTournamentAchievements(standings[i].user_id, i + 1, tournamentId);
+      }
+    } catch (e) {
+      console.error('Achievement awarding failed during endTournament (continuing):', e.message);
+    }
+
+    return standings;
   }
 
   /**
